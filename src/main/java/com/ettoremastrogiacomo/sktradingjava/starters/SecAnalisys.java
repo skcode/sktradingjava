@@ -1,0 +1,71 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+package com.ettoremastrogiacomo.sktradingjava.starters;
+//import java.util.ArrayList;
+//import speedking.utils.Init;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
+import org.jfree.chart.plot.XYPlot;
+import com.ettoremastrogiacomo.sktradingjava.Charts;
+import com.ettoremastrogiacomo.sktradingjava.Fints;
+import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import java.util.Optional;
+//import speedking.trading.data.Datasource;
+/**
+ *
+ * @author a241448
+ */
+public class SecAnalisys {
+
+    public static void main(String[] args) throws Exception{
+            String symbol="ENEL";//INA.EURONEXT-XLIS
+            Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of("MLSE"),Optional.empty());
+
+                System.out.println(f);
+                System.out.println(f.getSerieCopy(3));
+                Fints ER=Fints.ER(f.getSerieCopy(3), 1, false);
+                Fints msharpe=Fints.SMA(Fints.Sharpe(ER, 20), 200);
+                Fints dmsharpe=Fints.SMA(Fints.Diff(msharpe), 20);
+                Fints dmsharpe2=Fints.SMA(Fints.Diff(dmsharpe), 20);
+                //Fints dmsharpe2=Fints.Diff(dmsharpe);
+                
+                double []v_er=ER.getSerieVector(0);
+                double std=com.ettoremastrogiacomo.utils.DoubleArray.std(v_er);
+                double mean=com.ettoremastrogiacomo.utils.DoubleArray.mean(v_er);
+                double min=com.ettoremastrogiacomo.utils.DoubleArray.min(v_er);
+                double max=com.ettoremastrogiacomo.utils.DoubleArray.max(v_er);
+                
+                System.out.println("symbol="+symbol);
+                System.out.println("freq="+f.getFrequency());
+                System.out.println("first date="+f.getFirstDate());
+                System.out.println("last date="+f.getLastDate());
+                System.out.println("date gap="+f.getMaxDateGap()/(1000*60*60*24)+" day(s)");
+                System.out.println("std="+std+"\nmean="+mean+"\nmin="+min+"\nmax="+max);
+                for (int i=0;i<10;i++) {
+                    System.out.println("date:"+msharpe.getDate(msharpe.getLength()-1-i));
+                    System.out.println("sh:"+msharpe.get(msharpe.getLength()-1-i,0 ));
+                    System.out.println("dsh:"+dmsharpe.get(dmsharpe.getLength()-1-i,0 ));
+                    System.out.println("ddsh:"+dmsharpe2.get(dmsharpe2.getLength()-1-i,0 ));
+                }
+        Charts c1=new Charts("Analisys");
+        //Charts c2=new Charts("MOVING_SHARPE");
+        //Charts c3=new Charts("MOVING_SHARPE");
+        Fints all=f.getSerieCopy(3);
+        all=Fints.merge(all, msharpe);
+        all=Fints.merge(all, dmsharpe);
+        all=Fints.merge(all, dmsharpe2);
+        XYPlot p1=c1.createXYPlot(all.getName(0),all.getSerieCopy(0));
+        XYPlot p2=c1.createXYPlot(all.getName(1),all.getSerieCopy(1));
+        XYPlot p3=c1.createXYPlot(all.getName(2),all.getSerieCopy(2));
+        XYPlot p4=c1.createXYPlot(all.getName(3),all.getSerieCopy(3));
+        XYPlot []arr={p1,p2,p3,p4};
+        CombinedDomainXYPlot  cp=  c1.createCombinedDomainXYPlot("dom", arr, false);
+
+        c1.plotCombined(cp,640,480);
+
+
+        //c1.plot(p1,640,480);
+    }
+}
