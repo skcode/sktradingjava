@@ -1128,9 +1128,9 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
     public static void main(String[] args) throws Exception {
 
         Database.createSecTable();        
-        fetchSharesDetails();
-  //      fetchIntraday();
-       //Database.fetchEODquotes();
+  //      fetchSharesDetails();
+   //     fetchIntraday();
+       Database.fetchEODquotesST();
         //};
     }    
     

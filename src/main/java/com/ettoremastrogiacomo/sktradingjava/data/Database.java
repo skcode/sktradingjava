@@ -636,12 +636,12 @@ public class Database {
 
         HttpFetch http = new HttpFetch();
         String res = new String(http.HttpGetUrl(url.toString(), Optional.empty(), Optional.empty()));
-        int k0 = res.indexOf("consent-form single-page-form single-page-agree-form");
+        int k0 = res.indexOf("action=\"/consent\"");
 
         if (k0 > 0) {
             java.util.HashMap<String, String> pmap = new java.util.HashMap<>();
             Document dy = Jsoup.parse(res);
-            Elements els = dy.select("form[class='consent-form single-page-form single-page-agree-form'] input[type='hidden']");
+            Elements els = dy.select("form[class='consent-form'] input[type='hidden']");
             els.forEach((x) -> {
                 pmap.put(x.attr("name"), x.attr("value"));
             });
@@ -666,7 +666,8 @@ public class Database {
         res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.of(http.getCookies())));
         LOG.debug("getting "+symbol+"\tURL=" + u2);
         return res;
-    }
+}
+
 
     /**
      *
@@ -1460,6 +1461,12 @@ public class Database {
                     } else if (market.toUpperCase().contains("EURONEXT-ALXB") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
                         map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));
+                    } else if (market.toUpperCase().contains("EURONEXT-AYP") && type.toUpperCase().contains("STOCK")) {
+                        map.put("yahooquotes", Database.getYahooQuotes(code + ".IR"));
+                    } else if (market.toUpperCase().contains("EURONEXT-A5G") && type.toUpperCase().contains("STOCK")) {
+                        map.put("yahooquotes", Database.getYahooQuotes(code + ".IR"));
+                    } else if (market.toUpperCase().contains("EURONEXT-ALXP") && type.toUpperCase().contains("STOCK")) {
+                        map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
                     } else {
                         throw new Exception("unknown market/type " + market + "\t" + type);
                     }
@@ -1470,7 +1477,7 @@ public class Database {
                         } else {
                             stmt.setString(2, map.get("yahooquotes"));
                         }
-                    }
+                    } else stmt.setNull(2, java.sql.Types.VARCHAR);
 
                     if (map.containsKey("googlequotes")) {
                         if (map.get("googlequotes").isEmpty()) {
@@ -1478,7 +1485,8 @@ public class Database {
                         } else {
                             stmt.setString(3, map.get("googlequotes"));
                         }
-                    }
+                    } stmt.setNull(3, java.sql.Types.VARCHAR);
+                    
                     stmt.setString(1, hashcode);
                     stmt.executeUpdate();
 
