@@ -1076,17 +1076,19 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         //for (Element x : ll) {LOG.debug(x.text());}
         XetraURL = "http://www.xetra.com" + forms.attr("action") + "?state=" + state.attr("value") + "&sort=sTitle+asc&hitsPerPage=10&pageNum=#";
         
-        LOG.debug(XetraURL);
-        LOG.debug(maxpg);
+        
+        
         java.util.ArrayList<String> list = new java.util.ArrayList<>();
         for (int i = 0; i < maxpg; i++) {
             url = XetraURL.replace("#", Integer.toString(i));
             
             s = new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
+            
             doc = Jsoup.parse(s);
             Elements ll = doc.select("ol[class='list search-results '] p:containsOwn(ISIN:)");
             Elements names = doc.select("ol[class='list search-results ']  li  h4  a");
-            if (ll.size() != names.size()) {
+            //Elements links = doc.select("ol[class='list search-results ']  li  h4  a[href]");
+            if (ll.size() != names.size() ) {
                 throw new Exception("xml mismatch");
             }
             for (int j = 0; j < ll.size(); j++) {
@@ -1094,26 +1096,32 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 Element y = names.get(j);
                 if (!list.contains(x.text().replace("ISIN: ", ""))) {
                     String isin = x.text().replace("ISIN: ", "").trim();
+                    String tolink=names.get(j).attr("href");
+                    String name=names.get(j).text();
                     list.add(isin);
-                    String isindet = new String(http.HttpGetUrl(det.replace("#", isin), Optional.empty(), Optional.empty()));
-                    String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
-                    String sector = Jsoup.parse(isindet).select("div[class='ln_sector line']  span").text();
+                    //LOG.info(det.replace("#", isin));
+                    String isindet = new String(http.HttpGetUrl("https://www.xetra.com"+tolink, Optional.empty(), Optional.empty()));
+                    
+                    String symbol=Jsoup.parse(isindet).select("dt:containsOwn(Mnemonic) + dd").text();
+                    //String isindet = new String(http.HttpGetUrl(det.replace("#", isin), Optional.empty(), Optional.empty()));
+                    //String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
+                    //String sector = Jsoup.parse(isindet).select("div[class='ln_sector line']  span").text();
                     //String market= Jsoup.parse(isindet).select("div[class='ln_homemarket line']  span").text();
                     java.util.HashMap<String, String> map = new java.util.HashMap<>();
                     map.put("type", "STOCK");
                     map.put("market", "XETRA");
                     map.put("currency", "EUR");
-                    map.put("sector", sector);
+                    map.put("sector", "NA");
                     map.put("isin", isin);
                     map.put("code", symbol);
-                    map.put("name", y.text());
-                    if (!sector.isEmpty() && !symbol.isEmpty()) {
+                    map.put("name", name);
+                    if ( !symbol.isEmpty()) {
                         
                             String hash=Encoding.base64encode( getSHA1(String2Byte((map.get("isin")+map.get("market")))));
                             if (!all.containsKey(hash)) {
                                 all.put(hash, map);
                             }
-                        LOG.debug(isin + "\t" + symbol + "\t" + y.text() + "\t\t" + sector);
+                        LOG.debug(isin + "\t" + symbol + "\t" + y.text() );
                     }
                 }                
                 
@@ -1128,9 +1136,11 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
     public static void main(String[] args) throws Exception {
 
         Database.createSecTable();        
-  //      fetchSharesDetails();
-   //     fetchIntraday();
-       Database.fetchEODquotesST();
+        fetchListDE();
+        
+        fetchSharesDetails();
+        fetchIntraday();
+        Database.fetchEODquotesST();
         //};
     }    
     
