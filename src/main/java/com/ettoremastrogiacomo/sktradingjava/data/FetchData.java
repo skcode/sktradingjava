@@ -782,12 +782,16 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
   //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
         
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        all.putAll(fetchEuroNext());
-        all.putAll(fetchListDE());
-        all.putAll(fetchMLSEList(secType.ETCETN));        
-        all.putAll(fetchMLSEList(secType.ETF));
-        all.putAll(fetchMLSEList(secType.STOCK));
-        
+        LOG.info("fetching Euronext");
+        try {all.putAll(fetchEuroNext());} catch (Exception e) {LOG.warn(e.getMessage());}
+        LOG.info("fetching XETRA");
+        try {all.putAll(fetchListDE());} catch (Exception e) {LOG.warn(e.getMessage());}
+        LOG.info("fetching MLSE");
+        try {
+            all.putAll(fetchMLSEList(secType.ETCETN));        
+            all.putAll(fetchMLSEList(secType.ETF));
+            all.putAll(fetchMLSEList(secType.STOCK));
+        } catch (Exception e) {LOG.warn(e.getMessage());}
       String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
         /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
                 + "	hashcode text not null,\n"
