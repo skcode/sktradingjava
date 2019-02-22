@@ -192,5 +192,40 @@ public class Misc {
         }
         return map;
     }
+/**
+ * 
+ * @param s string to right pad
+ * @param n total n of chars
+ * @param padding 
+ * @return padded string
+ */
+public static String padRight(String s, int n, char padding){
+    if (s.length()>=n) return s;
+    int diff=n-s.length();
+    StringBuilder builder = new StringBuilder(s.length() + diff);
+    builder.append(s);
+    for(int i = 0; i < diff; i++){
+        builder.append(padding);
+    }
+    return builder.toString();
+}
+/**
+ * 
+ * @param s string to left pad
+ * @param n total n of chars
+ * @param padding
+ * @return padded string
+ */
+public static String padLeft(String s, int n, char padding){
+    if (s.length()>=n) return s;
+    int diff=n-s.length();
+    StringBuilder builder = new StringBuilder(s.length() + diff);
+    
+    for(int i = 0; i < diff; i++){
+        builder.append(padding);
+    }
+    builder.append(s);
+    return builder.toString();
+}
     
 }

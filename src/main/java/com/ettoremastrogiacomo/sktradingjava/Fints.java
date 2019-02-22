@@ -353,6 +353,17 @@ public final class Fints {
     public UDate getLastDate() {
         return getDate(getLength() - 1);
     }
+    
+    public double[] getRow (int i) {
+        double [] d=new double[this.getNoSeries()];
+        System.arraycopy(matrix[i], 0, d, 0, d.length);
+        return d;
+    }
+
+    public double[] getLastRow () {
+        return getRow(matrix.length-1);
+    }
+
 
     public double getSecondsFromNow() {
         UDate d=new UDate();        

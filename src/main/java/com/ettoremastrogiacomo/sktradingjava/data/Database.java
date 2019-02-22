@@ -261,7 +261,6 @@ public class Database {
 
     public static java.util.HashMap<String, TreeSet<UDate>> intradayDates() throws Exception {
         String sql = "select hashcode,date from intradayquotes";
-
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -426,6 +425,19 @@ public class Database {
         if (map.size()!=1) throw new Exception(code+"."+market+" not found");
         return map.get(0).get("hashcode");
     }
+    
+    public static HashMap<String,String> getCodeMarketName(List<String> hashcodes) throws Exception {
+        List<HashMap<String,String>> map=Database.getRecords(Optional.of(hashcodes), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        if (map.isEmpty()) throw new Exception("hashcodes not found");
+        HashMap<String,String> ret= new HashMap<>();
+        map.forEach((x) -> {
+            ret.put(x.get("hashcode"), x.get("code")+"."+x.get("market")+"."+x.get("type")+"."+x.get("currency")+"."+x.get("isin")+"."+x.get("name"));
+        });
+        return ret;
+        //return map.get(0).get("hashcode");
+    }
+
+    
     
     public static TreeSet<UDate> getIntradayDates(String hashcode) throws Exception {
         HashMap<String,TreeSet<UDate>> m=intradayDates();
@@ -927,11 +939,11 @@ public class Database {
             } else {
                 ret = gdataret;
             }
-            if (ret == yahooret) {
+            /*if (ret == yahooret) {
                 LOG.debug("Yahoo choice for " + codev + "." + marketv);
             } else {
                 LOG.debug("Google choice for " + codev + "." + marketv);
-            }
+            }*/
 
         } catch (SQLException e) {
             LOG.error("cannot fetch " + code + "." + market, e);

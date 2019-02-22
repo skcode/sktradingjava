@@ -9,8 +9,16 @@ import java.util.Calendar;
 import java.util.Date;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
+import com.ettoremastrogiacomo.sktradingjava.Portfolio;
+import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
-
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
 /**
  *
@@ -19,69 +27,46 @@ import com.ettoremastrogiacomo.utils.UDate;
 public class ReportDailyTrading {
     static Logger logger = Logger.getLogger(ReportDailyTrading.class);
  
-      public static String padRight(String s) {
-    return String.format("%1$-" + 15 + "s", s);
-  }
 
     public static void main(String[] args) throws Exception {
 
-/*
-
-        
-        java.util.ArrayList<String> syms = com.ettoremastrogiacomo.sktradingjava.data.DBInterface.getSymbolListFilter(null, "MLSE", "EUR", null, null, null, null, "STOCK", null);
-        
-        java.util.TreeMap<Double,String> best2tradehl=new java.util.TreeMap<> ();
-        java.util.Calendar c = java.util.Calendar.getInstance();
-        double volumetreshold=1000000;
-        if (c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-            c.add(Calendar.DATE, -2);
-        } else {
-            c.add(Calendar.DATE, -1);
-        }
-
-        UDate lastdate = new UDate(c.getTimeInMillis());
-        for (String sym : syms) {
-            Fints f = new Fints();
-            boolean err = false;
-            try {
-                f = DBInterface.getFints(sym, Fints.frequency.DAILY);
-            }catch (Exception e) {
-                err = true;
-            }
-            if (err) {
-                continue;
-            }
-            if (f.getMaxDateGap()>(7*24*60*60*1000)) continue;
-            if (f.getLastDate().before(lastdate)) {
-                continue;
-            }
-            if (f.getLength() < 300) {
-                continue;
-            }            
-            java.util.HashMap<String,String> info=DBInterface.getSymbolInfo(sym);
-            
-            Fints ER=Fints.ER(f.getSerieCopy(3), 100, true);
-            Fints volatility=Fints.Volatility(ER, 20);
-            Fints sharpe200=Fints.Sharpe(ER, 200);
-            Fints sharpe20=Fints.Sharpe(ER, 20);
-            double hlchange=(f.get(f.getLength()-1, 1)-f.get(f.getLength()-1, 2))/f.get(f.getLength()-1, 2);
-            double close=f.get(f.getLength()-1, 3);
-            double volume=f.get(f.getLength()-1, 4);
-            double lastchangeclose=(f.get(f.getLength()-1, 3)-f.get(f.getLength()-2, 3))/f.get(f.getLength()-2, 3);
-            //best2tradehlv.put(hlchange*volume, sym);
-            
-            
-            if (volume>volumetreshold) best2tradehl.put(hlchange, sym);
-            String sep="";
-            java.text.SimpleDateFormat dt1 = new java.text.SimpleDateFormat("yyyyMMdd");
-            java.text.DecimalFormat df = new java.text.DecimalFormat("#0.0000"); 
-            java.text.DecimalFormat df2= new java.text.DecimalFormat("#"); 
-            String s=padRight(dt1.format(f.getLastDate())) +sep+padRight(sym)  +sep+padRight(df.format(close))+sep+sep+padRight(df.format(lastchangeclose))+sep+sep+padRight(df.format(hlchange))+sep+sep+padRight(df2.format(volume))+sep+sep+padRight(df.format(hlchange*volume))+sep+sep+padRight(df.format(volatility.get(volatility.getLength()-1, 0)))+sep+sep+padRight(df.format(sharpe20.get(sharpe20.getLength()-1, 0)))+sep+sep+padRight(df.format(sharpe200.get(sharpe200.getLength()-1, 0)));
+        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(350), Optional.of(.3), Optional.of(7), Optional.empty(), Optional.of(500000), Optional.empty());
+        java.util.HashMap<String,Fints> close= new HashMap<>();
+        java.util.HashMap<String,Fints> sharpe= new HashMap<>();
+        java.util.HashMap<String,Fints> dsharpe= new HashMap<>();
+        java.util.HashMap<String,Fints> ddsharpe= new HashMap<>();
+        java.util.HashMap<String,String> bestmap= new HashMap<>();
+        java.util.HashMap<String,String> names= Database.getCodeMarketName(list);
+        NumberFormat formatter = new DecimalFormat("#0.0000");
+        StringBuilder bests=new StringBuilder();
+        java.util.ArrayList<String> bestStock= new ArrayList<>();
+        for (String x : list){
+            if (!names.get(x).contains("STOCK")) continue;
+            Fints t1=Database.getFintsQuotes(x).getSerieCopy(3).head(300);
+            close.put(x, Fints.ER(t1, 100, true));
+            sharpe.put(x, Fints.SMA(Fints.Sharpe(close.get(x), 20), 200));//Fints dmsharpe=Fints.SMA(Fints.Diff(msharpe), 20);            
+            dsharpe.put(x, Fints.SMA(Fints.Diff(sharpe.get(x)), 20));
+            ddsharpe.put(x, Fints.SMA(Fints.Diff(dsharpe.get(x)), 20));            
+            StringBuilder s= new StringBuilder();
+            s.append(t1.getLastDate()).append("\t");
+            s.append(formatter.format(t1.getLastRow()[0])).append("\t");
+            double s1=sharpe.get(x).getLastRow()[0];
+            double s2=dsharpe.get(x).getLastRow()[0];
+            double s3=ddsharpe.get(x).getLastRow()[0];
+            s.append(formatter.format(s1)).append("\t");
+            s.append(formatter.format(s2)).append("\t");
+            s.append(formatter.format(s3)).append("\t");
+            s.append(names.get(x));            
             logger.info(s);
-
+            if (s1>0 && s2>0 && s3>0) {
+                bests.append(Misc.padRight(names.get(x), 50, ' ')).append("\t").append(formatter.format(s1)).append("\t").append(formatter.format(s2)).append("\t").append(formatter.format(s3)).append("\n");
+                bestStock.add(x);
+            }
         }
-        logger.info("best2trade hl (volume>"+String.valueOf(volumetreshold)+")");
-        for (Double d: best2tradehl.keySet()) logger.info("HiLow change%="+d+"\t"+best2tradehl.get(d));
-*/
+        logger.info("\nBESTS\n"+bests);
+        Portfolio ptf= new Portfolio(bestStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
+        ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
+        ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
     }
 }

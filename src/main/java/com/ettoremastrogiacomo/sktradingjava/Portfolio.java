@@ -37,6 +37,7 @@ public class Portfolio {
     private Fints allfints, open, high, low, close, volume, oi;
     public final java.util.ArrayList<Security> securities;
     private final java.util.ArrayList<String> hashcodes;
+    private final java.util.HashMap<String,String> names;
     private final int nosecurities;
     private final int length;
     public final java.util.List<UDate> dates;
@@ -59,6 +60,7 @@ public class Portfolio {
             this.hashcodes.add(s);
             this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
         }
+        names=Database.getCodeMarketName(this.hashcodes);
         nosecurities = securities.size();
         allfints = new Fints();
         for (Security s : securities) {
@@ -215,7 +217,8 @@ public class Portfolio {
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         for (int i = 0; i < sol.length; i++) {
             if (sol[i] > 0.001) {
-                LOG.debug(this.securities.get(i).getName() + "\t" + sol[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+sol[i]);
+                //LOG.debug(this.securities.get(i).getName() + "\t" + sol[i]);
             }
         }
 
@@ -303,7 +306,7 @@ public class Portfolio {
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         for (int i = 0; i < v.length; i++) {
             if (v[i] != 0.0) {
-                LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+v[i]);
             }
         }
 
@@ -394,7 +397,8 @@ public class Portfolio {
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         for (int i = 0; i < v.length; i++) {
             if (v[i] != 0.0) {
-                LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+v[i]);
+                //LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
             }
         }
         besteq.get(0).plot("equity", "val");

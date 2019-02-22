@@ -18,6 +18,7 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -44,7 +45,7 @@ public class IntradayCorrelation {
             }
         }
         NumberFormat formatter = new DecimalFormat("#0.0000"); 
-        logger.debug(ld);
+        logger.debug("last date = " +ld);
         final int MINLEN = 400;
         final int MINMERGELEN = 300;
         java.util.ArrayList<Fints> all = new java.util.ArrayList<>();
@@ -52,7 +53,8 @@ public class IntradayCorrelation {
         TreeMap<Double, String> vgap = new java.util.TreeMap<>();
         TreeMap<Double, String> vol = new java.util.TreeMap<>();
         TreeMap<Double, String> volex = new java.util.TreeMap<>();
-        
+        HashMap<String,Double> dsharpe=new java.util.HashMap<>();
+        HashMap<String,Double> dsharpe2=new java.util.HashMap<>();
         for (String x : map.keySet()) {
             try {
                 if (!map.get(x).contains(ld)) {
@@ -60,16 +62,31 @@ public class IntradayCorrelation {
                 }
                 Fints f0=getIntradayFintsQuotes(x, ld);
                 Fints f = f0.getSerieCopy(3);
+                if (f.getLength() < MINLEN) continue;
                 
-                //f=Fints.changeFrequency(f.getSerieCopy(0), Fints.frequency.MINUTE);  
-                if (f.getLength() < MINLEN) {
+                Fints dailyC=Database.getFintsQuotes(x).getSerieCopy(3);
+                if (dailyC.getLength()<350) continue;                                
+                if (!dailyC.getLastDate().equals(ld)) {
+                    logger.warn(dailyC.getLastDate() + "<>"+ld);
                     continue;
-                }
+                }                       
+                dailyC=dailyC.head(300);
+                if (dailyC.getMaxDaysDateGap()>7) continue;
+                
+                //calculus
+                
+                Fints mSharpe=Fints.SMA(Fints.Sharpe(Fints.ER(dailyC, 100, true), 20), 200) ;
+                Fints dmsharpe=Fints.SMA(Fints.Diff(mSharpe), 20);
+                dsharpe.put( x,mSharpe.get( mSharpe.getLength()-1,0));
+                dsharpe2.put(x, dmsharpe.get( dmsharpe.getLength()-1,0));
+                //f=Fints.changeFrequency(f.getSerieCopy(0), Fints.frequency.MINUTE);  
+                
+
                 double volume= f0.getSerieCopy(4).getSums()[0];
                 double minmax=(f.getMax()[0] - f.getMin()[0])/f.getMin()[0];
-                vol.put(volume, f.getName(0));
-                vgap.put(minmax, f.getName(0));
-                volex.put(minmax*volume, f.getName(0));
+                vol.put(volume, x);
+                vgap.put(minmax, x);
+                volex.put(minmax*volume, x);
                 
                 f = Fints.ER(f, 100, true);
                 if (f.getLength() > MINLEN) {
@@ -86,7 +103,13 @@ public class IntradayCorrelation {
         }
         logger.debug("size " + all.size());
         logger.debug("start");
-
+        java.util.ArrayList<String> t1=new java.util.ArrayList<>();
+        t1.addAll(dsharpe.keySet());
+        java.util.HashMap<String,String> namemap=new java.util.HashMap<>();
+        List<HashMap<String,String>> names=Database.getRecords(Optional.of(t1), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        names.forEach((x) -> {
+            namemap.put(x.get("hashcode"), x.get("code")+"."+x.get("market")+"."+x.get("name"));
+        });
         java.util.TreeMap<Double, String> ranking = new java.util.TreeMap<>();
         for (Fints x : all) {
             for (Fints y : lagall) {
@@ -113,18 +136,20 @@ public class IntradayCorrelation {
         }
         logger.debug("\n******* daily excursion *********");
         for (Double d : vgap.keySet()) {
-            logger.debug(formatter.format(d) + "\t\t" + vgap.get(d));
+            String h=vgap.get(d);
+            logger.debug(formatter.format(d) + "\t" + formatter.format(dsharpe.get(h))+ "\t" + formatter.format(dsharpe2.get(h))+ "\t" + namemap.get(h));
         }
         logger.debug("\n******* volume *********");
         for (Double d : vol.keySet()) {
-            logger.debug(formatter.format(d) + "\t\t" + vol.get(d));
+            String h=vol.get(d);
+            logger.debug(formatter.format(d) + "\t" + formatter.format(dsharpe.get(h))+ "\t" + formatter.format(dsharpe2.get(h))+ "\t" + namemap.get(h));
         }
-
-
         logger.debug("\n******* volume*excursion *********");
         for (Double d : volex.keySet()) {
-            logger.debug(formatter.format(d) + "\t\t" + volex.get(d));
+            String h=volex.get(d);
+            logger.debug(formatter.format(d) + "\t" + formatter.format(dsharpe.get(h))+ "\t" + formatter.format(dsharpe2.get(h))+ "\t" + namemap.get(h));
         }
+
         
         
     }
