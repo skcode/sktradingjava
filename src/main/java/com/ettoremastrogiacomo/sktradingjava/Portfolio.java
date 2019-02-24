@@ -2,6 +2,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 
 
 import com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest;
+import com.ettoremastrogiacomo.sktradingjava.backtesting.MT_Optimizer;
 import com.ettoremastrogiacomo.sktradingjava.backtesting.Statistics;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.system.BUYANDHOLD;
@@ -325,6 +326,7 @@ public class Portfolio {
                 throw new Exception("max windows = " + closeER.getLength());
             }
         }
+            
         int eqSec = equalWeightSec.orElse(10);
         if (eqSec > closeER.getNoSeries()) {
             throw new Exception("no securities out of range: " + eqSec + ">" + closeER.getNoSeries());
