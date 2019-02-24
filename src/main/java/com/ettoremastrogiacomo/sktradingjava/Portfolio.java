@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.Pair;
 import java.util.HashMap;
+import java.util.Set;
 
 
 public class Portfolio {
@@ -45,6 +46,7 @@ public class Portfolio {
     public final Fints closeER;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
+    
     public Portfolio(java.util.ArrayList<String> hashcodes, Optional<Fints.frequency> freq, Optional<UDate> iday, Optional<UDate> from, Optional<UDate> to) throws Exception {
         this.freq = freq.orElse(Fints.frequency.DAILY);
         if (this.freq.compareTo(Fints.frequency.DAILY) < 0 && !iday.isPresent()) {
@@ -90,6 +92,10 @@ public class Portfolio {
                 }
             if (from.isPresent() && to.isPresent()) {
                 allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(from.get(), to.get()));
+            } else if (from.isPresent() && !to.isPresent()) {
+                allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(from.get(), f.getLastDate()));
+            } else if (!from.isPresent() && to.isPresent()) {
+                allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(f.getFirstDate(), to.get()));                
             } else {
                 allfints = allfints.isEmpty() ? f : allfints.merge(f);
             }
@@ -97,6 +103,7 @@ public class Portfolio {
 
         length = allfints.getLength();
         dates = Collections.unmodifiableList(allfints.getDate());
+        
         //if (this.freq.ordinal()>=Fints.frequency.DAILY.ordinal()) {
         for (int i = 0; i < this.nosecurities; i++) {
             if (i == 0) {
@@ -121,17 +128,12 @@ public class Portfolio {
         //corr=closeER.getCorrelation();
         //average=closeER.getMeans();
     }
-
+    
     /**
      *
      * @param window optimization window length, default all porfolio length
      * @param window_offset offset from most recent trading day, default 0
-     * @param ineq_constraints inequalities contraints matrix G: Gx <= h ,
-     * default -1.0*Identity Matrix @param ineq_contraints_vector i
-     * nequalities constraints vector h : Gx <= g, default 0 vector @return
-     * wheigths a
-     * rray solution
-     * @param ineq_contraints_vector
+     * @param limit_upper_bound
      * @return optimal weights
      * @throws Exception
      */
@@ -275,8 +277,10 @@ public class Portfolio {
                             }
                         }
                         if (var < bestvar) {
-                            bestset = set;
-                            bestvar = var;
+                                LOG.debug("best at="+l+"\ttid="+Thread.currentThread().getId() +" : "+var);
+                                bestset = set;
+                                bestvar = var;
+
                         }
                         //results.put(set, var);
                     } catch (Exception e) {
@@ -329,48 +333,39 @@ public class Portfolio {
         LOG.debug("sub serie" + sub);
         LOG.debug("length " + sub.getLength() + "\tno series" + sub.getNoSeries());
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
-        //double[][] cov = sub.getCovariance();
-
-        //javafx.util.Pair<java.util.List<Integer>,Double> results=new Pair<java.util.List<Integer>,Double>();//=new javafx.util.Pair<java.util.List<Integer>,Double>();
-        
-        //double[] bestselection=new double[closeER.getNoSeries()];
-        //final double bestvar=Double.MAX_VALUE;   
-        //final java.util.HashMap<java.util.List<Integer>,Double> results=new java.util.HashMap<>();
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         //com.ettoremastrogiacomo.utils.DoubleDoubleArray.show(cov);
+        java.util.TreeMap<Double,java.util.ArrayList<Object>> results=new java.util.TreeMap<>();
         java.util.ArrayList<Future> flist = new java.util.ArrayList<>();
-        java.util.ArrayList<Fints> besteq=new java.util.ArrayList<>();
+        Fints besteq=new Fints();
+        BUYANDHOLD bh = new BUYANDHOLD(Portfolio.this);
+        com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt = new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(Portfolio.this, Optional.of(1000.0), Optional.empty(), Optional.empty());        
         for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
             flist.add(pool.submit(() -> {
                 int len = closeER.getNoSeries();
                 java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-                //double bestvar = Double.MAX_VALUE;
-                BUYANDHOLD bh=new BUYANDHOLD(this);
-                com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt=new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(this, Optional.of(1000.0), Optional.empty(), Optional.empty());
                 double bestvar=Double.MIN_VALUE;
                 for (long l = 0; l < epochs.orElse(1000000L); l++) {
                     try {
-                        //LOG.debug(Thread.currentThread().getName()+"\t"+l);
-
                         java.util.Set<Integer> set = Misc.getDistinctRandom(eqSec, len);//getRandom(P, len);
                         double[] v;
-                        
-                            v = new double[len];
+                        v = new double[len];
                         set.forEach((i) -> {
                             v[i] = 1.0/eqSec;
                         });
-                        Statistics stats=bt.apply(bh.apply(closeER.getFirstDate(), closeER.getLastDate(), v),closeER.getFirstDate(),closeER.getLastDate());
-                        
+                        Statistics stats=bt.apply(bh.apply(sub.getFirstDate(), sub.getLastDate(), v),sub.getFirstDate(),sub.getLastDate());
                         double var = stats.linregsharpe;
                         if (var > bestvar) {
                             bestset = set;
                             bestvar = var;
-                            LOG.debug("best at "+l+" : "+stats.linregsharpe);
-                            besteq.clear();besteq.add(stats.equity);
-                           // stats.equity.plot("equity", "val");
+                            LOG.debug("best at="+l+"\ttid="+Thread.currentThread().getId() +" : "+stats.linregsharpe);
+                            java.util.ArrayList<Object> tlist=new java.util.ArrayList<>();
+                            tlist.add(set);tlist.add(stats.equity);
+                            synchronized (Portfolio.this){
+                                results.put(var, tlist);
+                            }
                         }
-                        //results.put(set, var);
-                    } catch (Exception e) {
+                    }catch (Exception e) {
                         LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
                     }
                 }
@@ -378,30 +373,38 @@ public class Portfolio {
                 return  Pair.of(bestset, bestvar);
             }));
         }
+        for (Future f : flist) {
+            Pair p = (Pair) f.get();
+        }
+        
         pool.shutdown();
 
-        double bestvar = Double.MIN_VALUE;
+        double bestvar = results.lastKey();// Double.MIN_VALUE;
         java.util.Set<Integer> bestset = new java.util.TreeSet<>();
         double[] v = new double[closeER.getNoSeries()];
         for (Future f : flist) {
             Pair p = (Pair) f.get();
-            if ((Double) p.second > bestvar) {
+            /*if ((Double) p.second > bestvar) {
                 bestvar = (Double) p.second;
                 bestset = (java.util.Set) p.first;
-            }
+            }*/
         }
-
+        java.util.ArrayList<Object> last=results.lastEntry().getValue();
+        bestset =(Set<Integer>) last.get(0);
+        besteq=(Fints) last.get(1);
         bestset.forEach((i) -> {
             v[i] = 1.0/eqSec;
-        });
+        });        
+        //LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
+        
         for (int i = 0; i < v.length; i++) {
             if (v[i] != 0.0) {
                 LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+v[i]);
                 //LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
             }
         }
-        besteq.get(0).plot("equity", "val");
+        besteq.plot("equity", "val");
         return v;
     }
 
@@ -473,15 +476,19 @@ public class Portfolio {
         try {
             s.append("first date: ").append(this.getDate(0)).append("\n");
             s.append("last date: ").append(this.getDate(this.getLength() - 1)).append("\n");
-            s.append("length: ").append(this.getLength());
+            s.append("length: ").append(this.getLength()).append("\n");
         } catch (Exception e) {
         }
         s.append("num securities: ").append(this.getNoSecurities()).append("\n");
         s.append("date gap in days: ").append(this.allfints.getMaxDaysDateGap()).append("\n");
         s.append("days from now: ").append(this.allfints.getDaysFromNow()).append("\n");
-        this.securities.forEach((x) -> {
-            s.append(x.getIsin()).append("\t").append(x.getCode()).append(".").append(x.getMarket()).append("\t").append(x.getName()).append("\t").append(x.getSector()).append("\n");
+        names.keySet().forEach((x)-> {
+            s.append(names.get(x)).append("\n");
         });
+        /*this.securities.forEach((x) -> {
+            
+            s.append(x.getIsin()).append("\t").append(x.getCode()).append(".").append(x.getMarket()).append("\t").append(x.getName()).append("\t").append(x.getSector()).append("\n");
+        });*/
         return s.toString();
     }
 

@@ -30,7 +30,7 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
 
-        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(350), Optional.of(.3), Optional.of(7), Optional.empty(), Optional.of(500000), Optional.empty());
+        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(350), Optional.of(.3), Optional.of(7), Optional.empty(), Optional.of(300000), Optional.empty());
         java.util.HashMap<String,Fints> close= new HashMap<>();
         java.util.HashMap<String,Fints> sharpe= new HashMap<>();
         java.util.HashMap<String,Fints> dsharpe= new HashMap<>();
@@ -58,15 +58,15 @@ public class ReportDailyTrading {
             s.append(formatter.format(s3)).append("\t");
             s.append(names.get(x));            
             logger.info(s);
-            if (s1>0 && s2>0 && s3>0) {
+            if (s1>0 /*&& s2>0 && s3>0*/) {
                 bests.append(Misc.padRight(names.get(x), 50, ' ')).append("\t").append(formatter.format(s1)).append("\t").append(formatter.format(s2)).append("\t").append(formatter.format(s3)).append("\n");
                 bestStock.add(x);
             }
         }
         logger.info("\nBESTS\n"+bests);
         Portfolio ptf= new Portfolio(bestStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
-        ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
-        ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
+      //  ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
+      //  ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
+        ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(100000L), Optional.of(20));
     }
 }

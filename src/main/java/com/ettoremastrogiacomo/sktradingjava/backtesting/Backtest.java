@@ -116,7 +116,8 @@ public class Backtest {
         //regression slope 
         double meanx=0,meany=0,varx=0,vary=0,covxy=0;
         for (int i=0;i<equityval.length;i++){meany+=equityval[i][0];meanx+=i;}
-        meany/=(double)portfolio.dates.size();meanx/=(double)equityval.length;
+        meany/=(double)equityval.length;// portfolio.dates.size();
+        meanx/=(double)equityval.length;
         for (int i=0;i<equityval.length;i++)  {varx+=Math.pow(i-meanx,2);vary+=Math.pow(equityval[i][0]-meany,2);}
         vary/=(double)(equityval.length-1);varx/=(double)(equityval.length-1);
         for (int i=0;i<equityval.length;i++) covxy+=(i-meanx)*(equityval[i][0]-meany);covxy/=(double)(equityval.length-1);
