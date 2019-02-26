@@ -30,7 +30,7 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
 
-        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(350), Optional.of(.3), Optional.of(7), Optional.empty(), Optional.of(300000), Optional.empty());
+        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(1000), Optional.of(.3), Optional.of(7), Optional.empty(), Optional.of(300000), Optional.empty());
         java.util.HashMap<String,Fints> close= new HashMap<>();
         java.util.HashMap<String,Fints> sharpe= new HashMap<>();
         java.util.HashMap<String,Fints> dsharpe= new HashMap<>();
@@ -42,6 +42,7 @@ public class ReportDailyTrading {
         java.util.ArrayList<String> bestStock= new ArrayList<>();
         for (String x : list){
             if (!names.get(x).contains("STOCK")) continue;
+            if (names.get(x).contains("IE0")) continue;
             Fints t1=Database.getFintsQuotes(x).getSerieCopy(3).head(300);
             close.put(x, Fints.ER(t1, 100, true));
             sharpe.put(x, Fints.SMA(Fints.Sharpe(close.get(x), 20), 200));//Fints dmsharpe=Fints.SMA(Fints.Diff(msharpe), 20);            
@@ -65,8 +66,9 @@ public class ReportDailyTrading {
         }
         logger.info("\nBESTS\n"+bests);
         Portfolio ptf= new Portfolio(bestStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-      //  ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.empty(), Optional.of(20));
+        ptf.walkForwardTest(Optional.of(120), Optional.of(60), Optional.of(1000000L), Optional.of(20));
+        //ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.of(2000000L), Optional.of(20));
       //  ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
-        ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(100000L), Optional.of(20));
+        //ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(1000000L), Optional.of(20));
     }
 }

@@ -1,6 +1,5 @@
 package com.ettoremastrogiacomo.sktradingjava;
 
-
 import com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest;
 import com.ettoremastrogiacomo.sktradingjava.backtesting.MT_Optimizer;
 import com.ettoremastrogiacomo.sktradingjava.backtesting.Statistics;
@@ -30,16 +29,16 @@ import java.util.concurrent.TimeUnit;
 //import javafx.util.Pair;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.Pair;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-
 
 public class Portfolio {
 
     private Fints allfints, open, high, low, close, volume, oi;
     public final java.util.ArrayList<Security> securities;
     private final java.util.ArrayList<String> hashcodes;
-    private final java.util.HashMap<String,String> names;
+    private final java.util.HashMap<String, String> names;
     private final int nosecurities;
     private final int length;
     public final java.util.List<UDate> dates;
@@ -47,7 +46,6 @@ public class Portfolio {
     public final Fints closeER;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
-    
     public Portfolio(java.util.ArrayList<String> hashcodes, Optional<Fints.frequency> freq, Optional<UDate> iday, Optional<UDate> from, Optional<UDate> to) throws Exception {
         this.freq = freq.orElse(Fints.frequency.DAILY);
         if (this.freq.compareTo(Fints.frequency.DAILY) < 0 && !iday.isPresent()) {
@@ -63,7 +61,7 @@ public class Portfolio {
             this.hashcodes.add(s);
             this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
         }
-        names=Database.getCodeMarketName(this.hashcodes);
+        names = Database.getCodeMarketName(this.hashcodes);
         nosecurities = securities.size();
         allfints = new Fints();
         for (Security s : securities) {
@@ -96,7 +94,7 @@ public class Portfolio {
             } else if (from.isPresent() && !to.isPresent()) {
                 allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(from.get(), f.getLastDate()));
             } else if (!from.isPresent() && to.isPresent()) {
-                allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(f.getFirstDate(), to.get()));                
+                allfints = allfints.isEmpty() ? f : allfints.merge(f.Sub(f.getFirstDate(), to.get()));
             } else {
                 allfints = allfints.isEmpty() ? f : allfints.merge(f);
             }
@@ -104,7 +102,7 @@ public class Portfolio {
 
         length = allfints.getLength();
         dates = Collections.unmodifiableList(allfints.getDate());
-        
+
         //if (this.freq.ordinal()>=Fints.frequency.DAILY.ordinal()) {
         for (int i = 0; i < this.nosecurities; i++) {
             if (i == 0) {
@@ -129,7 +127,7 @@ public class Portfolio {
         //corr=closeER.getCorrelation();
         //average=closeER.getMeans();
     }
-    
+
     /**
      *
      * @param window optimization window length, default all porfolio length
@@ -168,11 +166,14 @@ public class Portfolio {
             default_ineq[i][i] = -1.0;
         }*/
         //upper bound ineq e.g. 10%
-        double min_upperb=1.0/(double)cov.length;
-        if (limit_upper_bound.isPresent())
-            if (limit_upper_bound.get()<=min_upperb || limit_upper_bound.get()>1) throw new Exception("wrong limit "+limit_upper_bound.get());
-        double upper_bound= limit_upper_bound.orElse(1.0) > min_upperb ? limit_upper_bound.orElse(1.0) :min_upperb;     
-        LOG.debug("upper bound "+upper_bound);
+        double min_upperb = 1.0 / (double) cov.length;
+        if (limit_upper_bound.isPresent()) {
+            if (limit_upper_bound.get() <= min_upperb || limit_upper_bound.get() > 1) {
+                throw new Exception("wrong limit " + limit_upper_bound.get());
+            }
+        }
+        double upper_bound = limit_upper_bound.orElse(1.0) > min_upperb ? limit_upper_bound.orElse(1.0) : min_upperb;
+        LOG.debug("upper bound " + upper_bound);
         /*double[][] ub_ineq = new double[cov.length][cov.length];
         double[] ub_ineq_vector = new double[cov.length];
         for (int i = 0; i < cov.length; i++) {
@@ -180,24 +181,22 @@ public class Portfolio {
             ub_ineq_vector[i]=upper_bound;
         }*/
         //
-        
-        
+
         //double[][] td = ineq_constraints.orElse(default_ineq);
         //double[] tdv = ineq_contraints_vector.orElse(default_ineq_vector);
         //ineq_constraints.orElse(A)
-        ConvexMultivariateRealFunction[] inequalities = new ConvexMultivariateRealFunction[cov.length*2];
+        ConvexMultivariateRealFunction[] inequalities = new ConvexMultivariateRealFunction[cov.length * 2];
         for (int i = 0; i < cov.length; i++) {
-            double [] td=new double[cov.length];td[i]=-1.0;
+            double[] td = new double[cov.length];
+            td[i] = -1.0;
             inequalities[i] = new LinearMultivariateRealFunction(td, 0);
         }
         for (int i = cov.length; i < inequalities.length; i++) {
-            double [] td=new double[cov.length];td[i-cov.length]=1.0;
+            double[] td = new double[cov.length];
+            td[i - cov.length] = 1.0;
             inequalities[i] = new LinearMultivariateRealFunction(td, -upper_bound);
         }
-        
-        
-        
-        
+
         //optimization problem
         OptimizationRequest or = new OptimizationRequest();
         or.setF0(objectiveFunction);
@@ -220,7 +219,7 @@ public class Portfolio {
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         for (int i = 0; i < sol.length; i++) {
             if (sol[i] > 0.001) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+sol[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + sol[i]);
                 //LOG.debug(this.securities.get(i).getName() + "\t" + sol[i]);
             }
         }
@@ -228,7 +227,129 @@ public class Portfolio {
         return sol;
     }
 
-    
+    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
+        LOG.debug("Start walkforward test");
+        int testWin = test_window.orElse(250);
+        int trainWin = train_window.orElse(60);
+        int eqSec = equalWeightSec.orElse(10);
+
+        LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
+        Fints smaSharpe = Fints.SMA(Fints.Sharpe(closeER, 20), 200);//begins 
+        UDate startDate = smaSharpe.getDate(1);
+        LOG.debug("start training from " + startDate);
+        int offset_closeER = closeER.getIndex(startDate);
+        if ((closeER.getLength() - testWin - trainWin - offset_closeER) <= 0) {
+            throw new Exception("size too short, try to change parameters");
+        }
+        //boolean stopCond = false;
+        int step = 0;
+
+        while (true) {
+            
+            int ubound=offset_closeER + testWin * step + trainWin + testWin - 1;
+            if (closeER.getLength()<ubound) {
+                LOG.debug("terminato ubound="+ubound+"\tlast="+(closeER.getLength()-1));
+                break;
+            }
+            LOG.debug("all "+closeER.getLength()+"\t"+closeER.getNoSeries());
+            Fints subTrain = closeER.SubRows(offset_closeER + testWin * step, offset_closeER + testWin * step + trainWin - 1);            
+            Fints subTest = closeER.SubRows(offset_closeER + testWin * step + trainWin, offset_closeER + testWin * step + trainWin + testWin - 1);
+            Fints subTrainOK = new Fints(), subTestOK = new Fints();
+            double[] sharpeVal = smaSharpe.getRow(smaSharpe.getIndex(subTrain.getFirstDate()) - 1);
+            ArrayList<String> trainSet = new java.util.ArrayList<>();
+            for (int i = 0; i < sharpeVal.length; i++) {
+                if (sharpeVal[i] > 0) {//chek sharpe>0
+                    trainSet.add(this.securities.get(i).getHashcode());
+                    subTrainOK = subTrainOK.isEmpty() ? subTrain.getSerieCopy(i) : subTrainOK.merge(subTrain.getSerieCopy(i));
+                    subTestOK = subTestOK.isEmpty() ? subTest.getSerieCopy(i) : subTestOK.merge(subTest.getSerieCopy(i));
+                }
+            }
+            if (eqSec > subTrainOK.getNoSeries()) {
+                throw new Exception("too few series " + subTrainOK.getNoSeries());
+            }
+            final double[][] covTrain = subTrainOK.getCovariance();
+            //final double[][] covTest = subTestOK.getCovariance();
+            ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            final Fints FT = subTrainOK;
+            final Fints FF = subTestOK;
+            LOG.debug("train from "+FT.getFirstDate()+" to "+FT.getLastDate()+" samples "+FT.getLength());
+            LOG.debug("test from "+FF.getFirstDate()+" to "+FF.getLastDate()+" samples "+FF.getLength());
+            //final com.ettoremastrogiacomo.utils.Pair<Double,java.util.Set<Integer>> winnerPair;//=new com.ettoremastrogiacomo.utils.Pair<Double,java.util.Set<Integer>>();
+            final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSet = new java.util.TreeMap<>();
+            for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+            pool.execute(() -> {
+                int len = FT.getNoSeries();
+                java.util.Set<Integer> bestset = new java.util.TreeSet<>();
+                double bestvar = Double.MAX_VALUE;
+                for (long l = 0; l < epochs.orElse(1000000L); l++) {
+                    try {
+                        java.util.Set<Integer> set = Misc.getDistinctRandom(eqSec, len);//getRandom(P, len);
+                        double[] v = new double[len];
+                        set.forEach((i) -> {
+                            v[i] = 1.0 / eqSec;
+                        });
+                        double var = 0;
+                        for (int i = 0; i < len; i++) {
+                            for (int j = 0; j < len; j++) {
+                                var += v[i] * v[j] * covTrain[i][j];
+                            }
+                        }
+                        if (var < bestvar) {
+                            LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
+                            bestset = set;
+                            bestvar = var;
+                        }
+                        //results.put(set, var);
+                    } catch (Exception e) {
+                        LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
+                    }
+                }
+                if (Double.isFinite(bestvar)) {
+                   synchronized (Portfolio.this){ winnerSet.put(bestvar, bestset);}
+                }
+            }
+            );
+            }
+            pool.shutdown();
+            pool.awaitTermination(1, TimeUnit.HOURS);
+            LOG.debug("bestvar "+winnerSet.firstEntry().getKey());
+            LOG.debug("bestset");
+            Fints nf=new Fints();            
+            winnerSet.firstEntry().getValue().forEach((x)->{                
+                LOG.debug(names.get(trainSet.get(x)));                
+            });
+            double [] w=new double[winnerSet.firstEntry().getValue().size()];
+            for (int i=0;i<w.length;i++) w[i]=1.0/eqSec;            
+            for (int i: winnerSet.firstEntry().getValue()){
+                nf=nf.isEmpty()?FF.getSerieCopy(i):nf.merge(FF.getSerieCopy(i));
+            }
+            LOG.debug("varianza test: "+nf.getWeightedCovariance(w));            
+            double[][] equitymat=new double[nf.getLength()][2];
+            double[][] testptfmat=nf.getMatrixCopy();
+            double[][] testptfallmat=FF.getMatrixCopy();
+            for (int i=0;i<testptfmat.length;i++) {
+                double t1=0,t2=0;
+                for (int j=0;j<testptfmat[i].length;j++){
+                    t1+=(Math.pow(10.0,testptfmat[i][j]/100.0)-1.0);                    
+                }
+                for (int j=0;j<testptfallmat[i].length;j++){
+                    t2+=(Math.pow(10.0,testptfallmat[i][j]/100.0)-1.0);                    
+                }                
+                t1=t1/testptfmat[i].length;
+                t2=t2/testptfallmat[i].length;
+                equitymat[i][0]=i==0? 1*(1+t1) : equitymat[i-1][0]*(1+t1);
+                equitymat[i][1]=i==0? 1*(1+t2) : equitymat[i-1][1]*(1+t2);
+            }
+            LOG.debug("final equity "+equitymat[equitymat.length-1][0]);
+            
+            Fints equity=new Fints(nf.getDate(), Arrays.asList("equity","b&h"), Fints.frequency.DAILY, equitymat);
+            equity.plot("equity", "exret");
+            step++;
+            //stopCond=true;
+        }
+
+    }
+
     public double[] optimizeMinVar(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
         LOG.debug("first serie" + closeER);
         if (window.isPresent()) {
@@ -246,8 +367,7 @@ public class Portfolio {
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
         double[][] cov = sub.getCovariance();
 
-
-        double w=1.0/eqSec;
+        double w = 1.0 / eqSec;
         //javafx.util.Pair<java.util.List<Integer>,Double> results=new Pair<java.util.List<Integer>,Double>();//=new javafx.util.Pair<java.util.List<Integer>,Double>();
 
         //double[] bestselection=new double[closeER.getNoSeries()];
@@ -278,9 +398,9 @@ public class Portfolio {
                             }
                         }
                         if (var < bestvar) {
-                                LOG.debug("best at="+l+"\ttid="+Thread.currentThread().getId() +" : "+var);
-                                bestset = set;
-                                bestvar = var;
+                            LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
+                            bestset = set;
+                            bestvar = var;
 
                         }
                         //results.put(set, var);
@@ -288,7 +408,7 @@ public class Portfolio {
                         LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
                     }
                 }
-                
+
                 return Pair.of(bestset, bestvar);//new Pair(bestset, bestvar);
             }));
         }
@@ -298,7 +418,7 @@ public class Portfolio {
         java.util.Set<Integer> bestset = new java.util.TreeSet<>();
         double[] v = new double[closeER.getNoSeries()];
         for (Future f : flist) {
-            Pair p = (Pair) f.get();            
+            Pair p = (Pair) f.get();
             if ((Double) p.second < bestvar) {
                 bestvar = (Double) p.second;
                 bestset = (java.util.Set) p.first;
@@ -311,22 +431,21 @@ public class Portfolio {
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         for (int i = 0; i < v.length; i++) {
             if (v[i] != 0.0) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+v[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + v[i]);
             }
         }
 
         return v;
     }
 
-    
-        public double[] optimizeSharpeBH(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
+    public double[] optimizeSharpeBH(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
         LOG.debug("first serie" + closeER);
         if (window.isPresent()) {
             if (window.get() > closeER.getLength()) {
                 throw new Exception("max windows = " + closeER.getLength());
             }
         }
-            
+
         int eqSec = equalWeightSec.orElse(10);
         if (eqSec > closeER.getNoSeries()) {
             throw new Exception("no securities out of range: " + eqSec + ">" + closeER.getNoSeries());
@@ -337,48 +456,49 @@ public class Portfolio {
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         //com.ettoremastrogiacomo.utils.DoubleDoubleArray.show(cov);
-        java.util.TreeMap<Double,java.util.ArrayList<Object>> results=new java.util.TreeMap<>();
+        java.util.TreeMap<Double, java.util.ArrayList<Object>> results = new java.util.TreeMap<>();
         java.util.ArrayList<Future> flist = new java.util.ArrayList<>();
-        Fints besteq=new Fints();
+        Fints besteq = new Fints();
         BUYANDHOLD bh = new BUYANDHOLD(Portfolio.this);
-        com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt = new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(Portfolio.this, Optional.of(1000.0), Optional.empty(), Optional.empty());        
+        com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt = new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(Portfolio.this, Optional.of(1000.0), Optional.empty(), Optional.empty());
         for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
             flist.add(pool.submit(() -> {
                 int len = closeER.getNoSeries();
                 java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-                double bestvar=Double.MIN_VALUE;
+                double bestvar = Double.MIN_VALUE;
                 for (long l = 0; l < epochs.orElse(1000000L); l++) {
                     try {
                         java.util.Set<Integer> set = Misc.getDistinctRandom(eqSec, len);//getRandom(P, len);
                         double[] v;
                         v = new double[len];
                         set.forEach((i) -> {
-                            v[i] = 1.0/eqSec;
+                            v[i] = 1.0 / eqSec;
                         });
-                        Statistics stats=bt.apply(bh.apply(sub.getFirstDate(), sub.getLastDate(), v),sub.getFirstDate(),sub.getLastDate());
+                        Statistics stats = bt.apply(bh.apply(sub.getFirstDate(), sub.getLastDate(), v), sub.getFirstDate(), sub.getLastDate());
                         double var = stats.linregsharpe;
                         if (var > bestvar) {
                             bestset = set;
                             bestvar = var;
-                            LOG.debug("best at="+l+"\ttid="+Thread.currentThread().getId() +" : "+stats.linregsharpe);
-                            java.util.ArrayList<Object> tlist=new java.util.ArrayList<>();
-                            tlist.add(set);tlist.add(stats.equity);
-                            synchronized (Portfolio.this){
+                            LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + stats.linregsharpe);
+                            java.util.ArrayList<Object> tlist = new java.util.ArrayList<>();
+                            tlist.add(set);
+                            tlist.add(stats.equity);
+                            synchronized (Portfolio.this) {
                                 results.put(var, tlist);
                             }
                         }
-                    }catch (Exception e) {
+                    } catch (Exception e) {
                         LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
                     }
                 }
                 //java.util.HashMap<Set,Double> retval=
-                return  Pair.of(bestset, bestvar);
+                return Pair.of(bestset, bestvar);
             }));
         }
         for (Future f : flist) {
             Pair p = (Pair) f.get();
         }
-        
+
         pool.shutdown();
 
         double bestvar = results.lastKey();// Double.MIN_VALUE;
@@ -391,18 +511,18 @@ public class Portfolio {
                 bestset = (java.util.Set) p.first;
             }*/
         }
-        java.util.ArrayList<Object> last=results.lastEntry().getValue();
-        bestset =(Set<Integer>) last.get(0);
-        besteq=(Fints) last.get(1);
+        java.util.ArrayList<Object> last = results.lastEntry().getValue();
+        bestset = (Set<Integer>) last.get(0);
+        besteq = (Fints) last.get(1);
         bestset.forEach((i) -> {
-            v[i] = 1.0/eqSec;
-        });        
+            v[i] = 1.0 / eqSec;
+        });
         //LOG.debug("\n\n\n\n\nnew best=" + bestvar);
         LOG.debug("\n\n\n\n\nnew best=" + bestvar);
-        
+
         for (int i = 0; i < v.length; i++) {
             if (v[i] != 0.0) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t"+v[i]);
+                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + v[i]);
                 //LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
             }
         }
@@ -484,7 +604,7 @@ public class Portfolio {
         s.append("num securities: ").append(this.getNoSecurities()).append("\n");
         s.append("date gap in days: ").append(this.allfints.getMaxDaysDateGap()).append("\n");
         s.append("days from now: ").append(this.allfints.getDaysFromNow()).append("\n");
-        names.keySet().forEach((x)-> {
+        names.keySet().forEach((x) -> {
             s.append(names.get(x)).append("\n");
         });
         /*this.securities.forEach((x) -> {
@@ -494,15 +614,16 @@ public class Portfolio {
         return s.toString();
     }
 
-    
     public static void main(String[] args) throws Exception {
-        java.util.ArrayList<String> isins=new java.util.ArrayList<>();
-        
+        java.util.ArrayList<String> isins = new java.util.ArrayList<>();
+
         //List<HashMap<String,String>> records=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.empty(), Optional.of(Arrays.asList("EUR")), Optional.empty());
-        List<HashMap<String,String>> records=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")),  Optional.empty(), Optional.of(Arrays.asList("EUR")), Optional.empty());
-        List<String> hashes=new java.util.ArrayList<>();
-        records.forEach((x)->{hashes.add(x.get("hashcode"));});
-        java.util.ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashes),Optional.of(250), Optional.of(.2), Optional.of(7), Optional.of(20), Optional.of(100000), Optional.empty());
+        List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.empty(), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        List<String> hashes = new java.util.ArrayList<>();
+        records.forEach((x) -> {
+            hashes.add(x.get("hashcode"));
+        });
+        java.util.ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashes), Optional.of(250), Optional.of(.2), Optional.of(7), Optional.of(20), Optional.of(100000), Optional.empty());
         Portfolio ptf = new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         double[] d = ptf.optimizeMinVarQP(Optional.empty(), Optional.empty(), Optional.of(0.05));
         double[] d2 = ptf.optimizeMinVar(Optional.empty(), Optional.empty(), Optional.of(5000000L), Optional.of(50));

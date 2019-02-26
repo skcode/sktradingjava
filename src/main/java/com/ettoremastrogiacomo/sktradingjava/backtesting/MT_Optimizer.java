@@ -29,7 +29,7 @@ public class MT_Optimizer {
     final UDate from,to;
     final com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest  bt;
     final int[] paramsBoundary;
-            int [][] allpar;
+    int [][] allpar;
     final long permutationsNum;
     final int TRESHOLD=500000;
     final java.util.ArrayList<int[]> permutations=new java.util.ArrayList<>();
