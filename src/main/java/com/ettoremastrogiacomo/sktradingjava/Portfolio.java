@@ -229,9 +229,9 @@ public class Portfolio {
 
     public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
         LOG.debug("Start walkforward test");
-        int testWin = test_window.orElse(250);
-        int trainWin = train_window.orElse(60);
-        int eqSec = equalWeightSec.orElse(10);
+        int testWin = test_window.orElse(60);//default 60 samples for test window
+        int trainWin = train_window.orElse(250);//default 250 samples for train window
+        int eqSec = equalWeightSec.orElse(10);//default 10 stock to pick each time
 
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
         Fints smaSharpe = Fints.SMA(Fints.Sharpe(closeER, 20), 200);//begins 
@@ -246,7 +246,6 @@ public class Portfolio {
         Fints allequity = new Fints();
         Fints allequitySharpe = new Fints();
         while (true) {
-
             int ubound = offset_closeER + testWin * step + trainWin + testWin - 1;
             if (closeER.getLength() < ubound) {
                 LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeER.getLength() - 1));
@@ -302,7 +301,7 @@ public class Portfolio {
                                 }
                             }
                             if (var < bestvar) {
-                                LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
+                                LOG.debug("best var at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
                                 bestset = set;
                                 bestvar = var;
                             }
@@ -360,6 +359,8 @@ public class Portfolio {
             double[][] equitymat = new double[nf.getLength()][2];
             double[][] testptfmat = nf.getMatrixCopy();
             double[][] testptfallmat = FF.getMatrixCopy();
+            double oldlasteq=allequity.isEmpty()?1:allequity.getLastRow()[0];
+            double oldlasteqbh=allequity.isEmpty()?1:allequity.getLastRow()[1];
             for (int i = 0; i < testptfmat.length; i++) {
                 double t1 = 0, t2 = 0;
                 for (int j = 0; j < testptfmat[i].length; j++) {
@@ -370,8 +371,8 @@ public class Portfolio {
                 }
                 t1 = t1 / testptfmat[i].length;
                 t2 = t2 / testptfallmat[i].length;
-                equitymat[i][0] = i == 0 ? 1 * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
-                equitymat[i][1] = i == 0 ? 1 * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
+                equitymat[i][0] = i == 0 ? oldlasteq * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
+                equitymat[i][1] = i == 0 ? oldlasteqbh * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
             }
             LOG.debug("final equity " + equitymat[equitymat.length - 1][0]);
             Fints equity = new Fints(nf.getDate(), Arrays.asList("equity", "b&h"), Fints.frequency.DAILY, equitymat);
@@ -393,6 +394,8 @@ public class Portfolio {
             equitymat = new double[nf.getLength()][2];
             testptfmat = nf.getMatrixCopy();
             testptfallmat = subTest.getMatrixCopy();
+            double oldlasteqSharpe=allequitySharpe.isEmpty()?1:allequitySharpe.getLastRow()[0];
+            double oldlasteqbhSharpe=allequitySharpe.isEmpty()?1:allequitySharpe.getLastRow()[1];            
             for (int i = 0; i < testptfmat.length; i++) {
                 double t1 = 0, t2 = 0;
                 for (int j = 0; j < testptfmat[i].length; j++) {
@@ -403,8 +406,8 @@ public class Portfolio {
                 }
                 t1 = t1 / testptfmat[i].length;
                 t2 = t2 / testptfallmat[i].length;
-                equitymat[i][0] = i == 0 ? 1 * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
-                equitymat[i][1] = i == 0 ? 1 * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
+                equitymat[i][0] = i == 0 ? oldlasteqSharpe * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
+                equitymat[i][1] = i == 0 ? oldlasteqbhSharpe * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
             }
             LOG.debug("final equity " + equitymat[equitymat.length - 1][0]);
             equity = new Fints(nf.getDate(), Arrays.asList("equity", "b&h"), Fints.frequency.DAILY, equitymat);
@@ -412,8 +415,8 @@ public class Portfolio {
             step++;
             //stopCond=true;
         }
-        allequity.plot("equity", "exret");
-        allequitySharpe.plot("equity", "exret");
+        allequity.plot("equityminvaropt", "exret");
+        allequitySharpe.plot("equitysharpeopt", "exret");
     }
 
     public double[] optimizeMinVar(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
