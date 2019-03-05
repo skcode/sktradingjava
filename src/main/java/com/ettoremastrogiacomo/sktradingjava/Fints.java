@@ -895,6 +895,11 @@ public final class Fints {
         return res;
     }
 
+    public double getEqualWeightedCovariance() throws Exception {
+        double[] w= new double[this.getNoSeries()];
+        for (int i=0;i<w.length;i++) w[i]=1.0/(double)w.length;
+        return getWeightedCovariance(w);
+    }
     public double[][] getCorrelation() throws Exception {
         return DoubleDoubleArray.corr(matrix);
     }
