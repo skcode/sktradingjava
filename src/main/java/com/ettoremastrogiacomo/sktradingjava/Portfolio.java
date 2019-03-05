@@ -227,11 +227,14 @@ public class Portfolio {
 
         return sol;
     }
-    public void walkForwardTestSharpe(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
+    public void walkForwardTestSharpe(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec,Optional<Boolean> sharpeOrMinvar) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
+        boolean optype=sharpeOrMinvar.orElse(Boolean.TRUE);
         UDate startDate = closeER.getFirstDate();
+        if (optype) LOG.debug("OPTIMIZE FOR SHARPE");
+        else LOG.debug("OPTIMIZE FOR MINVAR");
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
         LOG.debug("start training from " + startDate);
         LOG.debug("optimal set size "+sizeOptimalSet);
@@ -276,7 +279,7 @@ public class Portfolio {
                                 }
                                 vec[i]=vec[i]/sizeOptimalSet;                                
                             }                               
-                            double sharpe=DoubleArray.mean(vec)/DoubleArray.std(vec);
+                            double sharpe=optype? DoubleArray.mean(vec)/DoubleArray.std(vec):1.0/DoubleArray.std(vec);
                             if (Double.isFinite(sharpe)){
                                 if (sharpe>bestsharpe){
                                     bestsharpe=sharpe;
@@ -297,7 +300,8 @@ public class Portfolio {
                 LOG.debug("no winner found");
                 for (int i=0;i<eqmat.length;i++) eqmat[i][0]=lastEquityVal;
             } else {                
-                LOG.debug("best sharpe : "+winnerSetSharpe.lastEntry().getKey());
+                LOG.debug("best value : "+winnerSetSharpe.lastEntry().getKey());
+                LOG.debug("best value inverse : "+1.0/winnerSetSharpe.lastEntry().getKey());
                 for (int i=0;i<eqmat.length;i++) {
                     double t1=0;
                     for (int j : winnerSetSharpe.lastEntry().getValue()){
