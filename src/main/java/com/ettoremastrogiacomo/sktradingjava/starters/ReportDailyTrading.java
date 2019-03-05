@@ -30,7 +30,7 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
 
-        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(1000), Optional.of(.15), Optional.of(7), Optional.empty(), Optional.of(300000), Optional.empty());
+        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(2500), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(300000), Optional.empty());
         java.util.HashMap<String,Fints> close= new HashMap<>();
         java.util.HashMap<String,Fints> sharpe= new HashMap<>();
         java.util.HashMap<String,Fints> dsharpe= new HashMap<>();
@@ -40,6 +40,7 @@ public class ReportDailyTrading {
         NumberFormat formatter = new DecimalFormat("#0.0000");
         StringBuilder bests=new StringBuilder();
         java.util.ArrayList<String> bestStock= new ArrayList<>();
+        java.util.ArrayList<String> allStock= new ArrayList<>();
         for (String x : list){
             if (!names.get(x).contains("STOCK")) continue;
             if (names.get(x).contains("IE0")) continue;
@@ -63,10 +64,11 @@ public class ReportDailyTrading {
                 bests.append(Misc.padRight(names.get(x), 50, ' ')).append("\t").append(formatter.format(s1)).append("\t").append(formatter.format(s2)).append("\t").append(formatter.format(s3)).append("\n");
                 bestStock.add(x);
             }
+            allStock.add(x);
         }
         logger.info("\nBESTS\n"+bests);
-        Portfolio ptf= new Portfolio(bestStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        ptf.walkForwardTest(Optional.of(250), Optional.of(60), Optional.of(1000000L), Optional.of(15));
+        Portfolio ptf= new Portfolio(allStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        ptf.walkForwardTest(Optional.of(120), Optional.of(30), Optional.of(1000000L), Optional.of(10));
         //ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.of(2000000L), Optional.of(20));
       //  ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
         //ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(1000000L), Optional.of(20));
