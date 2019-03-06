@@ -238,7 +238,7 @@ public class Portfolio {
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
         LOG.debug("start training from " + startDate);
         LOG.debug("optimal set size "+sizeOptimalSet);
-        LOG.debug("all samples Fints\n"+closeER.toString());
+        LOG.debug("all samples Fints "+closeER.toString());
         LOG.debug("runtime processors "+Runtime.getRuntime().availableProcessors());
         if ((closeER.getLength() - testWin - trainWin) <= 0) {
             throw new Exception("size too short, try to change parameters: "+closeER.getLength()+"<="+(testWin+trainWin));
@@ -267,7 +267,7 @@ public class Portfolio {
                 pool.execute(() -> {
                     int stockPoolSize=subTrain.getNoSeries();                   
                     java.util.Set<Integer> bestsetsharpe = new java.util.TreeSet<>();
-                    double bestsharpe = Double.MIN_VALUE;
+                    double bestsharpe = Double.NEGATIVE_INFINITY;// Double.MIN_VALUE;
                     for (long l = 0; l < epochs.orElse(1000000L); l++) {
                         try {
                             java.util.Set<Integer> tempSet = Misc.getDistinctRandom(sizeOptimalSet, stockPoolSize);//getRandom(P, len);                        
@@ -279,7 +279,9 @@ public class Portfolio {
                                 }
                                 vec[i]=vec[i]/sizeOptimalSet;                                
                             }                               
-                            double sharpe=optype? DoubleArray.mean(vec)/DoubleArray.std(vec):1.0/DoubleArray.std(vec);
+                            
+                           double sharpe=optype? DoubleArray.mean(vec)/DoubleArray.std(vec):1.0/DoubleArray.std(vec);
+                            //double sharpe=DoubleArray.mean(vec);//DA CAMBIARE
                             if (Double.isFinite(sharpe)){
                                 if (sharpe>bestsharpe){
                                     bestsharpe=sharpe;
@@ -288,7 +290,10 @@ public class Portfolio {
                             }
                         }catch (Exception e) {LOG.warn(e);}
                     }
-                    if (bestsharpe>0) synchronized (Portfolio.class) {winnerSetSharpe.put(bestsharpe,bestsetsharpe);}
+                    if (bestsharpe>0) synchronized (Portfolio.class) {
+                        winnerSetSharpe.put(bestsharpe,bestsetsharpe);
+                        LOG.debug("new best "+bestsharpe+"\t"+bestsetsharpe);
+                    }
                 });
             }
             pool.shutdown();
@@ -300,8 +305,15 @@ public class Portfolio {
                 LOG.debug("no winner found");
                 for (int i=0;i<eqmat.length;i++) eqmat[i][0]=lastEquityVal;
             } else {                
+                Fints temp_train=subTrain.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue()));
+                Fints temp_test=subTest.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue()));
+                LOG.debug("trainopt"+temp_train);
+                LOG.debug("testopt"+temp_test);
                 LOG.debug("best value : "+winnerSetSharpe.lastEntry().getKey());
-                LOG.debug("best value inverse : "+1.0/winnerSetSharpe.lastEntry().getKey());
+                LOG.debug("train variance "+temp_train.getEqualWeightedCovariance());
+                LOG.debug("train mean "+DoubleArray.mean(subTrain.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue())).getMeans()));                
+                LOG.debug("test variance "+temp_test.getEqualWeightedCovariance());
+                LOG.debug("test mean "+DoubleArray.mean(subTest.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue())).getMeans()));
                 for (int i=0;i<eqmat.length;i++) {
                     double t1=0;
                     for (int j : winnerSetSharpe.lastEntry().getValue()){
@@ -323,7 +335,8 @@ public class Portfolio {
             LOG.info("final equity optimized " + eqmat[eqmat.length - 1][0]);
             LOG.info("final equity BH " + eqmat[eqmat.length - 1][1]);
             Fints equity = new Fints(subTest.getDate(), Arrays.asList("optimized", "b&h"), Fints.frequency.DAILY, eqmat);
-            allequitySharpe = allequitySharpe.isEmpty() ? equity : Fints.append(allequitySharpe, equity);            
+            allequitySharpe = allequitySharpe.isEmpty() ? equity : Fints.append(allequitySharpe, equity);      
+            winnerSetSharpe.clear();
             step++;
         }
         allequitySharpe.plot("equity", "exret");

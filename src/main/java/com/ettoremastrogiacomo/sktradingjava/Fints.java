@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 //import java.util.Locale;
 import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
@@ -413,6 +415,25 @@ public final class Fints {
             }
         }
         return gap;
+    }
+    /**
+     * 
+     * @param subset lista di indici rappresentanti le colonne del nuovo fints
+     * @return nuovo fints contenente le colonne indicate dal subset (ammette duplicati)
+     * @throws Exception 
+     */
+    public Fints SubSeries(ArrayList<Integer> subset) throws Exception {
+        int newNoSeries=subset.size();
+        double[][] newmat=new double[this.matrix.length][newNoSeries];
+        ArrayList<String> newNames=new ArrayList<>();
+        for (int i=0;i<this.matrix.length;i++) {            
+            for (int j=0;j<subset.size();j++) {
+                newmat[i][j]=this.matrix[i][subset.get(j)];
+            }
+        }
+        for (int i=0;i<subset.size();i++) newNames.add(this.names.get(subset.get(i)));
+        Fints newf = new Fints(this.dates, newNames, this.freq, newmat);
+        return newf;
     }
 /**
  * 
@@ -884,7 +905,7 @@ public final class Fints {
         double[][] cov = DoubleDoubleArray.cov(matrix);
         double s = DoubleArray.sum(w);
         if (Math.abs(s - 1.0) > 0.0000001) {
-            throw new Exception("weights sum must be near 1.0");
+            throw new Exception("weights sum must be near 1.0 :"+s);
         }
         double res = 0;
         for (int i = 0; i < w.length; i++) {
