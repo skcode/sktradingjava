@@ -6,6 +6,7 @@ import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -501,7 +502,7 @@ public final class Fints {
     public Fints Sub(int Yfrom, int Yto, int Xfrom, int Xto) throws Exception {
         if (Yfrom < 0 || Yfrom > Yto || Yto >= getLength()
                 || Xfrom < 0 || Xfrom > Xto || Xto >= this.getNoSeries()) {
-            throw new Exception("bad ranges: " + Yfrom + " " + Yto + " " + Xfrom + " " + Xto);
+            throw new Exception("bad ranges: " + Yfrom + " " + Yto + " " + Xfrom + " " + Xto+" limits(0-"+(this.matrix.length-1)+",0"+(this.names.size()-1)+")");
         }
         ArrayList<UDate> newd = new ArrayList<>();
         ArrayList<String> newn = new ArrayList<>();
@@ -915,7 +916,52 @@ public final class Fints {
         }
         return res;
     }
-
+    
+    /**
+     * 
+     * @param k
+     * @return max drowdown of k column serie
+     * @throws Exception 
+     */
+    public double getMaxDD(int k) throws Exception {
+        //maxDD calculus
+        double mdd=0,mddp=0,maxmdd=this.matrix[0][k];
+        for (int i=1;i<matrix.length;i++) {
+            if (matrix[i][k]>=matrix[i-1][k]) {
+                if (matrix[i][k]>maxmdd) maxmdd=matrix[i][k];
+                continue;
+            }
+            double t1=matrix[i][k]-maxmdd;
+            double t1p=t1/maxmdd;
+            if (t1<mdd) mdd=t1;
+            if (t1p<mddp) mddp=t1p;
+        }//    
+        return mddp;    
+    }
+    /**
+     * 
+     * @param k column
+     * @return new Fints linear regression of k colummn
+     * @throws Exception 
+     */
+    public Fints getLinReg(int k) throws Exception {
+        //regression slope 
+        double[][] equityval=this.matrix;
+        double meanx=0,meany=0,varx=0,vary=0,covxy=0;
+        for (int i=0;i<equityval.length;i++){meany+=equityval[i][k];meanx+=i;}
+        meany/=(double)equityval.length;// portfolio.dates.size();
+        meanx/=(double)equityval.length;
+        for (int i=0;i<equityval.length;i++)  {varx+=Math.pow(i-meanx,2);vary+=Math.pow(equityval[i][k]-meany,2);}
+        vary/=(double)(equityval.length-1);varx/=(double)(equityval.length-1);
+        for (int i=0;i<equityval.length;i++) covxy+=(i-meanx)*(equityval[i][k]-meany);covxy/=(double)(equityval.length-1);
+        double reg_b=covxy/varx;
+        double reg_a=meany-reg_b*meanx;
+        double[][] newm=new double[equityval.length][1];
+        for (int i=0;i<newm.length;i++) newm[i][0]=reg_a+reg_b*i;
+        return new Fints(this.dates, Arrays.asList("LINREG("+this.names.get(k)+")"), this.freq, newm);            
+    }
+    
+    
     public double getEqualWeightedCovariance() throws Exception {
         double[] w= new double[this.getNoSeries()];
         for (int i=0;i<w.length;i++) w[i]=1.0/(double)w.length;
