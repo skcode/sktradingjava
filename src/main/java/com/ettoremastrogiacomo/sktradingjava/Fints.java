@@ -116,6 +116,7 @@ public final class Fints {
     } 
      
     
+    
     static public Fints removeOutliers(Fints f, int nsigma, int idx) throws Exception {
         if (nsigma < 1) {
             throw new Exception("nsigma must be >= 1");
@@ -705,6 +706,34 @@ public final class Fints {
         return newf;
     }
 
+    static public Fints SUMCOLS(Fints f1) throws Exception {
+        if (f1.isEmpty()) return new Fints();
+        double[][] newm=new double[f1.length][1];
+        StringBuilder sb=new StringBuilder();
+        sb.append("SUMCOLS(").append(f1.names.get(0));
+        for (int i=1;i<f1.names.size();i++) sb.append(",").append(f1.names.get(i));
+        sb.append(")");
+        for (int i=0;i<newm.length;i++)
+            for (int j=0;j<newm[i].length;j++)
+                newm[i][0]+=f1.matrix[i][j];
+        return new Fints(f1.dates, Arrays.asList(sb.toString()), f1.freq, newm);
+    }
+
+    static public Fints MEANCOLS(Fints f1) throws Exception {
+        if (f1.isEmpty()) return new Fints();
+        double[][] newm=new double[f1.length][1];
+        StringBuilder sb=new StringBuilder();
+        sb.append("MEANCOLS(").append(f1.names.get(0));
+        for (int i=1;i<f1.names.size();i++) sb.append(",").append(f1.names.get(i));
+        sb.append(")");
+        for (int i=0;i<newm.length;i++){
+            for (int j=0;j<newm[i].length;j++)
+                newm[i][0]+=f1.matrix[i][j];
+            newm[i][0]/=(double)newm[i].length;
+        }
+        return new Fints(f1.dates, Arrays.asList(sb.toString()), f1.freq, newm);
+    }
+    
     static public Fints SUM(Fints f1, Fints f2) throws Exception {
         if (f1.getNoSeries() != f2.getNoSeries()) {
             throw new Exception("series number must be equal");

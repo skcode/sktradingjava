@@ -46,7 +46,7 @@ public class Portfolio {
     private final Fints.frequency freq;
     public final Fints closeER;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
-
+    public enum optMethod { MINVAR, MAXSHARPE, MAXPROFIT, MINDD};
     public Portfolio(java.util.ArrayList<String> hashcodes, Optional<Fints.frequency> freq, Optional<UDate> iday, Optional<UDate> from, Optional<UDate> to) throws Exception {
         this.freq = freq.orElse(Fints.frequency.DAILY);
         if (this.freq.compareTo(Fints.frequency.DAILY) < 0 && !iday.isPresent()) {
@@ -227,14 +227,14 @@ public class Portfolio {
 
         return sol;
     }
-    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec,Optional<Boolean> sharpeOrMinvar) throws Exception {
+    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec,Optional<Portfolio.optMethod> optmet) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
-        boolean optype=sharpeOrMinvar.orElse(Boolean.TRUE);
+        Portfolio.optMethod optype=optmet.orElse(Portfolio.optMethod.MAXSHARPE);
         UDate startDate = closeER.getFirstDate();
-        if (optype) LOG.debug("OPTIMIZE FOR SHARPE");
-        else LOG.debug("OPTIMIZE FOR MINVAR");
+        
+        LOG.debug("OPTIMIZE FOR "+optype);
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
         LOG.debug("start training from " + startDate);
         LOG.debug("optimal set size "+sizeOptimalSet);
@@ -278,10 +278,32 @@ public class Portfolio {
                                     vec[i]+=m_subTrain[i][j];
                                 }
                                 vec[i]=vec[i]/sizeOptimalSet;                                
-                            }                               
-                            
-                           //double sharpe=optype? DoubleArray.mean(vec)/DoubleArray.std(vec):1.0/DoubleArray.std(vec);
-                            double sharpe=DoubleArray.mean(vec);//DA CAMBIARE
+                            }                   
+                            double sharpe=0.0;
+                           switch (optype) {
+                               case MAXPROFIT:
+                                   sharpe=DoubleArray.mean(vec);
+                                   break;
+                               case MAXSHARPE:
+                                   sharpe=DoubleArray.mean(vec)/DoubleArray.std(vec);
+                                   break;
+                               case MINVAR:
+                                   sharpe=1.0/DoubleArray.std(vec);
+                                   break;
+                               case MINDD:
+                                   Fints tt=Fints.MEANCOLS(subTrain.SubSeries(new ArrayList<>(tempSet)));
+                                   double[][] tmat=new double[tt.getLength()][1];
+                                   for (int z=0;z<tmat.length;z++) {
+                                       tmat[z][0]=z==0 ? (Math.pow(10.0, tt.get(z, 0) / 100.0)):(Math.pow(10.0, tt.get(z, 0) / 100.0))*tmat[z-1][0];                                       
+                                   }
+                                   Fints tt2=new Fints(tt.getDate(), Arrays.asList("temp"), tt.getFrequency(), tmat);
+                                   sharpe=tt2.getMaxDD(0);
+                                   break;
+                               default:
+                                   throw new Exception("unknow optmethod "+optype);                                                              
+                           }
+                           
+                           // double sharpe=DoubleArray.mean(vec);//DA CAMBIARE
                             if (Double.isFinite(sharpe)){
                                 if (sharpe>bestsharpe){
                                     bestsharpe=sharpe;
@@ -290,7 +312,7 @@ public class Portfolio {
                             }
                         }catch (Exception e) {LOG.warn(e);}
                     }
-                    if (bestsharpe>0) synchronized (Portfolio.class) {
+                    if (Double.isFinite(bestsharpe)) synchronized (Portfolio.class) {
                         winnerSetSharpe.put(bestsharpe,bestsetsharpe);
                         LOG.debug("new best "+bestsharpe+"\t"+bestsetsharpe);
                     }

@@ -68,7 +68,7 @@ public class ReportDailyTrading {
         }
         logger.info("\nBESTS\n"+bests);
         Portfolio ptf= new Portfolio(allStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        ptf.walkForwardTest(Optional.of(120), Optional.of(20), Optional.of(1000000L), Optional.of(20),Optional.of(true));
+        ptf.walkForwardTest(Optional.of(120), Optional.of(20), Optional.of(1000000L), Optional.of(20),Optional.of(Portfolio.optMethod.MINDD));
         //ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.of(2000000L), Optional.of(20));
       //  ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
         //ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(1000000L), Optional.of(20));
