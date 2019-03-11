@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 //import javafx.util.Pair;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.Pair;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
@@ -253,9 +255,11 @@ public class Portfolio {
 
             int offset = step * testWin;
             LOG.debug("offset " + offset);
+            
             if ((offset + trainWin + testWin) >= exretmat.length) {
                 break;
             }
+            LOG.debug("date range  " + exret.getDate(offset)+"\t"+exret.getDate(offset + trainWin + testWin));
             final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetSharpe = new java.util.TreeMap<>();
 
             ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -293,17 +297,22 @@ public class Portfolio {
                                 throw new Exception("unknow optmethod " + optype);
                         }
                         if (Double.isFinite(res)) {
+                            
                             if (winnerSetSharpe.isEmpty()) {
+                                synchronized (this) {
                                 winnerSetSharpe.put(res, tempSet);
+                                }
                                 //LOG.debug("new best " + res + " at " + k);
                             } else {
                                 if (res > winnerSetSharpe.lastKey()) {
-                                    winnerSetSharpe.put(res, tempSet);
+                                    synchronized (this) {
+                                        winnerSetSharpe.put(res, tempSet);
+                                    }
                                   //  LOG.debug("new best " + res + " at " + k);
                                 }
                             }
                         }
-                        } catch (Exception e) {LOG.warn(e);}
+                        } catch (Exception e) {LOG.warn(Misc.stackTrace2String(e));}
                     }
                 });
             }
@@ -424,11 +433,11 @@ public class Portfolio {
                                 }
                             }
                         } catch (Exception e) {
-                            LOG.warn(e);
+                            LOG.warn(Misc.stackTrace2String(e));
                         }
                     }
                     if (Double.isFinite(bestsharpe)) {
-                        synchronized (Portfolio.class) {
+                        synchronized (this) {
                             winnerSetSharpe.put(bestsharpe, bestsetsharpe);
                             LOG.debug("new best " + bestsharpe + "\t" + bestsetsharpe);
                         }

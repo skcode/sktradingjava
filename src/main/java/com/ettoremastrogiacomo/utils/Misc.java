@@ -9,6 +9,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -258,6 +260,16 @@ public class Misc {
 
     public static <T> ArrayList<T> set2list(Set<T> set) {
         return new ArrayList<>(set);
+    }
+    /**
+     * get fullstacktrace from an exception
+     * @param e
+     * @return stacktrace in string form
+     */
+    public static String stackTrace2String(Exception e ){
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();    
     }
 
 }
