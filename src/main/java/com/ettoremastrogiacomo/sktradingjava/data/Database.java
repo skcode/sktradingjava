@@ -654,6 +654,11 @@ public class Database {
             java.util.HashMap<String, String> pmap = new java.util.HashMap<>();
             Document dy = Jsoup.parse(res);
             Elements els = dy.select("form[class='consent-form'] input[type='hidden']");
+            //consent-form single-page-form single-page-agree-form
+            if (els.isEmpty()) {
+                els=dy.select("form[class='consent-form single-page-form single-page-agree-form'] input[type='hidden']");
+            }
+            if (els.isEmpty()) throw new Exception("cannot grab conset yahoo form : "+url.toString());
             els.forEach((x) -> {
                 pmap.put(x.attr("name"), x.attr("value"));
             });
@@ -672,6 +677,7 @@ public class Database {
         }
         int k1 = res.indexOf("CrumbStore");
         int k2 = res.indexOf("\"", k1 + 22);
+        if (k1<0 || k2<0) throw new Exception("cannot grab yahoo crumbstore "+url.toString());
         String crumb = res.substring(k1 + 21, k2).replace("\"", "").replace("\\u00", "%");
        // LOG.info("crumb=" + crumb);
         String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history&crumb=" + crumb;
