@@ -41,7 +41,7 @@ public class DailyCorrelation {
         ArrayList<String> newhashes=Database.getFilteredPortfolio(Optional.of(hashes), Optional.of(WINDOW), Optional.of(MAXPCGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL), Optional.empty());
        
         Portfolio ptf= new Portfolio(newhashes, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        Fints all=ptf.closeER;
+        Fints all=ptf.closeERlog;
         /*for (String x : newhashes)
             all=all.isEmpty()?Database.getFintsQuotes(x).getSerieCopy(3):all.merge(Database.getFintsQuotes(x).getSerieCopy(3));
         LOG.debug(all.toString());

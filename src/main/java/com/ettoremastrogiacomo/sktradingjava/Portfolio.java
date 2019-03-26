@@ -32,9 +32,12 @@ import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.Pair;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class Portfolio {
 
@@ -46,6 +49,7 @@ public class Portfolio {
     private final int length;
     public final java.util.List<UDate> dates;
     private final Fints.frequency freq;
+    public final Fints closeERlog;
     public final Fints closeER;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
@@ -129,12 +133,173 @@ public class Portfolio {
             }
         }
 
-        closeER = Fints.ER(close, 100, true);
-        //cov=closeER.getCovariance();
-        //corr=closeER.getCorrelation();
-        //average=closeER.getMeans();
+        closeERlog = Fints.ER(close, 100, true);
+        closeER = Fints.ER(close, 1, false);
+        //cov=closeERlog.getCovariance();
+        //corr=closeERlog.getCorrelation();
+        //average=closeERlog.getMeans();
     }
-
+    public Fints  opttest(Set<Integer> set,UDate startdate,UDate enddate,Optional<Double> lastequity,Optional<Double> lastequitybh) throws Exception {
+        Fints subf=closeER.Sub(startdate, enddate);
+        double[][] m=subf.getMatrixCopy();        
+        LOG.debug("TEST \n"+subf.toString());
+        int setsize=set.size();
+        int poolsize=subf.getNoSeries();
+        int len=subf.getLength();
+        double[][] eqm=new double[len][2];
+        for (int i=0;i<len;i++){
+            double dm=0;
+            double dmbh=0;
+            for (int j:set){
+                dm+=m[i][j];
+            }
+            for (int j=0;j<poolsize;j++){
+                dmbh+=m[i][j];
+            }
+            dm=dm/setsize;
+            dmbh=dmbh/poolsize;
+            if (i==0) {
+                eqm[i][0]=lastequity.orElse(1.0)*(1+dm);
+                eqm[i][1]=lastequitybh.orElse(1.0)*(1+dmbh);
+            }
+            else{
+                eqm[i][0]=eqm[i-1][0]*(1+dm);
+                eqm[i][1]=eqm[i-1][1]*(1+dmbh);
+            }
+        }        
+        return new Fints(subf.getDate(), Arrays.asList("equity","equityBH"), subf.getFrequency(), eqm);
+    }
+    
+    public Entry  opttrain(int setsize,UDate startdate,UDate enddate,optMethod met,Optional<Long> epoch) throws Exception {
+        Fints subf=closeER.Sub(startdate, enddate);
+        LOG.debug("TRAIN \n"+subf.toString());
+        int poolsize=subf.getNoSeries();
+        if (setsize>poolsize) throw new Exception("optimal set greather than available set "+setsize+">"+poolsize);
+        double[][] m=subf.getMatrixCopy();                
+        long DEFEPOCHS=1000000L;        
+        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        java.util.ArrayList<Future> futures=new java.util.ArrayList<>();
+        switch (met) {
+            case MINVAR:{
+                double [][] c=DoubleDoubleArray.cov(m);
+                double w=1.0/setsize;
+                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                    futures.add(pool.submit(() -> {                                                
+                        double localbest=Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset=new TreeSet<>();
+                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
+                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
+                            double var = 0;
+                            for (Integer sa1 : set) {
+                                for (Integer sa2 : set) {
+                                    var += w * w * c[sa1][sa2];
+                                }
+                            }                            
+                            double fitness=1.0/var;
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
+                            if (t==0) {
+                                localbest=fitness;
+                                localbestset=set;
+                            }else {
+                                if (fitness>localbest){
+                                localbest=fitness;
+                                localbestset=set;                                    
+                                }
+                            }
+                        }                        
+                        return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+                    }));
+                }                                
+            }
+            break;
+            case MAXSHARPE:{
+                double [][] c=DoubleDoubleArray.cov(m);
+                double [] mv=DoubleDoubleArray.mean(m);
+                double w=1.0/setsize;
+                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                    futures.add(pool.submit(() -> {                                                
+                        double localbest=Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset=new TreeSet<>();
+                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
+                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
+                            double var = 0;
+                            double mean=0;
+                            for (Integer sa1 : set) {
+                                for (Integer sa2 : set) {
+                                    var += w * w * c[sa1][sa2];
+                                }
+                                mean+=mv[sa1];
+                            }                 
+                            mean=mean/setsize;
+                            double fitness=mean/Math.sqrt(var);
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
+                            if (t==0) {
+                                localbest=fitness;
+                                localbestset=set;
+                            }else {
+                                if (fitness>localbest){
+                                localbest=fitness;
+                                localbestset=set;                                    
+                                }
+                            }
+                        }                        
+                        return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+                    }));
+                }                                
+            }
+            break;
+            case MAXPROFIT:{
+                //double [][] c=DoubleDoubleArray.cov(m);
+                double [] mv=DoubleDoubleArray.mean(m);
+                double w=1.0/setsize;
+                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                    futures.add(pool.submit(() -> {                                                
+                        double localbest=Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset=new TreeSet<>();
+                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
+                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
+                            double mean=0;
+                            for (Integer sa1 : set) {
+                                mean+=mv[sa1];
+                            }                 
+                            mean=mean/setsize;
+                            double fitness=mean;
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
+                            if (t==0) {
+                                localbest=fitness;
+                                localbestset=set;
+                            }else {
+                                if (fitness>localbest){
+                                localbest=fitness;
+                                localbestset=set;                                    
+                                }
+                            }
+                        }                        
+                        return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+                    }));
+                }                                
+            }                
+            break;                
+            default:
+                throw new Exception("not yet implemented");
+        }
+        pool.shutdown();
+        try {
+            pool.awaitTermination(1, TimeUnit.HOURS);//wait 1 hour
+        } catch (InterruptedException e) {
+            LOG.error(e);
+        }   
+        
+        Entry<Double,Set> bestentry=new AbstractMap.SimpleEntry<>(Double.NEGATIVE_INFINITY,Misc.getDistinctRandom(setsize, poolsize));
+        for (Future f : futures) {            
+            Entry<Double,Set> entry=(Entry)f.get();
+            if (entry.getKey()>bestentry.getKey()) {
+                bestentry=entry;
+            }
+        }
+        return bestentry;
+    }
+    
     /**
      *
      * @param window optimization window length, default all porfolio length
@@ -144,13 +309,13 @@ public class Portfolio {
      * @throws Exception
      */
     public double[] optimizeMinVarQP(Optional<Integer> window, Optional<Integer> window_offset, Optional<Double> limit_upper_bound) throws Exception {
-        LOG.debug("first serie" + closeER);
+        LOG.debug("first serie" + closeERlog);
         if (window.isPresent()) {
-            if (window.get() > closeER.getLength()) {
-                throw new Exception("max windows = " + closeER.getLength());
+            if (window.get() > closeERlog.getLength()) {
+                throw new Exception("max windows = " + closeERlog.getLength());
             }
         }
-        Fints sub = closeER.SubRows(closeER.getLength() - window_offset.orElse(0) - window.orElse(closeER.getLength()), closeER.getLength() - window_offset.orElse(0) - 1);
+        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
         LOG.debug("sub serie" + sub);
         LOG.debug("length " + sub.getLength() + "\tno series" + sub.getNoSeries());
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
@@ -354,32 +519,32 @@ public class Portfolio {
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
         Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
-        UDate startDate = closeER.getFirstDate();
+        UDate startDate = closeERlog.getFirstDate();
 
         LOG.debug("OPTIMIZE FOR " + optype);
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
         LOG.debug("start training from " + startDate);
         LOG.debug("optimal set size " + sizeOptimalSet);
-        LOG.debug("all samples Fints " + closeER.toString());
+        LOG.debug("all samples Fints " + closeERlog.toString());
         LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
-        if ((closeER.getLength() - testWin - trainWin) <= 0) {
-            throw new Exception("size too short, try to change parameters: " + closeER.getLength() + "<=" + (testWin + trainWin));
+        if ((closeERlog.getLength() - testWin - trainWin) <= 0) {
+            throw new Exception("size too short, try to change parameters: " + closeERlog.getLength() + "<=" + (testWin + trainWin));
         }
-        if (sizeOptimalSet > closeER.getNoSeries()) {
-            throw new Exception("optimal set must be less than pool size: " + sizeOptimalSet + ">" + closeER.getNoSeries());
+        if (sizeOptimalSet > closeERlog.getNoSeries()) {
+            throw new Exception("optimal set must be less than pool size: " + sizeOptimalSet + ">" + closeERlog.getNoSeries());
         }
 
         int step = 0;
         Fints allequitySharpe = new Fints();
         while (true) {
             int ubound = testWin * step + trainWin + testWin - 1;
-            if (closeER.getLength() < (ubound + 1)) {
-                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeER.getLength() - 1));
+            if (closeERlog.getLength() < (ubound + 1)) {
+                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeERlog.getLength() - 1));
                 break;
             }
             LOG.info("Step " + (step + 1));
-            final Fints subTrain = closeER.SubRows(testWin * step, testWin * step + trainWin - 1);
-            final Fints subTest = closeER.SubRows(testWin * step + trainWin, testWin * step + trainWin + testWin - 1);
+            final Fints subTrain = closeERlog.SubRows(testWin * step, testWin * step + trainWin - 1);
+            final Fints subTest = closeERlog.SubRows(testWin * step + trainWin, testWin * step + trainWin + testWin - 1);
             LOG.debug("trainset" + subTrain.toString());
             LOG.debug("testset" + subTest.toString());
             final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetSharpe = new java.util.TreeMap<>();
@@ -504,11 +669,11 @@ public class Portfolio {
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time
         LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
-        Fints smaSharpe = Fints.SMA(Fints.Sharpe(closeER, 20), 200);//begins 
+        Fints smaSharpe = Fints.SMA(Fints.Sharpe(closeERlog, 20), 200);//begins 
         UDate startDate = smaSharpe.getDate(1);
         LOG.debug("start training from " + startDate);
-        int offset_closeER = closeER.getIndex(startDate);
-        if ((closeER.getLength() - testWin - trainWin - offset_closeER) <= 0) {
+        int offset_closeER = closeERlog.getIndex(startDate);
+        if ((closeERlog.getLength() - testWin - trainWin - offset_closeER) <= 0) {
             throw new Exception("size too short, try to change parameters");
         }
         //boolean stopCond = false;
@@ -517,13 +682,13 @@ public class Portfolio {
         Fints allequitySharpe = new Fints();
         while (true) {
             int ubound = offset_closeER + testWin * step + trainWin + testWin - 1;
-            if (closeER.getLength() < ubound) {
-                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeER.getLength() - 1));
+            if (closeERlog.getLength() < ubound) {
+                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeERlog.getLength() - 1));
                 break;
             }
-            LOG.info("all " + closeER.getLength() + "\t" + closeER.getNoSeries());
-            Fints subTrain = closeER.SubRows(offset_closeER + testWin * step, offset_closeER + testWin * step + trainWin - 1);
-            Fints subTest = closeER.SubRows(offset_closeER + testWin * step + trainWin, offset_closeER + testWin * step + trainWin + testWin - 1);
+            LOG.info("all " + closeERlog.getLength() + "\t" + closeERlog.getNoSeries());
+            Fints subTrain = closeERlog.SubRows(offset_closeER + testWin * step, offset_closeER + testWin * step + trainWin - 1);
+            Fints subTest = closeERlog.SubRows(offset_closeER + testWin * step + trainWin, offset_closeER + testWin * step + trainWin + testWin - 1);
             Fints trainMinVar = new Fints(), testMinVar = new Fints();
             double[] sharpeVal = smaSharpe.getRow(smaSharpe.getIndex(subTrain.getFirstDate()) - 1);
             ArrayList<String> trainSetMinVar = new java.util.ArrayList<>();
@@ -700,17 +865,17 @@ public class Portfolio {
     }
      */
     public double[] optimizeMinVar(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
-        LOG.debug("first serie" + closeER);
+        LOG.debug("first serie" + closeERlog);
         if (window.isPresent()) {
-            if (window.get() > closeER.getLength()) {
-                throw new Exception("max windows = " + closeER.getLength());
+            if (window.get() > closeERlog.getLength()) {
+                throw new Exception("max windows = " + closeERlog.getLength());
             }
         }
         int eqSec = equalWeightSec.orElse(10);
-        if (eqSec > closeER.getNoSeries()) {
-            throw new Exception("no securities out of range: " + eqSec + ">" + closeER.getNoSeries());
+        if (eqSec > closeERlog.getNoSeries()) {
+            throw new Exception("no securities out of range: " + eqSec + ">" + closeERlog.getNoSeries());
         }
-        Fints sub = closeER.SubRows(closeER.getLength() - window_offset.orElse(0) - window.orElse(closeER.getLength()), closeER.getLength() - window_offset.orElse(0) - 1);
+        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
         LOG.debug("sub serie" + sub);
         LOG.debug("length " + sub.getLength() + "\tno series " + sub.getNoSeries());
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
@@ -719,7 +884,7 @@ public class Portfolio {
         double w = 1.0 / eqSec;
         //javafx.util.Pair<java.util.List<Integer>,Double> results=new Pair<java.util.List<Integer>,Double>();//=new javafx.util.Pair<java.util.List<Integer>,Double>();
 
-        //double[] bestselection=new double[closeER.getNoSeries()];
+        //double[] bestselection=new double[closeERlog.getNoSeries()];
         //final double bestvar=Double.MAX_VALUE;   
         //final java.util.HashMap<java.util.List<Integer>,Double> results=new java.util.HashMap<>();
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -727,7 +892,7 @@ public class Portfolio {
         java.util.ArrayList<Future> flist = new java.util.ArrayList<>();
         for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
             flist.add(pool.submit(() -> {
-                int len = closeER.getNoSeries();
+                int len = closeERlog.getNoSeries();
                 java.util.Set<Integer> bestset = new java.util.TreeSet<>();
                 double bestvar = Double.MAX_VALUE;
                 for (long l = 0; l < epochs.orElse(1000000L); l++) {
@@ -765,7 +930,7 @@ public class Portfolio {
 
         double bestvar = Double.MAX_VALUE;
         java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-        double[] v = new double[closeER.getNoSeries()];
+        double[] v = new double[closeERlog.getNoSeries()];
         for (Future f : flist) {
             Pair p = (Pair) f.get();
             if ((Double) p.second < bestvar) {
@@ -788,18 +953,18 @@ public class Portfolio {
     }
 
     public double[] optimizeSharpeBH(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
-        LOG.debug("first serie" + closeER);
+        LOG.debug("first serie" + closeERlog);
         if (window.isPresent()) {
-            if (window.get() > closeER.getLength()) {
-                throw new Exception("max windows = " + closeER.getLength());
+            if (window.get() > closeERlog.getLength()) {
+                throw new Exception("max windows = " + closeERlog.getLength());
             }
         }
 
         int eqSec = equalWeightSec.orElse(10);
-        if (eqSec > closeER.getNoSeries()) {
-            throw new Exception("no securities out of range: " + eqSec + ">" + closeER.getNoSeries());
+        if (eqSec > closeERlog.getNoSeries()) {
+            throw new Exception("no securities out of range: " + eqSec + ">" + closeERlog.getNoSeries());
         }
-        Fints sub = closeER.SubRows(closeER.getLength() - window_offset.orElse(0) - window.orElse(closeER.getLength()), closeER.getLength() - window_offset.orElse(0) - 1);
+        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
         LOG.debug("sub serie" + sub);
         LOG.debug("length " + sub.getLength() + "\tno series" + sub.getNoSeries());
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
@@ -812,7 +977,7 @@ public class Portfolio {
         com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt = new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(Portfolio.this, Optional.of(1000.0), Optional.empty(), Optional.empty());
         for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
             flist.add(pool.submit(() -> {
-                int len = closeER.getNoSeries();
+                int len = closeERlog.getNoSeries();
                 java.util.Set<Integer> bestset = new java.util.TreeSet<>();
                 double bestvar = Double.MIN_VALUE;
                 for (long l = 0; l < epochs.orElse(1000000L); l++) {
@@ -852,7 +1017,7 @@ public class Portfolio {
 
         double bestvar = results.lastKey();// Double.MIN_VALUE;
         java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-        double[] v = new double[closeER.getNoSeries()];
+        double[] v = new double[closeERlog.getNoSeries()];
         for (Future f : flist) {
             Pair p = (Pair) f.get();
             /*if ((Double) p.second > bestvar) {
