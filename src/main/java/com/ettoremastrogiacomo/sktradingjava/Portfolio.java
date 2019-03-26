@@ -1,7 +1,5 @@
 package com.ettoremastrogiacomo.sktradingjava;
 
-import com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest;
-import com.ettoremastrogiacomo.sktradingjava.backtesting.MT_Optimizer;
 import com.ettoremastrogiacomo.sktradingjava.backtesting.Statistics;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.system.BUYANDHOLD;
@@ -18,11 +16,8 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,12 +25,8 @@ import java.util.concurrent.TimeUnit;
 //import javafx.util.Pair;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.Pair;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -663,6 +654,56 @@ public class Portfolio {
 
     }
 
+    
+    
+    
+    public void walkForwardTest3(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec, Optional<Portfolio.optMethod> optmet) throws Exception {
+        int testWin = test_window.orElse(60);//default 60 samples for test window
+        int trainWin = train_window.orElse(250);//default 250 samples for train window
+        int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
+        Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
+        //Fints exret = Fints.ER(this.close, 1, false);
+        //double[][] exretmat = exret.getMatrixCopy();
+        int step = 0;
+        //int stockPoolSize = exret.getNoSeries();
+
+        double lastequity = 1;
+        double lastequitybh = 1;
+        LOG.debug("trainWin " + trainWin);
+        LOG.debug("testWin " + testWin);
+        LOG.debug("opt method " + optype);
+        //LOG.debug("pool " + exret);
+        Fints alleq=new Fints();
+        while (true) {
+
+            int offset = step * testWin;
+            LOG.debug("offset " + offset);
+            
+            if ((offset + trainWin + testWin) >= closeER.getLength()) {
+                break;
+            }
+            LOG.debug("date range  " + closeER.getDate(offset)+"\t"+closeER.getDate(offset + trainWin + testWin));
+            Entry<Double,Set<Integer>> winner=this.opttrain(sizeOptimalSet, closeER.getDate(offset), closeER.getDate(offset + trainWin-1), optype, epochs);
+            LOG.debug("overall best : " + winner.getKey() + winner.getValue());
+            Fints eq=this.opttest(winner.getValue(), closeER.getDate(offset + trainWin), closeER.getDate(offset + trainWin+testWin-1), Optional.of(lastequity), Optional.of(lastequitybh));
+            if (alleq.isEmpty()){
+                alleq=eq;
+            } else {
+                alleq=Fints.append(alleq, eq);
+            }
+            lastequity=alleq.getLastRow()[0];
+            lastequitybh=alleq.getLastRow()[1];
+            LOG.debug("equity optimized " + lastequity);
+            LOG.debug("equity bh " + lastequitybh);
+            step++;
+        }
+        alleq=alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1))) ;
+        LOG.debug("equity mdd " + alleq.getMaxDD(0));
+        LOG.debug("equity bh mdd " + alleq.getMaxDD(1));
+        alleq.plot("equity", "val");
+        
+    }
+    
     /*   public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
         LOG.debug("Start walkforward test");
         int testWin = test_window.orElse(60);//default 60 samples for test window

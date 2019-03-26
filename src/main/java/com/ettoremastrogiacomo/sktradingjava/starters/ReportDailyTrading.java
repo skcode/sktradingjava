@@ -12,7 +12,6 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.Misc;
-import com.ettoremastrogiacomo.utils.UDate;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
 
-        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(2000), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(100000), Optional.empty());
+        List<String> list=Database.getFilteredPortfolio(Optional.empty(), Optional.of(1000), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(1000000), Optional.empty());
         java.util.HashMap<String,Fints> close= new HashMap<>();
         java.util.HashMap<String,Fints> sharpe= new HashMap<>();
         java.util.HashMap<String,Fints> dsharpe= new HashMap<>();
@@ -68,7 +67,7 @@ public class ReportDailyTrading {
         }
         logger.info("\nBESTS\n"+bests);
         Portfolio ptf= new Portfolio(allStock, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        ptf.walkForwardTest2(Optional.of(250), Optional.of(60), Optional.of(1000000L), Optional.of(15),Optional.of(Portfolio.optMethod.MAXSHARPE));
+        ptf.walkForwardTest3(Optional.of(80), Optional.of(20), Optional.of(1000000L), Optional.of(10),Optional.of(Portfolio.optMethod.MAXSHARPE));
         //ptf.optimizeMinVar(Optional.of(120), Optional.empty(), Optional.of(2000000L), Optional.of(20));
       //  ptf.optimizeMinVarQP(Optional.of(120), Optional.empty(), Optional.empty());
         //ptf.optimizeSharpeBH(Optional.of(120), Optional.empty(), Optional.of(1000000L), Optional.of(20));
