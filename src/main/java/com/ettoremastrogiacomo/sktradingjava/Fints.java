@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -975,6 +976,7 @@ public final class Fints {
      */
     public Fints getLinReg(int k) throws Exception {
         //regression slope 
+        /*
         double[][] equityval=this.matrix;
         double meanx=0,meany=0,varx=0,vary=0,covxy=0;
         for (int i=0;i<equityval.length;i++){meany+=equityval[i][k];meanx+=i;}
@@ -986,6 +988,13 @@ public final class Fints {
         double reg_b=covxy/varx;
         double reg_a=meany-reg_b*meanx;
         double[][] newm=new double[equityval.length][1];
+        for (int i=0;i<newm.length;i++) newm[i][0]=reg_a+reg_b*i;
+        return new Fints(this.dates, Arrays.asList("LINREG("+this.names.get(k)+")"), this.freq, newm);            
+        */
+        double[]v=DoubleDoubleArray.column(matrix, k);
+        HashMap<String,Double> map=DoubleArray.LinearRegression(v);
+        double[][] newm=new double[v.length][1];
+        double reg_a=map.get("intercept"),reg_b=map.get("slope");
         for (int i=0;i<newm.length;i++) newm[i][0]=reg_a+reg_b*i;
         return new Fints(this.dates, Arrays.asList("LINREG("+this.names.get(k)+")"), this.freq, newm);            
     }

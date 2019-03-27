@@ -1,5 +1,6 @@
 package com.ettoremastrogiacomo.utils;
 
+import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 public class DoubleArray {
@@ -62,6 +63,34 @@ public class DoubleArray {
         }//    
         return mddp;    
     }    
+    /**
+     * 
+     * @param equityval, vector (time series usually)
+     * @return map with (slope, intercept,stderr)
+     * @throws Exception 
+     */
+        static public java.util.HashMap<String,Double> LinearRegression(double[] equityval) throws Exception {
+        //regression slope 
+        java.util.HashMap<String,Double> map=new HashMap<>();
+        double meanx=0,meany=0,varx=0,vary=0,covxy=0;
+        for (int i=0;i<equityval.length;i++){meany+=equityval[i];meanx+=i;}
+        meany/=(double)equityval.length;// portfolio.dates.size();
+        meanx/=(double)equityval.length;
+        for (int i=0;i<equityval.length;i++)  {varx+=Math.pow(i-meanx,2);vary+=Math.pow(equityval[i]-meany,2);}
+        vary/=(double)(equityval.length-1);varx/=(double)(equityval.length-1);
+        for (int i=0;i<equityval.length;i++) covxy+=(i-meanx)*(equityval[i]-meany);covxy/=(double)(equityval.length-1);
+        double reg_b=covxy/varx;
+        double reg_a=meany-reg_b*meanx;
+        map.put("slope", reg_b);
+        map.put("intercept", reg_a);        
+        double stdeverr=0;
+        for (int i=0;i<equityval.length;i++) stdeverr+=Math.pow(equityval[i]- (reg_a+reg_b*i),2);        
+        stdeverr=Math.sqrt((1.0/(equityval.length-1))*stdeverr);
+        map.put("stderr", stdeverr);        
+        return map;
+    }
+    
+    
     
     
     static public double min(double[] v) {
