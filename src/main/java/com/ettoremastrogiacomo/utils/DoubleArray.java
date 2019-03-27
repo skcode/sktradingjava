@@ -39,6 +39,31 @@ public class DoubleArray {
         return ret;
     }
 
+    
+    
+    /**
+     * 
+     * @param v
+     * @return max drow down of a serie, not absolute, (<=0 value)
+     * @throws Exception 
+     */
+    static public double maxDrowDownPerc(double[] v) throws Exception {
+        //maxDD calculus
+        double mdd=0,mddp=0,maxmdd=v[0];
+        for (int i=1;i<v.length;i++) {
+            if (v[i]>=v[i-1]) {
+                if (v[i]>maxmdd) maxmdd=v[i];
+                continue;
+            }
+            double t1=v[i]-maxmdd;
+            double t1p=t1/maxmdd;
+            if (t1<mdd) mdd=t1;
+            if (t1p<mddp) mddp=t1p;
+        }//    
+        return mddp;    
+    }    
+    
+    
     static public double min(double[] v) {
         if (v.length < 1) {
             return Double.NaN;

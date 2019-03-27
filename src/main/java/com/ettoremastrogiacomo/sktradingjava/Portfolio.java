@@ -1,8 +1,6 @@
 package com.ettoremastrogiacomo.sktradingjava;
 
-import com.ettoremastrogiacomo.sktradingjava.backtesting.Statistics;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import com.ettoremastrogiacomo.sktradingjava.system.BUYANDHOLD;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
@@ -15,7 +13,6 @@ import com.joptimizer.optimizers.OptimizationRequest;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -24,9 +21,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 //import javafx.util.Pair;
 import org.apache.log4j.Logger;
-import com.ettoremastrogiacomo.utils.Pair;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -101,11 +95,8 @@ public class Portfolio {
                 allfints = allfints.isEmpty() ? f : allfints.merge(f);
             }
         }
-
         length = allfints.getLength();
         dates = Collections.unmodifiableList(allfints.getDate());
-
-        //if (this.freq.ordinal()>=Fints.frequency.DAILY.ordinal()) {
         for (int i = 0; i < this.nosecurities; i++) {
             if (i == 0) {
                 open = allfints.getSerieCopy(i * 6);
@@ -123,154 +114,198 @@ public class Portfolio {
                 oi = oi.merge(allfints.getSerieCopy(i * 6 + 5));
             }
         }
-
         closeERlog = Fints.ER(close, 100, true);
         closeER = Fints.ER(close, 1, false);
-        //cov=closeERlog.getCovariance();
-        //corr=closeERlog.getCorrelation();
-        //average=closeERlog.getMeans();
     }
-    public Fints  opttest(Set<Integer> set,UDate startdate,UDate enddate,Optional<Double> lastequity,Optional<Double> lastequitybh) throws Exception {
-        Fints subf=closeER.Sub(startdate, enddate);
-        double[][] m=subf.getMatrixCopy();        
-        LOG.debug("TEST \n"+subf.toString());
-        int setsize=set.size();
-        int poolsize=subf.getNoSeries();
-        int len=subf.getLength();
-        double[][] eqm=new double[len][2];
-        for (int i=0;i<len;i++){
-            double dm=0;
-            double dmbh=0;
-            for (int j:set){
-                dm+=m[i][j];
+
+    public Fints opttest(Set<Integer> set, UDate startdate, UDate enddate, Optional<Double> lastequity, Optional<Double> lastequitybh) throws Exception {
+        Fints subf = closeER.Sub(startdate, enddate);
+        double[][] m = subf.getMatrixCopy();
+        LOG.debug("\nTEST " + subf.toString());
+        int setsize = set.size();
+        int poolsize = subf.getNoSeries();
+        int len = subf.getLength();
+        double[][] eqm = new double[len][2];
+        for (int i = 0; i < len; i++) {
+            double dm = 0;
+            double dmbh = 0;
+            for (int j : set) { //IF SET is empty, then flat!!! dm=0
+                dm += m[i][j];
             }
-            for (int j=0;j<poolsize;j++){
-                dmbh+=m[i][j];
+            for (int j = 0; j < poolsize; j++) {
+                dmbh += m[i][j];
             }
-            dm=dm/setsize;
-            dmbh=dmbh/poolsize;
-            if (i==0) {
-                eqm[i][0]=lastequity.orElse(1.0)*(1+dm);
-                eqm[i][1]=lastequitybh.orElse(1.0)*(1+dmbh);
+            dm = dm / setsize;
+            dmbh = dmbh / poolsize;
+            if (i == 0) {
+                eqm[i][0] = lastequity.orElse(1.0) * (1 + dm);
+                eqm[i][1] = lastequitybh.orElse(1.0) * (1 + dmbh);
+            } else {
+                eqm[i][0] = eqm[i - 1][0] * (1 + dm);
+                eqm[i][1] = eqm[i - 1][1] * (1 + dmbh);
             }
-            else{
-                eqm[i][0]=eqm[i-1][0]*(1+dm);
-                eqm[i][1]=eqm[i-1][1]*(1+dmbh);
-            }
-        }        
-        return new Fints(subf.getDate(), Arrays.asList("equity","equityBH"), subf.getFrequency(), eqm);
+        }
+        return new Fints(subf.getDate(), Arrays.asList("equity", "equityBH"), subf.getFrequency(), eqm);
     }
-    
-    public Entry  opttrain(int setsize,UDate startdate,UDate enddate,optMethod met,Optional<Long> epoch) throws Exception {
-        Fints subf=closeER.Sub(startdate, enddate);
-        LOG.debug("TRAIN \n"+subf.toString());
-        int poolsize=subf.getNoSeries();
-        if (setsize>poolsize) throw new Exception("optimal set greather than available set "+setsize+">"+poolsize);
-        double[][] m=subf.getMatrixCopy();                
-        long DEFEPOCHS=1000000L;        
+
+    public Entry opttrain(int setsize, UDate startdate, UDate enddate, optMethod met, Optional<Long> epoch) throws Exception {
+        Fints subf = closeER.Sub(startdate, enddate);
+        LOG.debug("\nTRAIN " + subf.toString());
+        int poolsize = subf.getNoSeries();
+        int samplelen = subf.getLength();
+        if (setsize > poolsize) {
+            throw new Exception("optimal set greather than available set " + setsize + ">" + poolsize);
+        }
+        double[][] m = subf.getMatrixCopy();
+        long DEFEPOCHS = 1000000L;
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        java.util.ArrayList<Future> futures=new java.util.ArrayList<>();
+        java.util.ArrayList<Future> futures = new java.util.ArrayList<>();
         switch (met) {
-            case MINVAR:{
-                double [][] c=DoubleDoubleArray.cov(m);
-                double w=1.0/setsize;
+            case MINVAR: {
+                double[][] c = DoubleDoubleArray.cov(m);
+                double w = 1.0 / setsize;
                 for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-                    futures.add(pool.submit(() -> {                                                
-                        double localbest=Double.NEGATIVE_INFINITY;
-                        Set<Integer> localbestset=new TreeSet<>();
-                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
-                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
+                    futures.add(pool.submit(() -> {
+                        double localbest = Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset = new TreeSet<>();
+                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                            Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             double var = 0;
                             for (Integer sa1 : set) {
                                 for (Integer sa2 : set) {
                                     var += w * w * c[sa1][sa2];
                                 }
-                            }                            
-                            double fitness=1.0/var;
-                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
-                            if (t==0) {
-                                localbest=fitness;
-                                localbestset=set;
-                            }else {
-                                if (fitness>localbest){
-                                localbest=fitness;
-                                localbestset=set;                                    
+                            }
+                            double fitness = 1.0 / var;
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                                fitness = Double.NEGATIVE_INFINITY;
+                            }
+                            if (t == 0) {
+                                localbest = fitness;
+                                localbestset = set;
+                            } else {
+                                if (fitness > localbest) {
+                                    localbest = fitness;
+                                    localbestset = set;
                                 }
                             }
-                        }                        
+                        }
                         return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
                     }));
-                }                                
+                }
             }
             break;
-            case MAXSHARPE:{
-                double [][] c=DoubleDoubleArray.cov(m);
-                double [] mv=DoubleDoubleArray.mean(m);
-                double w=1.0/setsize;
+            case MAXSHARPE: {
+                double[][] c = DoubleDoubleArray.cov(m);
+                double[] mv = DoubleDoubleArray.mean(m);
+                double w = 1.0 / setsize;
                 for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-                    futures.add(pool.submit(() -> {                                                
-                        double localbest=Double.NEGATIVE_INFINITY;
-                        Set<Integer> localbestset=new TreeSet<>();
-                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
-                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
+                    futures.add(pool.submit(() -> {
+                        double localbest = Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset = new TreeSet<>();
+                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                            Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             double var = 0;
-                            double mean=0;
+                            double mean = 0;
                             for (Integer sa1 : set) {
                                 for (Integer sa2 : set) {
                                     var += w * w * c[sa1][sa2];
                                 }
-                                mean+=mv[sa1];
-                            }                 
-                            mean=mean/setsize;
-                            double fitness=mean/Math.sqrt(var);
-                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
-                            if (t==0) {
-                                localbest=fitness;
-                                localbestset=set;
-                            }else {
-                                if (fitness>localbest){
-                                localbest=fitness;
-                                localbestset=set;                                    
+                                mean += mv[sa1];
+                            }
+                            mean = mean / setsize;
+                            double fitness = mean / Math.sqrt(var);
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                                fitness = Double.NEGATIVE_INFINITY;
+                            }
+                            if (t == 0) {
+                                localbest = fitness;
+                                localbestset = set;
+                            } else {
+                                if (fitness > localbest) {
+                                    localbest = fitness;
+                                    localbestset = set;
                                 }
                             }
-                        }                        
+                        }
                         return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
                     }));
-                }                                
+                }
             }
             break;
-            case MAXPROFIT:{
+            case MAXPROFIT: {
                 //double [][] c=DoubleDoubleArray.cov(m);
-                double [] mv=DoubleDoubleArray.mean(m);
-                double w=1.0/setsize;
+                double[] mv = DoubleDoubleArray.mean(m);
+                double w = 1.0 / setsize;
                 for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-                    futures.add(pool.submit(() -> {                                                
-                        double localbest=Double.NEGATIVE_INFINITY;
-                        Set<Integer> localbestset=new TreeSet<>();
-                        for (long t=0;t<epoch.orElse(DEFEPOCHS);t++){
-                            Set<Integer> set=Misc.getDistinctRandom(setsize,poolsize);
-                            double mean=0;
+                    futures.add(pool.submit(() -> {
+                        double localbest = Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset = new TreeSet<>();
+                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                            Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
+                            double mean = 0;
                             for (Integer sa1 : set) {
-                                mean+=mv[sa1];
-                            }                 
-                            mean=mean/setsize;
-                            double fitness=mean;
-                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) fitness=Double.NEGATIVE_INFINITY;
-                            if (t==0) {
-                                localbest=fitness;
-                                localbestset=set;
-                            }else {
-                                if (fitness>localbest){
-                                localbest=fitness;
-                                localbestset=set;                                    
+                                mean += mv[sa1];
+                            }
+                            mean = mean / setsize;
+                            double fitness = mean;
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                                fitness = Double.NEGATIVE_INFINITY;
+                            }
+                            if (t == 0) {
+                                localbest = fitness;
+                                localbestset = set;
+                            } else {
+                                if (fitness > localbest) {
+                                    localbest = fitness;
+                                    localbestset = set;
                                 }
                             }
-                        }                        
+                        }
                         return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
                     }));
-                }                                
-            }                
-            break;                
+                }
+            }
+            break;
+            case MINDD: {
+                double[] eqt = new double[samplelen];
+                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                    futures.add(pool.submit(() -> {
+                        double localbest = Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset = new TreeSet<>();
+                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                            Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
+
+                            for (int i = 0; i < samplelen; i++) {
+                                double mean = 0;
+                                for (Integer sa1 : set) {
+                                    mean += m[i][sa1];
+                                }
+                                mean = mean / setsize;
+                                eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
+                            }
+                            //                            
+                            double fitness = DoubleArray.maxDrowDownPerc(eqt);
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                                fitness = Double.NEGATIVE_INFINITY;
+                            }
+                            if (t == 0) {
+                                localbest = fitness;
+                                localbestset = set;
+                            } else {
+                                if (fitness > localbest) {
+                                    localbest = fitness;
+                                    localbestset = set;
+                                }
+                            }
+                        }
+                        return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+                    }));
+                }
+            }
+
+            break;
+
             default:
                 throw new Exception("not yet implemented");
         }
@@ -279,18 +314,18 @@ public class Portfolio {
             pool.awaitTermination(1, TimeUnit.HOURS);//wait 1 hour
         } catch (InterruptedException e) {
             LOG.error(e);
-        }   
-        
-        Entry<Double,Set> bestentry=new AbstractMap.SimpleEntry<>(Double.NEGATIVE_INFINITY,Misc.getDistinctRandom(setsize, poolsize));
-        for (Future f : futures) {            
-            Entry<Double,Set> entry=(Entry)f.get();
-            if (entry.getKey()>bestentry.getKey()) {
-                bestentry=entry;
+        }
+
+        Entry<Double, Set> bestentry = new AbstractMap.SimpleEntry<>(Double.NEGATIVE_INFINITY, Misc.getDistinctRandom(setsize, poolsize));
+        for (Future f : futures) {
+            Entry<Double, Set> entry = (Entry) f.get();
+            if (entry.getKey() > bestentry.getKey()) {
+                bestentry = entry;
             }
         }
         return bestentry;
     }
-    
+
     /**
      *
      * @param window optimization window length, default all porfolio length
@@ -390,274 +425,7 @@ public class Portfolio {
         return sol;
     }
 
-    public void walkForwardTest2(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec, Optional<Portfolio.optMethod> optmet) throws Exception {
-        int testWin = test_window.orElse(60);//default 60 samples for test window
-        int trainWin = train_window.orElse(250);//default 250 samples for train window
-        int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
-        Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
-        Fints exret = Fints.ER(this.close, 1, false);
-        double[][] exretmat = exret.getMatrixCopy();
-        int step = 0;
-        int stockPoolSize = exret.getNoSeries();
-
-        double eqopt = 1;
-        double eqbh = 1;
-        LOG.debug("trainWin " + trainWin);
-        LOG.debug("testWin " + testWin);
-        LOG.debug("opt method " + optype);
-        LOG.debug("pool " + exret);
-
-        while (true) {
-
-            int offset = step * testWin;
-            LOG.debug("offset " + offset);
-            
-            if ((offset + trainWin + testWin) >= exretmat.length) {
-                break;
-            }
-            LOG.debug("date range  " + exret.getDate(offset)+"\t"+exret.getDate(offset + trainWin + testWin));
-            final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetSharpe = new java.util.TreeMap<>();
-
-            ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-            for (int p = 0; p < Runtime.getRuntime().availableProcessors(); p++) {
-                pool.execute(() -> {
-
-                    for (int k = 0; k < epochs.orElse(500000L); k++) {
-                        try {
-                        java.util.Set<Integer> tempSet = Misc.getDistinctRandom(sizeOptimalSet, stockPoolSize);
-                        double[] vtrain = new double[trainWin];
-                        for (int i = 0; i < trainWin; i++) {
-                            vtrain[i] = 0;
-                            for (int j : tempSet) {
-                                vtrain[i] = vtrain[i] + exretmat[offset + i][j];
-                            }
-                            vtrain[i] = vtrain[i] / (double) sizeOptimalSet;
-                        }
-                        double meantrain = DoubleArray.mean(vtrain);
-                        double stdtrain = DoubleArray.std(vtrain);
-                        double sharpetrain = meantrain / stdtrain;
-                        double res;
-                        switch (optype) {
-                            case MAXPROFIT:
-                                res = meantrain;
-                                break;
-                            case MAXSHARPE:
-                                res = sharpetrain;
-                                break;
-                            case MINVAR:
-                                res = 1.0 / stdtrain;
-                                break;
-                            case MINDD:
-                                throw new Exception("mindd not implemented " + optype);
-                            default:
-                                throw new Exception("unknow optmethod " + optype);
-                        }
-                        if (Double.isFinite(res)) {
-                            
-                            if (winnerSetSharpe.isEmpty()) {
-                                synchronized (this) {
-                                winnerSetSharpe.put(res, tempSet);
-                                }
-                                //LOG.debug("new best " + res + " at " + k);
-                            } else {
-                                if (res > winnerSetSharpe.lastKey()) {
-                                    synchronized (this) {
-                                        winnerSetSharpe.put(res, tempSet);
-                                    }
-                                  //  LOG.debug("new best " + res + " at " + k);
-                                }
-                            }
-                        }
-                        } catch (Exception e) {LOG.warn(Misc.stackTrace2String(e));}
-                    }
-                });
-            }
-            pool.shutdown();
-            pool.awaitTermination(1, TimeUnit.HOURS);            
-            LOG.debug("overall best : " + winnerSetSharpe.lastEntry().getKey() + winnerSetSharpe.lastEntry().getValue());
-            double[] vtest = new double[testWin];
-            double[] vtestbh = new double[testWin];
-            for (int i = 0; i < testWin; i++) {
-                vtest[i] = 0;
-                vtestbh[i] = 0;
-                for (int j : winnerSetSharpe.lastEntry().getValue()) {
-                    vtest[i] = vtest[i] + exretmat[offset + trainWin + i][j];
-                }
-                for (int j = 0; j < stockPoolSize; j++) {
-                    vtestbh[i] = vtestbh[i] + exretmat[offset + trainWin + i][j];
-                }
-                vtest[i] = vtest[i] / (double) sizeOptimalSet;
-                vtestbh[i] = vtestbh[i] / (double) stockPoolSize;
-            }
-            double meantest = DoubleArray.mean(vtest);
-            double stdtest = DoubleArray.std(vtest);
-            double sharpetest = meantest / stdtest;
-            double meantestbh = DoubleArray.mean(vtestbh);
-            double stdtestbh = DoubleArray.std(vtestbh);
-            double sharpetestbh = meantest / stdtestbh;
-            for (int i = 0; i < testWin; i++) {
-                eqbh = eqbh * (1 + vtestbh[i]);
-                eqopt = eqopt * (1 + vtest[i]);
-            }
-            LOG.debug("equity optimized " + eqopt);
-            LOG.debug("equity bh " + eqbh);
-            step++;
-        }
-    }
-
     public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec, Optional<Portfolio.optMethod> optmet) throws Exception {
-        int testWin = test_window.orElse(60);//default 60 samples for test window
-        int trainWin = train_window.orElse(250);//default 250 samples for train window
-        int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
-        Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
-        UDate startDate = closeERlog.getFirstDate();
-
-        LOG.debug("OPTIMIZE FOR " + optype);
-        LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
-        LOG.debug("start training from " + startDate);
-        LOG.debug("optimal set size " + sizeOptimalSet);
-        LOG.debug("all samples Fints " + closeERlog.toString());
-        LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
-        if ((closeERlog.getLength() - testWin - trainWin) <= 0) {
-            throw new Exception("size too short, try to change parameters: " + closeERlog.getLength() + "<=" + (testWin + trainWin));
-        }
-        if (sizeOptimalSet > closeERlog.getNoSeries()) {
-            throw new Exception("optimal set must be less than pool size: " + sizeOptimalSet + ">" + closeERlog.getNoSeries());
-        }
-
-        int step = 0;
-        Fints allequitySharpe = new Fints();
-        while (true) {
-            int ubound = testWin * step + trainWin + testWin - 1;
-            if (closeERlog.getLength() < (ubound + 1)) {
-                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeERlog.getLength() - 1));
-                break;
-            }
-            LOG.info("Step " + (step + 1));
-            final Fints subTrain = closeERlog.SubRows(testWin * step, testWin * step + trainWin - 1);
-            final Fints subTest = closeERlog.SubRows(testWin * step + trainWin, testWin * step + trainWin + testWin - 1);
-            LOG.debug("trainset" + subTrain.toString());
-            LOG.debug("testset" + subTest.toString());
-            final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetSharpe = new java.util.TreeMap<>();
-            final double[][] m_subTrain = subTrain.getMatrixCopy();
-            final double[][] m_subTest = subTest.getMatrixCopy();
-            ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-            for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-                pool.execute(() -> {
-                    int stockPoolSize = subTrain.getNoSeries();
-                    java.util.Set<Integer> bestsetsharpe = new java.util.TreeSet<>();
-                    double bestsharpe = Double.NEGATIVE_INFINITY;// Double.MIN_VALUE;
-                    for (long l = 0; l < epochs.orElse(1000000L); l++) {
-                        try {
-                            java.util.Set<Integer> tempSet = Misc.getDistinctRandom(sizeOptimalSet, stockPoolSize);//getRandom(P, len);                        
-                            double[] vec = new double[m_subTrain.length];
-                            for (int i = 0; i < vec.length; i++) {
-                                vec[i] = 0;
-                                for (int j : tempSet) {
-                                    vec[i] += m_subTrain[i][j];
-                                }
-                                vec[i] = vec[i] / sizeOptimalSet;
-                            }
-                            double sharpe = 0.0;
-                            switch (optype) {
-                                case MAXPROFIT:
-                                    sharpe = DoubleArray.mean(vec);
-                                    break;
-                                case MAXSHARPE:
-                                    sharpe = DoubleArray.mean(vec) / DoubleArray.std(vec);
-                                    break;
-                                case MINVAR:
-                                    sharpe = 1.0 / DoubleArray.std(vec);
-                                    break;
-                                case MINDD:
-                                    double[][] tmat = new double[vec.length][1];
-                                    for (int z = 0; z < tmat.length; z++) {
-                                        tmat[z][0] = z == 0 ? (Math.pow(10.0, vec[z] / 100.0)) : (Math.pow(10.0, vec[z] / 100.0)) * tmat[z - 1][0];
-                                    }
-                                    Fints tt2 = new Fints(subTrain.getDate(), Arrays.asList("temp"), subTrain.getFrequency(), tmat);
-                                    sharpe = tt2.getMaxDD(0);
-                                    break;
-                                default:
-                                    throw new Exception("unknow optmethod " + optype);
-                            }
-
-                            // double sharpe=DoubleArray.mean(vec);//DA CAMBIARE
-                            if (Double.isFinite(sharpe)) {
-                                if (sharpe > bestsharpe) {
-                                    bestsharpe = sharpe;
-                                    bestsetsharpe = tempSet;
-                                }
-                            }
-                        } catch (Exception e) {
-                            LOG.warn(Misc.stackTrace2String(e));
-                        }
-                    }
-                    if (Double.isFinite(bestsharpe)) {
-                        synchronized (this) {
-                            winnerSetSharpe.put(bestsharpe, bestsetsharpe);
-                            LOG.debug("new best " + bestsharpe + "\t" + bestsetsharpe);
-                        }
-                    }
-                });
-            }
-            pool.shutdown();
-            pool.awaitTermination(1, TimeUnit.HOURS);
-            double lastEquityVal = allequitySharpe.isEmpty() ? 1.0 : allequitySharpe.getLastRow()[0];
-            double lastEquityBH = allequitySharpe.isEmpty() ? 1.0 : allequitySharpe.getLastRow()[1];
-            double[][] eqmat = new double[subTest.getLength()][2];
-            if (winnerSetSharpe.isEmpty()) {//no winner found (e.g. sharpe > 0 )
-                LOG.debug("no winner found");
-                for (int i = 0; i < eqmat.length; i++) {
-                    eqmat[i][0] = lastEquityVal;
-                }
-            } else {
-                Fints temp_train = subTrain.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue()));
-                Fints temp_test = subTest.SubSeries(new ArrayList<>(winnerSetSharpe.lastEntry().getValue()));
-                LOG.info("trainopt" + temp_train);
-                LOG.info("testopt" + temp_test);
-                LOG.info("best value : " + winnerSetSharpe.lastEntry().getKey());
-                LOG.info("train variance " + temp_train.getEqualWeightedCovariance());
-                LOG.info("train mean " + DoubleArray.mean(temp_train.getMeans()));
-                LOG.info("test variance " + temp_test.getEqualWeightedCovariance());
-                LOG.info("test mean " + DoubleArray.mean(temp_test.getMeans()));
-
-                for (int i = 0; i < eqmat.length; i++) {
-                    double t1 = 0;
-                    for (int j : winnerSetSharpe.lastEntry().getValue()) {
-                        t1 += (Math.pow(10.0, m_subTest[i][j] / 100.0) - 1.0);
-                    }
-                    t1 = t1 / sizeOptimalSet;
-                    eqmat[i][0] = i == 0 ? lastEquityVal * (1 + t1) : eqmat[i - 1][0] * (1 + t1);
-                }
-            }
-            //calculate B&H
-            for (int i = 0; i < eqmat.length; i++) {
-                double t1 = 0;
-                for (int j = 0; j < m_subTest[i].length; j++) {
-                    t1 += (Math.pow(10.0, m_subTest[i][j] / 100.0) - 1.0);
-                }
-                t1 = t1 / m_subTest[i].length;
-                eqmat[i][1] = i == 0 ? lastEquityBH * (1 + t1) : eqmat[i - 1][1] * (1 + t1);
-            }
-            LOG.info("final equity optimized " + eqmat[eqmat.length - 1][0]);
-            LOG.info("final equity BH " + eqmat[eqmat.length - 1][1]);
-            Fints equity = new Fints(subTest.getDate(), Arrays.asList("optimized", "b&h"), Fints.frequency.DAILY, eqmat);
-            LOG.info("equity maxdd " + equity.getMaxDD(0));
-            LOG.info("equity maxdd bh " + equity.getMaxDD(1));
-            allequitySharpe = allequitySharpe.isEmpty() ? equity : Fints.append(allequitySharpe, equity);
-            winnerSetSharpe.clear();
-            step++;
-        }
-        allequitySharpe.merge(allequitySharpe.getLinReg(0)).merge(allequitySharpe.getLinReg(1)).plot("equity", "exret");
-        LOG.info("allequity maxdd " + allequitySharpe.getMaxDD(0));
-        LOG.info("allequity maxdd bh " + allequitySharpe.getMaxDD(1));
-
-    }
-
-    
-    
-    
-    public void walkForwardTest3(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec, Optional<Portfolio.optMethod> optmet) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
@@ -672,417 +440,39 @@ public class Portfolio {
         LOG.debug("trainWin " + trainWin);
         LOG.debug("testWin " + testWin);
         LOG.debug("opt method " + optype);
+        LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
+        LOG.debug("epochs " + epochs);
+        LOG.debug("START " + closeER.getFirstDate()+"\t"+closeER.getLastDate());
         //LOG.debug("pool " + exret);
-        Fints alleq=new Fints();
+        Fints alleq = new Fints();
         while (true) {
 
             int offset = step * testWin;
-            LOG.debug("offset " + offset);
-            
+            //LOG.debug("offset " + offset);
+
             if ((offset + trainWin + testWin) >= closeER.getLength()) {
                 break;
             }
-            LOG.debug("date range  " + closeER.getDate(offset)+"\t"+closeER.getDate(offset + trainWin + testWin));
-            Entry<Double,Set<Integer>> winner=this.opttrain(sizeOptimalSet, closeER.getDate(offset), closeER.getDate(offset + trainWin-1), optype, epochs);
+            //LOG.debug("date range  " + closeER.getDate(offset) + "\t" + closeER.getDate(offset + trainWin + testWin));
+            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, closeER.getDate(offset), closeER.getDate(offset + trainWin - 1), optype, epochs);
             LOG.debug("overall best : " + winner.getKey() + winner.getValue());
-            Fints eq=this.opttest(winner.getValue(), closeER.getDate(offset + trainWin), closeER.getDate(offset + trainWin+testWin-1), Optional.of(lastequity), Optional.of(lastequitybh));
-            if (alleq.isEmpty()){
-                alleq=eq;
+            Fints eq = this.opttest(winner.getValue(), closeER.getDate(offset + trainWin), closeER.getDate(offset + trainWin + testWin - 1), Optional.of(lastequity), Optional.of(lastequitybh));
+            if (alleq.isEmpty()) {
+                alleq = eq;
             } else {
-                alleq=Fints.append(alleq, eq);
+                alleq = Fints.append(alleq, eq);
             }
-            lastequity=alleq.getLastRow()[0];
-            lastequitybh=alleq.getLastRow()[1];
+            lastequity = alleq.getLastRow()[0];
+            lastequitybh = alleq.getLastRow()[1];
             LOG.debug("equity optimized " + lastequity);
             LOG.debug("equity bh " + lastequitybh);
             step++;
         }
-        alleq=alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1))) ;
+        alleq = alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1)));
         LOG.debug("equity mdd " + alleq.getMaxDD(0));
         LOG.debug("equity bh mdd " + alleq.getMaxDD(1));
         alleq.plot("equity", "val");
-        
-    }
-    
-    /*   public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
-        LOG.debug("Start walkforward test");
-        int testWin = test_window.orElse(60);//default 60 samples for test window
-        int trainWin = train_window.orElse(250);//default 250 samples for train window
-        int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time
-        LOG.debug("Train window size = " + trainWin + "\tTest window size = " + testWin);
-        Fints smaSharpe = Fints.SMA(Fints.Sharpe(closeERlog, 20), 200);//begins 
-        UDate startDate = smaSharpe.getDate(1);
-        LOG.debug("start training from " + startDate);
-        int offset_closeER = closeERlog.getIndex(startDate);
-        if ((closeERlog.getLength() - testWin - trainWin - offset_closeER) <= 0) {
-            throw new Exception("size too short, try to change parameters");
-        }
-        //boolean stopCond = false;
-        int step = 0;
-        Fints allequityMinVar = new Fints();
-        Fints allequitySharpe = new Fints();
-        while (true) {
-            int ubound = offset_closeER + testWin * step + trainWin + testWin - 1;
-            if (closeERlog.getLength() < ubound) {
-                LOG.debug("terminato ubound=" + ubound + "\tlast=" + (closeERlog.getLength() - 1));
-                break;
-            }
-            LOG.info("all " + closeERlog.getLength() + "\t" + closeERlog.getNoSeries());
-            Fints subTrain = closeERlog.SubRows(offset_closeER + testWin * step, offset_closeER + testWin * step + trainWin - 1);
-            Fints subTest = closeERlog.SubRows(offset_closeER + testWin * step + trainWin, offset_closeER + testWin * step + trainWin + testWin - 1);
-            Fints trainMinVar = new Fints(), testMinVar = new Fints();
-            double[] sharpeVal = smaSharpe.getRow(smaSharpe.getIndex(subTrain.getFirstDate()) - 1);
-            ArrayList<String> trainSetMinVar = new java.util.ArrayList<>();
-            ArrayList<String> trainSetSharpe = new java.util.ArrayList<>();
-            for (int i = 0; i < sharpeVal.length; i++) {
-                if (sharpeVal[i] > 0) {//chek sharpe>0
-                    trainSetMinVar.add(this.securities.get(i).getHashcode());
-                    trainMinVar = trainMinVar.isEmpty() ? subTrain.getSerieCopy(i) : trainMinVar.merge(subTrain.getSerieCopy(i));
-                    testMinVar = testMinVar.isEmpty() ? subTest.getSerieCopy(i) : testMinVar.merge(subTest.getSerieCopy(i));
-                }
-                trainSetSharpe.add(this.securities.get(i).getHashcode());
-            }
-            
-            if (sizeOptimalSet > trainMinVar.getNoSeries()) {
-                throw new Exception("too few series " + trainMinVar.getNoSeries()+" , needed almost "+sizeOptimalSet);
-            }
-            
-            //final double[][] covTest = subTestOK.getCovariance();
-            ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-            final Fints trainMinVarFinal = trainMinVar;
-            final Fints testMinVarFinal = testMinVar;
-            final Fints trainSharpeFinal=subTrain;
-            final Fints testSharpeFinal=subTest;
-            LOG.info("trainMinVar:"+trainMinVarFinal.toString());
-            LOG.info("testMinVar:"+testMinVarFinal.toString());
-            LOG.info("trainSharpe:"+trainSharpeFinal.toString());
-            LOG.info("testSharpe:"+testSharpeFinal.toString());
-            final double[][] covTrain = trainMinVar.getCovariance();
-            
-            LOG.info("train from " + trainMinVarFinal.getFirstDate() + " to " + trainMinVarFinal.getLastDate() + " samples " + trainMinVarFinal.getLength());
-            LOG.info("test from " + testMinVarFinal.getFirstDate() + " to " + testMinVarFinal.getLastDate() + " samples " + testMinVarFinal.getLength());
-            //final com.ettoremastrogiacomo.utils.Pair<Double,java.util.Set<Integer>> winnerPair;//=new com.ettoremastrogiacomo.utils.Pair<Double,java.util.Set<Integer>>();
-            final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetMinVar = new java.util.TreeMap<>();
-            final java.util.TreeMap<Double, java.util.Set<Integer>> winnerSetSharpe = new java.util.TreeMap<>();
-            for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-                pool.execute(() -> {
-                    int sizeTrainMinVar = trainMinVarFinal.getNoSeries();
-                    int sizeTrainSharpe = trainSharpeFinal.getNoSeries();
-                    java.util.Set<Integer> bestsetMinVar = new java.util.TreeSet<>();
-                    java.util.Set<Integer> bestsetsharpe = new java.util.TreeSet<>();
-                    double bestMinVar = Double.MAX_VALUE;
-                    double bestsharpe = Double.MIN_VALUE;
-                    for (long l = 0; l < epochs.orElse(1000000L); l++) {
-                        try {
-                            java.util.Set<Integer> setMinVar = Misc.getDistinctRandom(sizeOptimalSet, sizeTrainMinVar);//getRandom(P, len);                        
-                            double[] v = new double[sizeTrainMinVar];
-                            setMinVar.forEach((i) -> {
-                                v[i] = 1.0 / sizeOptimalSet;
-                            });
-                            double var = 0;
-                            for (int i = 0; i < sizeTrainMinVar; i++) {
-                                for (int j = 0; j < sizeTrainMinVar; j++) {
-                                    var += v[i] * v[j] * covTrain[i][j];
-                                }
-                            }
-                            if (var < bestMinVar) {
-                                LOG.debug("best var at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
-                                bestsetMinVar = setMinVar;
-                                bestMinVar = var;
-                            }
-                            java.util.Set<Integer> setsharpe = Misc.getDistinctRandom(sizeOptimalSet, sizeTrainSharpe);//getRandom(P, len);
-                            double[] meanv = new double[trainWin];
-                            for (int i = 0; i < trainSharpeFinal.getLength(); i++) {
-                                double t1 = 0;
-                                for (int j : setsharpe) {
-                                    t1 += trainSharpeFinal.get(i, j);
-                                }
-                                meanv[i] = t1 / sizeTrainSharpe;
-                            }
-                            double shrp = DoubleArray.mean(meanv) / DoubleArray.std(meanv);
-                            if (Double.isFinite(shrp))
-                            if (shrp > bestsharpe) {
-                                LOG.debug("best sharpe at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + shrp);
-                                bestsetsharpe = setsharpe;
-                                bestsharpe = shrp;
-                            }
-                            //results.put(set, var);
-                        } catch (Exception e) {
-                            LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
-                        }
-                    }
-                    if (Double.isFinite(bestMinVar)) {
-                        synchronized (Portfolio.this) {
-                            winnerSetMinVar.put(bestMinVar, bestsetMinVar);
-                        }
-                    }
-                    if (Double.isFinite(bestsharpe)) {
-                        synchronized (Portfolio.this) {
-                            winnerSetSharpe.put(bestsharpe, bestsetsharpe);
-                        }
-                    }
 
-                }
-                );
-            }
-            pool.shutdown();
-            pool.awaitTermination(1, TimeUnit.HOURS);
-            LOG.info("bestvar " + winnerSetMinVar.firstEntry().getKey());
-            LOG.info("size train minvar "+trainMinVarFinal.getNoSeries());
-            LOG.debug("bestset");
-            Fints nf = new Fints();
-            winnerSetMinVar.firstEntry().getValue().forEach((x) -> {
-                LOG.debug(names.get(trainSetMinVar.get(x)));
-            });
-            double[] w = new double[winnerSetMinVar.firstEntry().getValue().size()];
-            for (int i = 0; i < w.length; i++) {
-                w[i] = 1.0 / sizeOptimalSet;
-            }
-            for (int i : winnerSetMinVar.firstEntry().getValue()) {
-                nf = nf.isEmpty() ? testMinVarFinal.getSerieCopy(i) : nf.merge(testMinVarFinal.getSerieCopy(i));
-            }
-            LOG.info("varianza test: " + nf.getWeightedCovariance(w));
-            double[][] equitymat = new double[nf.getLength()][2];
-            double[][] testptfmat = nf.getMatrixCopy();
-            double[][] testptfallmat = testMinVarFinal.getMatrixCopy();
-            double oldlasteq=allequityMinVar.isEmpty()?1:allequityMinVar.getLastRow()[0];
-            double oldlasteqbh=allequityMinVar.isEmpty()?1:allequityMinVar.getLastRow()[1];
-            for (int i = 0; i < testptfmat.length; i++) {
-                double t1 = 0, t2 = 0;
-                for (int j = 0; j < testptfmat[i].length; j++) {
-                    t1 += (Math.pow(10.0, testptfmat[i][j] / 100.0) - 1.0);
-                }
-                for (int j = 0; j < testptfallmat[i].length; j++) {
-                    t2 += (Math.pow(10.0, testptfallmat[i][j] / 100.0) - 1.0);
-                }
-                t1 = t1 / testptfmat[i].length;
-                t2 = t2 / testptfallmat[i].length;
-                equitymat[i][0] = i == 0 ? oldlasteq * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
-                equitymat[i][1] = i == 0 ? oldlasteqbh * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
-            }
-            LOG.info("final equity minvar " + equitymat[equitymat.length - 1][0]);
-            Fints equity = new Fints(nf.getDate(), Arrays.asList("equity", "b&h"), Fints.frequency.DAILY, equitymat);
-            allequityMinVar = allequityMinVar.isEmpty() ? equity : Fints.append(allequityMinVar, equity);
-
-
-            LOG.info("bestsharpe " + winnerSetSharpe.lastEntry().getKey());
-            LOG.info("bestset");
-            nf = new Fints();
-            LOG.info("size winner sharpe"+winnerSetSharpe.lastEntry().getValue().size());
-            LOG.info("size train sharpe"+trainSetSharpe.size());
-            
-            winnerSetSharpe.lastEntry().getValue().forEach((x) -> {
-                LOG.debug(names.get( trainSetSharpe.get(x)));
-            });            
-            for (int i : winnerSetSharpe.lastEntry().getValue()) {
-                nf = nf.isEmpty() ? testSharpeFinal.getSerieCopy(i) : nf.merge(testSharpeFinal.getSerieCopy(i));
-            }
-            equitymat = new double[nf.getLength()][2];
-            testptfmat = nf.getMatrixCopy();
-            testptfallmat = subTest.getMatrixCopy();
-            double oldlasteqSharpe=allequitySharpe.isEmpty()?1:allequitySharpe.getLastRow()[0];
-            double oldlasteqbhSharpe=allequitySharpe.isEmpty()?1:allequitySharpe.getLastRow()[1];            
-            for (int i = 0; i < testptfmat.length; i++) {
-                double t1 = 0, t2 = 0;
-                for (int j = 0; j < testptfmat[i].length; j++) {
-                    t1 += (Math.pow(10.0, testptfmat[i][j] / 100.0) - 1.0);
-                }
-                for (int j = 0; j < testptfallmat[i].length; j++) {
-                    t2 += (Math.pow(10.0, testptfallmat[i][j] / 100.0) - 1.0);
-                }
-                t1 = t1 / testptfmat[i].length;
-                t2 = t2 / testptfallmat[i].length;
-                equitymat[i][0] = i == 0 ? oldlasteqSharpe * (1 + t1) : equitymat[i - 1][0] * (1 + t1);
-                equitymat[i][1] = i == 0 ? oldlasteqbhSharpe * (1 + t2) : equitymat[i - 1][1] * (1 + t2);
-            }
-            LOG.info("final equity sharpe " + equitymat[equitymat.length - 1][0]);
-            equity = new Fints(nf.getDate(), Arrays.asList("equity", "b&h"), Fints.frequency.DAILY, equitymat);
-            allequitySharpe = allequitySharpe.isEmpty() ? equity : Fints.append(allequitySharpe, equity);
-            step++;
-            //stopCond=true;
-        }
-        allequityMinVar.plot("equityminvaropt", "exret");
-        allequitySharpe.plot("equitysharpeopt", "exret");
-    }
-     */
-    public double[] optimizeMinVar(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
-        LOG.debug("first serie" + closeERlog);
-        if (window.isPresent()) {
-            if (window.get() > closeERlog.getLength()) {
-                throw new Exception("max windows = " + closeERlog.getLength());
-            }
-        }
-        int eqSec = equalWeightSec.orElse(10);
-        if (eqSec > closeERlog.getNoSeries()) {
-            throw new Exception("no securities out of range: " + eqSec + ">" + closeERlog.getNoSeries());
-        }
-        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
-        LOG.debug("sub serie" + sub);
-        LOG.debug("length " + sub.getLength() + "\tno series " + sub.getNoSeries());
-        LOG.debug("max date gap " + sub.getMaxDaysDateGap());
-        double[][] cov = sub.getCovariance();
-
-        double w = 1.0 / eqSec;
-        //javafx.util.Pair<java.util.List<Integer>,Double> results=new Pair<java.util.List<Integer>,Double>();//=new javafx.util.Pair<java.util.List<Integer>,Double>();
-
-        //double[] bestselection=new double[closeERlog.getNoSeries()];
-        //final double bestvar=Double.MAX_VALUE;   
-        //final java.util.HashMap<java.util.List<Integer>,Double> results=new java.util.HashMap<>();
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        //com.ettoremastrogiacomo.utils.DoubleDoubleArray.show(cov);
-        java.util.ArrayList<Future> flist = new java.util.ArrayList<>();
-        for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-            flist.add(pool.submit(() -> {
-                int len = closeERlog.getNoSeries();
-                java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-                double bestvar = Double.MAX_VALUE;
-                for (long l = 0; l < epochs.orElse(1000000L); l++) {
-                    try {
-                        //LOG.debug(Thread.currentThread().getName()+"\t"+l);
-
-                        java.util.Set<Integer> set = Misc.getDistinctRandom(eqSec, len);//getRandom(P, len);
-                        double[] v = new double[len];
-                        set.forEach((i) -> {
-                            v[i] = w;
-                            // if (v[i]<0) throw new Exception("CAZ"+v[i]);
-                        });
-                        double var = 0;
-                        for (int i = 0; i < len; i++) {
-                            for (int j = 0; j < len; j++) {
-                                var += v[i] * v[j] * cov[i][j];
-                            }
-                        }
-                        if (var < bestvar) {
-                            LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + var);
-                            bestset = set;
-                            bestvar = var;
-
-                        }
-                        //results.put(set, var);
-                    } catch (Exception e) {
-                        LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
-                    }
-                }
-
-                return Pair.of(bestset, bestvar);//new Pair(bestset, bestvar);
-            }));
-        }
-        pool.shutdown();
-
-        double bestvar = Double.MAX_VALUE;
-        java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-        double[] v = new double[closeERlog.getNoSeries()];
-        for (Future f : flist) {
-            Pair p = (Pair) f.get();
-            if ((Double) p.second < bestvar) {
-                bestvar = (Double) p.second;
-                bestset = (java.util.Set) p.first;
-            }
-        }
-
-        bestset.forEach((i) -> {
-            v[i] = w;
-        });
-        LOG.debug("\n\n\n\n\nnew best=" + bestvar);
-        for (int i = 0; i < v.length; i++) {
-            if (v[i] != 0.0) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + v[i]);
-            }
-        }
-
-        return v;
-    }
-
-    public double[] optimizeSharpeBH(Optional<Integer> window, Optional<Integer> window_offset, Optional<Long> epochs, Optional<Integer> equalWeightSec) throws Exception {
-        LOG.debug("first serie" + closeERlog);
-        if (window.isPresent()) {
-            if (window.get() > closeERlog.getLength()) {
-                throw new Exception("max windows = " + closeERlog.getLength());
-            }
-        }
-
-        int eqSec = equalWeightSec.orElse(10);
-        if (eqSec > closeERlog.getNoSeries()) {
-            throw new Exception("no securities out of range: " + eqSec + ">" + closeERlog.getNoSeries());
-        }
-        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
-        LOG.debug("sub serie" + sub);
-        LOG.debug("length " + sub.getLength() + "\tno series" + sub.getNoSeries());
-        LOG.debug("max date gap " + sub.getMaxDaysDateGap());
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        //com.ettoremastrogiacomo.utils.DoubleDoubleArray.show(cov);
-        java.util.TreeMap<Double, java.util.ArrayList<Object>> results = new java.util.TreeMap<>();
-        java.util.ArrayList<Future> flist = new java.util.ArrayList<>();
-        Fints besteq = new Fints();
-        BUYANDHOLD bh = new BUYANDHOLD(Portfolio.this);
-        com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest bt = new com.ettoremastrogiacomo.sktradingjava.backtesting.Backtest(Portfolio.this, Optional.of(1000.0), Optional.empty(), Optional.empty());
-        for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
-            flist.add(pool.submit(() -> {
-                int len = closeERlog.getNoSeries();
-                java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-                double bestvar = Double.MIN_VALUE;
-                for (long l = 0; l < epochs.orElse(1000000L); l++) {
-                    try {
-                        java.util.Set<Integer> set = Misc.getDistinctRandom(eqSec, len);//getRandom(P, len);
-                        double[] v;
-                        v = new double[len];
-                        set.forEach((i) -> {
-                            v[i] = 1.0 / eqSec;
-                        });
-                        Statistics stats = bt.apply(bh.apply(sub.getFirstDate(), sub.getLastDate(), v), sub.getFirstDate(), sub.getLastDate());
-                        double var = stats.linregsharpe;
-                        if (var > bestvar) {
-                            bestset = set;
-                            bestvar = var;
-                            LOG.debug("best at=" + l + "\ttid=" + Thread.currentThread().getId() + " : " + stats.linregsharpe);
-                            java.util.ArrayList<Object> tlist = new java.util.ArrayList<>();
-                            tlist.add(set);
-                            tlist.add(stats.equity);
-                            synchronized (Portfolio.this) {
-                                results.put(var, tlist);
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOG.error("error at thread " + Thread.currentThread().getName() + "\tmsg:" + e.getMessage());
-                    }
-                }
-                //java.util.HashMap<Set,Double> retval=
-                return Pair.of(bestset, bestvar);
-            }));
-        }
-        for (Future f : flist) {
-            Pair p = (Pair) f.get();
-        }
-
-        pool.shutdown();
-
-        double bestvar = results.lastKey();// Double.MIN_VALUE;
-        java.util.Set<Integer> bestset = new java.util.TreeSet<>();
-        double[] v = new double[closeERlog.getNoSeries()];
-        for (Future f : flist) {
-            Pair p = (Pair) f.get();
-            /*if ((Double) p.second > bestvar) {
-                bestvar = (Double) p.second;
-                bestset = (java.util.Set) p.first;
-            }*/
-        }
-        java.util.ArrayList<Object> last = results.lastEntry().getValue();
-        bestset = (Set<Integer>) last.get(0);
-        besteq = (Fints) last.get(1);
-        bestset.forEach((i) -> {
-            v[i] = 1.0 / eqSec;
-        });
-        //LOG.debug("\n\n\n\n\nnew best=" + bestvar);
-        LOG.debug("\n\n\n\n\nnew best=" + bestvar);
-
-        for (int i = 0; i < v.length; i++) {
-            if (v[i] != 0.0) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + v[i]);
-                //LOG.debug(this.securities.get(i).getName() + "\t" + v[i]);
-            }
-        }
-        besteq.plot("equity", "val");
-        return v;
     }
 
     public Fints.frequency getFrequency() {
@@ -1169,20 +559,4 @@ public class Portfolio {
         return s.toString();
     }
 
-    public static void main(String[] args) throws Exception {
-        java.util.ArrayList<String> isins = new java.util.ArrayList<>();
-
-        //List<HashMap<String,String>> records=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.empty(), Optional.of(Arrays.asList("EUR")), Optional.empty());
-        List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.empty(), Optional.of(Arrays.asList("EUR")), Optional.empty());
-        List<String> hashes = new java.util.ArrayList<>();
-        records.forEach((x) -> {
-            hashes.add(x.get("hashcode"));
-        });
-        java.util.ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashes), Optional.of(250), Optional.of(.2), Optional.of(7), Optional.of(20), Optional.of(100000), Optional.empty());
-        Portfolio ptf = new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        double[] d = ptf.optimizeMinVarQP(Optional.empty(), Optional.empty(), Optional.of(0.05));
-        double[] d2 = ptf.optimizeMinVar(Optional.empty(), Optional.empty(), Optional.of(5000000L), Optional.of(50));
-        //double[] d3 = ptf.optimizeSharpeBH(Optional.empty(), Optional.empty(), Optional.of(1000000L), Optional.of(20));
-        //com.ettoremastrogiacomo.utils.DoubleArray.show(d);
-    }
 }

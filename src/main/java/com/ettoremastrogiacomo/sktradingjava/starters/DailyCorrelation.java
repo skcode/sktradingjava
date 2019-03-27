@@ -38,14 +38,9 @@ public class DailyCorrelation {
             LOG.debug(x.get("name"));
             hashes.add(x.get("hashcode"));
         });
-        ArrayList<String> newhashes=Database.getFilteredPortfolio(Optional.of(hashes), Optional.of(WINDOW), Optional.of(MAXPCGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL), Optional.empty());
-       
+        ArrayList<String> newhashes=Database.getFilteredPortfolio(Optional.of(hashes), Optional.of(WINDOW), Optional.of(MAXPCGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL), Optional.empty());       
         Portfolio ptf= new Portfolio(newhashes, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         Fints all=ptf.closeERlog;
-        /*for (String x : newhashes)
-            all=all.isEmpty()?Database.getFintsQuotes(x).getSerieCopy(3):all.merge(Database.getFintsQuotes(x).getSerieCopy(3));
-        LOG.debug(all.toString());
-        all=Fints.ER(all, 100, true);*/
         double[][] c=all.getCorrelation();
         double min=DoubleArray.min ( com.ettoremastrogiacomo.utils.DoubleDoubleArray.min(c));
         LOG.debug(min);
@@ -62,8 +57,6 @@ public class DailyCorrelation {
         //java.util.HashMap<String,HashMap<String,String>> hmap=Misc.list2map(map, "hashmap");
         
         double[] w=ptf.optimizeMinVarQP(Optional.of(200), Optional.empty(),Optional.of(.5));
-        for (int i=0;i<w.length;i++) {if (w[i]>.005) LOG.debug(ptf.securities.get(i).getName()+"\t"+w[i]*100+"%");}
-        w=ptf.optimizeSharpeBH(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(15));
         for (int i=0;i<w.length;i++) {if (w[i]>.005) LOG.debug(ptf.securities.get(i).getName()+"\t"+w[i]*100+"%");}
         
     }
