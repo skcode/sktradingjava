@@ -207,6 +207,7 @@ public class Temp {
             ts.forEach((d)->{LOG.debug(h+"\t"+d);});
         
         }*/
+        
         Fints.frequency[] f=Fints.frequency.values();
         for (Fints.frequency v: f ) LOG.debug(v);
         

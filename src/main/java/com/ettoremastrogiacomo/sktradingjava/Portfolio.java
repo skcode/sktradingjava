@@ -10,7 +10,9 @@ import com.joptimizer.functions.LinearMultivariateRealFunction;
 import com.joptimizer.functions.PDQuadraticMultivariateRealFunction;
 import com.joptimizer.optimizers.JOptimizer;
 import com.joptimizer.optimizers.OptimizationRequest;
+import com.sun.org.apache.bcel.internal.generic.AALOAD;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +42,7 @@ public class Portfolio {
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
     public enum optMethod {
-        MINVAR,MINVARBARRIER, MAXSHARPE, MAXPROFIT, MINDD,MAXSLOPE,MINSTDERR,PROFITMINDDRATIO
+        MINVAR,MINVARBARRIER, MAXSHARPE, MAXPROFIT, MINDD,MAXSLOPE,MINSTDERR,PROFITMINDDRATIO,SMASHARPE
     };
 
     public Portfolio(java.util.ArrayList<String> hashcodes, Optional<Fints.frequency> freq, Optional<UDate> iday, Optional<UDate> from, Optional<UDate> to) throws Exception {
@@ -119,10 +121,18 @@ public class Portfolio {
         closeER = Fints.ER(close, 1, false);
     }
 
+    public ArrayList<String> set2names(Set<Integer> set) {
+        ArrayList<String> list=new java.util.ArrayList<>();
+        TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
+        hashSetToTreeSet.forEach((x) -> {list.add(this.names.get(this.hashcodes.get(x)));});
+        return list;
+    }
+    
+    
     public Fints opttest(Set<Integer> set, UDate startdate, UDate enddate, Optional<Double> lastequity, Optional<Double> lastequitybh) throws Exception {
         Fints subf = closeER.Sub(startdate, enddate);
         double[][] m = subf.getMatrixCopy();
-        LOG.debug("\nTEST " + subf.toString());
+        LOG.debug("\nTEST " + subf.toString()+"\n"+set+"\n"+set2names(set));
         int setsize = set.size();
         int poolsize = subf.getNoSeries();
         int len = subf.getLength();
@@ -222,6 +232,51 @@ public class Portfolio {
                             }
                             
                             
+                            double fitness = 1.0 / var;
+                            if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                                fitness = Double.NEGATIVE_INFINITY;
+                            }
+                            if (t == 0) {
+                                localbest = fitness;
+                                localbestset = set;
+                            } else {
+                               
+                                if (fitness > localbest) {
+                                    localbest = fitness;
+                                    localbestset = set;
+                                }
+                            }
+                        }
+                        return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+                    }));
+                }
+            }
+            break;
+            case SMASHARPE: {
+                if (mlog.length<250) throw new Exception("SMASHARPE , trainingsamples<250:"+mlog.length);
+                double[][] c = DoubleDoubleArray.cov(mlog);
+                Fints smasharpe=Fints.SMA(Fints.Sharpe(subflog,200), 20);
+                double[] lr=smasharpe.getLastRow();
+                //double[] mm=DoubleDoubleArray.mean(mlog);
+                double w = 1.0 / setsize;
+                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                    futures.add(pool.submit(() -> {
+                        double localbest = Double.NEGATIVE_INFINITY;
+                        Set<Integer> localbestset = new TreeSet<>();
+                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                            Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
+                            boolean notgood=false;
+                            for (Integer sa1 : set) {
+                                if (lr[sa1]<=0) notgood=true;//mean barrier
+                            }
+                            if (notgood) continue;
+                            
+                            double var = 0;
+                            for (Integer sa1 : set) {
+                                for (Integer sa2 : set) {
+                                    var += w * w * c[sa1][sa2];
+                                }
+                            }
                             double fitness = 1.0 / var;
                             if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
                                 fitness = Double.NEGATIVE_INFINITY;
@@ -612,7 +667,7 @@ public class Portfolio {
             }
             //LOG.debug("date range  " + closeER.getDate(offset) + "\t" + closeER.getDate(offset + trainWin + testWin));
             Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, closeER.getDate(offset), closeER.getDate(offset + trainWin - 1), optype, epochs);
-            LOG.debug("overall best : " + winner.getKey() + winner.getValue());
+            LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue()+"\n"+set2names(winner.getValue()));
             Fints eq = this.opttest(winner.getValue(), closeER.getDate(offset + trainWin), closeER.getDate(offset + trainWin + testWin - 1), Optional.of(lastequity), Optional.of(lastequitybh));
             if (alleq.isEmpty()) {
                 alleq = eq;
@@ -621,8 +676,9 @@ public class Portfolio {
             }
             lastequity = alleq.getLastRow()[0];
             lastequitybh = alleq.getLastRow()[1];
-            LOG.debug("equity optimized " + lastequity);
-            LOG.debug("equity bh " + lastequitybh);
+            LOG.debug("equity optimized " + lastequity+"\tmdd="+alleq.getMaxDD(0));
+            LOG.debug("equity bh " + lastequitybh+"\tmdd="+alleq.getMaxDD(1));
+            LOG.debug("equity info "+alleq);
             step++;
         }
         alleq = alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1)));

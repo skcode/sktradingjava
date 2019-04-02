@@ -262,6 +262,8 @@ public final class FetchData {
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
+        final String FUTURES_URL="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
+        final String FUTURES_URL_DETAILS="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
         final String ALLSHARE_URL_DETAILS = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?&isin=#";
         final String ETF_DETAILS = "https://www.borsaitaliana.it/borsa/etf/dettaglio.html?isin=#";
         final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#";        
@@ -291,6 +293,13 @@ public final class FetchData {
                 currency = "EUR";
                 market = "MLSE";
                 break;
+            case FUTURE:
+                url=FUTURES_URL;
+                urldet=FUTURES_URL_DETAILS;
+                type="FUTURE";
+                currency = "EUR";
+                market = "MLSE";
+                break;                
             default:
                 throw new Exception(st + " not yet implemented");
         }
@@ -315,18 +324,24 @@ public final class FetchData {
                         case ETCETN:
                             span = doc.select("a[title=\"Successiva\"]");
                             break;
+                        case FUTURE:
+                            span = doc.select("a[class=\"u-hidden -xs\"]");
+                            break;                            
                         default:
                             throw new Exception("not yet implemented");
                     }
                 }
                 links.forEach((x) -> {
                     if (x.attr("href").contains("/scheda/")) {
+                        //if (st==secType.FUTURE && !x.attr("href").contains("/mini-ftse-mib/")) return;
                         int idx = x.attr("href").indexOf("/scheda/");
                         String isin = x.attr("href").substring(idx + 8, idx + 8 + 12);
                         //LOG.debug(hashcode + "\t" + x.text().toUpperCase());
                         java.util.HashMap<String, String> map = new java.util.HashMap<>();
                         map.put("isin", isin);
-                        map.put("name", x.text().toUpperCase());
+                        if (st!=secType.FUTURE)
+                            map.put("name", x.text().toUpperCase());
+                        else map.put("name", "MINIFTSEMIB-"+x.text().toUpperCase());
                         map.put("type", type);
                         map.put("currency", currency);
                         map.put("market", market);
@@ -364,6 +379,10 @@ public final class FetchData {
                                         elements.get(i).text().contains("Tipo sottostante") ||
                                         elements.get(i).text().contains("Commissioni entrata uscita Performance"))                                         
                                         ) sector= sector.length()==0?sector=elements.get(i).text()+"="+elements2.get(i).text():sector+";"+elements.get(i).text()+"="+elements2.get(i).text();
+                                if (st==secType.FUTURE) {
+                                    sector="NA";
+                                    map.put("code", isin);
+                                }
                                     
                                 
                             }
@@ -380,7 +399,7 @@ public final class FetchData {
                         }
                     }
                 });
-                if (span.isEmpty()) {
+                if (span.isEmpty() || st==secType.FUTURE) {
                     break;
                 }
                 cnt++;
@@ -791,6 +810,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             all.putAll(fetchMLSEList(secType.ETCETN));        
             all.putAll(fetchMLSEList(secType.ETF));
             all.putAll(fetchMLSEList(secType.STOCK));
+            all.putAll(fetchMLSEList(secType.FUTURE));
         } catch (Exception e) {LOG.warn(e.getMessage());}
       String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
         /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
@@ -1139,12 +1159,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
 
     public static void main(String[] args) throws Exception {
 
-        Database.createSecTable();        
-        fetchListDE();
         
-        fetchSharesDetails();
-        fetchIntraday();
-        Database.fetchEODquotesST();
+        fetchMLSEList(secType.FUTURE);
         //};
     }    
     
