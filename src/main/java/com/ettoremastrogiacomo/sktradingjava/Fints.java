@@ -3,6 +3,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 import com.ettoremastrogiacomo.utils.UDate;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -49,7 +50,16 @@ public final class Fints {
         matrix = new double[0][0];
         this.length=this.dates.size();
     }
-
+    public Fints(java.util.TreeMap<UDate,Double> map,List<String> names, frequency freq) throws Exception {
+        this.freq=freq;
+        this.dates=Misc.set2list(map.keySet());
+        this.names=names;
+        double[][] m=new double[this.dates.size()][1];
+        Double[] d=map.values().toArray(new Double[this.dates.size()]);
+        for (int i=0;i<d.length;i++) m[i][0]=d[i];
+        matrix= m;
+        this.length=this.dates.size();
+    }
     public Fints(List<UDate> dates, List<String> names, frequency freq, double[][] matrix) throws Exception {
         this.freq = freq;        
         //this.names = new ArrayList<>();
@@ -1023,14 +1033,13 @@ public final class Fints {
     public double[] getMin() throws Exception {
         return DoubleDoubleArray.min(matrix);
     }
-    
-/**
- * esegue il runs test di una serie di valori (e.g. chiusura titoli azionari)
- * @param serieidx indice serie
- * @return true se è significativo al 95% un processo non random dei ritorni, false altrimenti
-     * @throws java.lang.Exception
- */
-    public  boolean runsTest95(int serieidx) throws Exception{
+    /**
+     * 
+     * @param serieidx
+     * @return Z score Run test incrementi (serie temporale)
+     * @throws Exception 
+     */
+    public double runTestZscore(int serieidx) throws Exception {
         if (serieidx>=this.getNoSeries()) throw new Exception("bad idx:"+ serieidx);
         double[] values=new double[matrix.length];
         for (int i=0;i<values.length;i++) values[i]=matrix[i][serieidx];
@@ -1042,12 +1051,32 @@ public final class Fints {
         runs[0]=1;
         for (int i=1;i<diff.length;i++) runs[i]=binary[i]==binary[i-1]?runs[i-1]:runs[i-1]+1;
         double R=runs[runs.length-1],W=DoubleArray.sum(binary),L=binary.length-W,N=W+L,X=(2*W*L)/(W+L);
-        double Z=(R-(X+1))/Math.sqrt(X*(X-1)/(N-1));//http://www.adaptrade.com/Articles/article-dep.htm        
-        LOG.debug("Z value : " +Z);
-        return Math.abs(Z)>1.96; //non random
+        double Z=(R-(X+1))/Math.sqrt(X*(X-1)/(N-1));//http://www.adaptrade.com/Articles/article-dep.htm                
+        return Z; 
+        //else random            
+    }
+/**
+ * esegue il runs test di una serie di valori (e.g. chiusura titoli azionari)
+ * @param serieidx indice serie
+ * @return true se è significativo al 95% un processo non random dei ritorni, false altrimenti
+     * @throws java.lang.Exception
+ */
+    public  boolean runsTest95(int serieidx) throws Exception{
+        return Math.abs(runTestZscore(serieidx) )>1.96; //non random
+        //else random    
+    }
+/**
+ * esegue il runs test di una serie di valori (e.g. chiusura titoli azionari)
+ * @param serieidx indice serie
+ * @return true se è significativo al 99% un processo non random dei ritorni, false altrimenti
+     * @throws java.lang.Exception
+ */
+    public  boolean runsTest99(int serieidx) throws Exception{
+        return Math.abs(runTestZscore(serieidx))>2.576; //non random
         //else random    
     }
 
+    
     
     @Override
     public String toString() {

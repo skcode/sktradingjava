@@ -21,10 +21,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -443,6 +445,33 @@ public class Database {
         HashMap<String,TreeSet<UDate>> m=intradayDates();
         return m.get(hashcode);
     }
+
+    public static TreeSet<UDate> getIntradayDates() throws Exception {
+        HashMap<String,TreeSet<UDate>> m=intradayDates();
+        TreeSet<UDate> s=new TreeSet<>();
+        m.keySet().forEach((x) -> {
+            s.addAll(m.get(x));
+        });
+        return s;
+    }
+    
+    
+    public static Set<String> getIntradayHashCodes(Optional<UDate> d) throws Exception {
+        HashMap<String,TreeSet<UDate>> m=intradayDates();
+        if (d.isEmpty()) {
+            return m.keySet();
+        }
+        else {
+            java.util.HashSet<String> s=new HashSet<>();
+            m.keySet().forEach((x)->{
+                if (m.get(x).contains(d.get()) ) s.add(x);
+            });
+            return s;
+        }
+        
+        //return m.get(hashcode);
+    }    
+    
     public static java.util.ArrayList< java.util.HashMap<String, String>> getRecords(Optional<List<String>> hashcode, Optional<List<String>> isin, Optional<List<String>> name, Optional<List<String>> code, Optional<List<String>> type, Optional<List<String>> market, Optional<List<String>> currency, Optional<List<String>> sector) throws Exception {
 
         StringBuilder hashcodesql = new StringBuilder();
