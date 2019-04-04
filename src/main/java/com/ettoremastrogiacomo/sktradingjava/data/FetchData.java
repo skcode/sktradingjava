@@ -98,7 +98,8 @@ class Tintradaydata implements Runnable {
     static final String ALLSHARE_URL_DETAILS = "https://www.borsaitaliana.it/borsa/azioni/contratti.html?isin=#&lang=it&page=";
     static final String ETF_DETAILS = "https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=#&lang=it&page=";
     static final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/contratti.html?isin=#&lang=it&page=";
-    static final int ROW_SIZE = 5;
+    static final String FUTURES_URL_DETAILS="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/contratti.html?isin=#&lang=it&page=";    
+    final int ROW_SIZE;
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Tintradaydata.class);
     
     public String data, fase;
@@ -110,12 +111,19 @@ class Tintradaydata implements Runnable {
         switch (st) {
             case STOCK:
                 url = ALLSHARE_URL_DETAILS;
+                ROW_SIZE=5;
                 break;
             case ETF:
                 url = ETF_DETAILS;
+                ROW_SIZE=5;
                 break;
             case ETCETN:
                 url = ETCETN_DETAILS;
+                ROW_SIZE=5;
+                break;
+            case FUTURE:
+                url= FUTURES_URL_DETAILS;                
+                ROW_SIZE =4;
                 break;
             default:
                 throw new Exception(st + " not yet implemented");
@@ -162,12 +170,13 @@ class Tintradaydata implements Runnable {
                     this.data = data;
                     Elements t = doc.select("table[class='m-table -responsive -clear-m'] tr td");
                     Elements f = doc.select("span[class='m-icon -pagination-right']");
+                    
                     if (t.isEmpty() || (t.size() % ROW_SIZE) != 0) {
                         throw new Exception("wrong string : " + t);
                     }
                     for (int i = 0; i < t.size(); i = i + ROW_SIZE) {
                         java.util.HashMap<String, String> m = new java.util.HashMap<>();
-                        for (int j = i; j < (i + 5); j++) {
+                        for (int j = i; j < (i + ROW_SIZE); j++) {
                             if (j == i) {
                                 m.put("ORA", data + " " + t.get(j).text().trim());
                             } else if (j == (i + 1)) {

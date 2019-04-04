@@ -207,26 +207,11 @@ public class Temp {
             ts.forEach((d)->{LOG.debug(h+"\t"+d);});
         
         }*/
-        
-        Fints.frequency[] f=Fints.frequency.values();
-        for (Fints.frequency v: f ) LOG.debug(v);
-        
-        //com.ettoremastrogiacomo.utils.HttpFetch http= new HttpFetch();
-        //String s= new String(http.HttpGetUrl("https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=IE00B6YX5B26&lang=it&page=0", Optional.empty(), Optional.empty()));
-        //LOG.debug(Database.getYahooQuotes("ENEL.MI"));
-        //LOG.debug(Database.getGoogleQuotes("BIT:ENEL"));
-        if (true) {
-            return;
-        }
-        ArrayList<String> h = new ArrayList<>();
-        ArrayList<String> i = new ArrayList<>();
-        h.add("1hash");
-        h.add("2hash");
-        h.add("3hash");
-        i.add("1isin");
-        i.add("2isin");
-        i.add("3isin");
-        Database.getRecords(Optional.of(h), Optional.of(i), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        String h="bvTCvXgkZN4qgk2NdJHFns1pynM=";
+        Fints ff=Database.getIntradayFintsQuotes(h, UDate.genDate(2019, 3, 4, 0, 0, 0));
+        ff.getSerieCopy(3).plot("t", "y");
+        LOG.debug(ff);
+        if (true) return;
 //fetchEuroNext();
         //Fints f=Database.getFintsQuotes(Optional.of("XMIB"),Optional.of("MLSE") , Optional.empty());
         //f.getSerieCopy(3).plot("xmib", "price");
