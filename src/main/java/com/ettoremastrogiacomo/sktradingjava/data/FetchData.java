@@ -163,9 +163,14 @@ class Tintradaydata implements Runnable {
                     } else {
                         throw new Exception("cannot grab date, maybe no contracts for  ISIN " +isin+"\thash "+ hashcode);
                     }
-                    if (!fase.equalsIgnoreCase("CHIUSURA")) {
+                    if (st!=FetchData.secType.FUTURE && !fase.equalsIgnoreCase("CHIUSURA"))  {
                         throw new Exception("market not closed");                        
                     }
+
+                    if (st==FetchData.secType.FUTURE && !fase.equalsIgnoreCase("Fine Servizio") )  {
+                        throw new Exception("future market not closed");                        
+                    }
+                                  
                     this.fase = fase;
                     this.data = data;
                     Elements t = doc.select("table[class='m-table -responsive -clear-m'] tr td");
