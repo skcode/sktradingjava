@@ -34,7 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -196,8 +198,45 @@ public class Temp {
     
     }
     
+    public static java.util.ArrayList<TreeSet<UDate>> timesegments(java.util.TreeSet<UDate> dates,long maxgapmsec)
+    {
+        java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
+        java.util.TreeSet<UDate> t= new TreeSet<>();
+        java.util.ArrayList<TreeSet<UDate>> list= new ArrayList<>();
+        for (UDate d: dates) {
+            if (t.isEmpty()) {
+                t.add(d);
+            } else if (d.diffmills(t.last())>maxgapmsec){                             
+                rank.put(t.size(), t);
+                list.add(t);
+                t= new TreeSet<>();
+            } else {
+                t.add(d);
+            }                        
+        }
+        
+        return list;
+    }
+    
+    public static <T>  java.util.Set<T> longestSet(ArrayList<TreeSet<T>> list) {
+        if (list.isEmpty()) return new java.util.TreeSet<>();
+        java.util.TreeSet<T> best=list.get(0);
+        for (TreeSet<T> s : list) {
+            if (best.size()<s.size()) best=s;
+        }
+        return best;
+    }
  
     public static void main(String[] args) throws Exception {
+        TreeSet<UDate> d=Database.getIntradayDates();
+        ArrayList<TreeSet<UDate>> m= timesegments(d, 1000*60*60*24*4);
+        m.forEach((x)->{
+            LOG.debug(x.size()+"\t"+x);            
+        });
+        Set l=longestSet(m);
+        LOG.debug(l.size()+"\t"+l);
+        
+        
   //      testCookies();
 //LOG.debug(Database.getGoogleQuotes("BIT:ENEL"));
         /*java.util.HashMap<String,TreeSet<UDate>> map=new HashMap<String, TreeSet<UDate>>();
@@ -207,10 +246,8 @@ public class Temp {
             ts.forEach((d)->{LOG.debug(h+"\t"+d);});
         
         }*/
-        String h="bvTCvXgkZN4qgk2NdJHFns1pynM=";
-        Fints ff=Database.getIntradayFintsQuotes(h, UDate.genDate(2019, 3, 4, 0, 0, 0));
-        ff.getSerieCopy(3).plot("t", "y");
-        LOG.debug(ff);
+       
+
         if (true) return;
 //fetchEuroNext();
         //Fints f=Database.getFintsQuotes(Optional.of("XMIB"),Optional.of("MLSE") , Optional.empty());

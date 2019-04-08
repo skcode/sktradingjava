@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import org.apache.log4j.Logger;
 
 /**
@@ -272,4 +273,44 @@ public class Misc {
         return sw.toString();    
     }
 
+    /**
+     * divide un set in tanti sottoset il cui gap temporale non supera il maxgapmsec millisecondi
+     * @param dates
+     * @param maxgapmsec
+     * @return array di subset
+     */
+    public static java.util.ArrayList<TreeSet<UDate>> timesegments(java.util.TreeSet<UDate> dates,long maxgapmsec)
+    {
+        java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
+        java.util.TreeSet<UDate> t= new TreeSet<>();
+        java.util.ArrayList<TreeSet<UDate>> list= new ArrayList<>();
+        for (UDate d: dates) {
+            if (t.isEmpty()) {
+                t.add(d);
+            } else if (d.diffmills(t.last())>maxgapmsec){                             
+                rank.put(t.size(), t);
+                list.add(t);
+                t= new TreeSet<>();
+            } else {
+                t.add(d);
+            }                        
+        }
+        
+        return list;
+    }
+    /**
+     * prende da un array di set, quello più lungo, non garantisce se ci sono più bestset con stessa lunghezza
+     * @param <T>
+     * @param list
+     * @return 
+     */
+    public static <T>  java.util.Set<T> longestSet(ArrayList<TreeSet<T>> list) {
+        if (list.isEmpty()) return new java.util.TreeSet<>();
+        java.util.TreeSet<T> best=list.get(0);
+        for (TreeSet<T> s : list) {
+            if (best.size()<s.size()) best=s;
+        }
+        return best;
+    }    
+    
 }

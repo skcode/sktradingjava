@@ -8,7 +8,6 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
-import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -106,7 +105,7 @@ public class IntradaySecAnalisys {
             LOG.debug("maxddmap% mean "+f7.getMeans()[0]+"\tmin "+f7.getMin()[0]+"\tmax "+f7.getMax()[0]+"\tlast "+f7.getLastRow()[0]);
             LOG.debug("closeopen% mean "+f8.getMeans()[0]+"\tmin "+f8.getMin()[0]+"\tmax "+f8.getMax()[0]+"\tlast "+f8.getLastRow()[0]);
         }
-        File file = new File("./file.csv");
+        File file = new File("./intradaysecanalisys.csv");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(sb.toString());
         }        

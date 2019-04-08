@@ -395,7 +395,7 @@ public final class FetchData {
                                         ) sector= sector.length()==0?sector=elements.get(i).text()+"="+elements2.get(i).text():sector+";"+elements.get(i).text()+"="+elements2.get(i).text();
                                 if (st==secType.FUTURE) {
                                     sector="NA";
-                                    map.put("code", isin);
+                                    map.put("code", map.get("name"));
                                 }
                                     
                                 

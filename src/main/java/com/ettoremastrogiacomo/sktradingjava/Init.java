@@ -4,7 +4,6 @@
  */
 
 package com.ettoremastrogiacomo.sktradingjava;
-import com.ettoremastrogiacomo.sktradingjava.starters.IntradayCorrelation;
 import java.io.*;
 import java.util.*;
 /**

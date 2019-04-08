@@ -12,8 +12,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 //import java.util.Locale;
 import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
