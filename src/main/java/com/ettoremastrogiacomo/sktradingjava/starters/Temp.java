@@ -229,7 +229,7 @@ public class Temp {
  
     public static void main(String[] args) throws Exception {
         TreeSet<UDate> d=Database.getIntradayDates();
-        ArrayList<TreeSet<UDate>> m= timesegments(d, 1000*60*60*24*4);
+        ArrayList<TreeSet<UDate>> m= timesegments(d, 1000*60*60*24*5);
         m.forEach((x)->{
             LOG.debug(x.size()+"\t"+x);            
         });

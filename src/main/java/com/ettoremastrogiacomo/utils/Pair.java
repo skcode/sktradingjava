@@ -4,13 +4,6 @@
  * and open the template in the editor.
  */
 package com.ettoremastrogiacomo.utils;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-// Pair class
 public class Pair<U, V>
 {
 	public final U first;   	// first field of a Pair
