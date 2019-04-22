@@ -87,72 +87,69 @@ import org.jsoup.nodes.Element;
         
     }
 }
-*/
-
+ */
 class Tintradaydata implements Runnable {
-    
+
     final FetchData.secType st;
-   // final com.ettoremastrogiacomo.utils.HttpFetch http;
+    // final com.ettoremastrogiacomo.utils.HttpFetch http;
     final String url;
-    final String hashcode,isin;
+    final String hashcode, isin;
     static final String ALLSHARE_URL_DETAILS = "https://www.borsaitaliana.it/borsa/azioni/contratti.html?isin=#&lang=it&page=";
     static final String ETF_DETAILS = "https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=#&lang=it&page=";
     static final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/contratti.html?isin=#&lang=it&page=";
-    static final String FUTURES_URL_DETAILS="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/contratti.html?isin=#&lang=it&page=";    
+    static final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/contratti.html?isin=#&lang=it&page=";
     final int ROW_SIZE;
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Tintradaydata.class);
-    
+
     public String data, fase;
     private final String sql = "insert or replace into intradayquotes (hashcode,date,quotes) values(?,?,?);";
-    
-    
-    Tintradaydata(String isin,String hashcode, FetchData.secType st) throws Exception {
+
+    Tintradaydata(String isin, String hashcode, FetchData.secType st) throws Exception {
         this.st = st;
         switch (st) {
             case STOCK:
                 url = ALLSHARE_URL_DETAILS;
-                ROW_SIZE=5;
+                ROW_SIZE = 5;
                 break;
             case ETF:
                 url = ETF_DETAILS;
-                ROW_SIZE=5;
+                ROW_SIZE = 5;
                 break;
             case ETCETN:
                 url = ETCETN_DETAILS;
-                ROW_SIZE=5;
+                ROW_SIZE = 5;
                 break;
             case FUTURE:
-                url= FUTURES_URL_DETAILS;                
-                ROW_SIZE =4;
+                url = FUTURES_URL_DETAILS;
+                ROW_SIZE = 4;
                 break;
             default:
                 throw new Exception(st + " not yet implemented");
         }
         this.hashcode = hashcode;
-        this.isin=isin;//String sd = url.replace("#", isin);
+        this.isin = isin;//String sd = url.replace("#", isin);
     }
-    
+
     @Override
     public void run() {
         int cnt = 0;
-        java.util.ArrayList<java.util.HashMap<String, String>> list=new java.util.ArrayList<>();
-        
-                //https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=LU1681046931&lang=it&page=0
-                //https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=FR0011807015&lang=it&page=0
-                
+        java.util.ArrayList<java.util.HashMap<String, String>> list = new java.util.ArrayList<>();
+
+        //https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=LU1681046931&lang=it&page=0
+        //https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=FR0011807015&lang=it&page=0
         try {
-        HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }
+            HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
+            if (Init.use_http_proxy.equals("true")) {
+                http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            }
             while (true) {
-                
+
                 String s = url.replace("#", isin) + Integer.toString(cnt);
-                String fase = "", data = "";     
-                       // String url = "http://www.something.com";
-        
+                String fase = "", data = "";
+                // String url = "http://www.something.com";
+
                 //s="https://www.borsaitaliana.it/borsa/etf/contratti.html?isin=LU1681046931&lang=it&page=0";
-               String ss = new String(http.HttpGetUrl(s, Optional.of(30), Optional.empty()));      
+                String ss = new String(http.HttpGetUrl(s, Optional.of(30), Optional.empty()));
                 //if (ss.contains("Page Not Found")) {LOG.debug(isin+" not found\n"+url.replace("#", isin) + Integer.toString(cnt)); throw new Exception("cannot grab "+isin);}
                 Document doc = Jsoup.parse(ss);//"m-table -responsive -clear-m"            
                 Elements b = doc.select("div[class='w-999__bcol | l-box | l-screen -sm-9 -md-9'] strong");
@@ -161,21 +158,21 @@ class Tintradaydata implements Runnable {
                     if (b.get(1).text().length() >= 8) {
                         data = b.get(1).text().substring(0, 8);
                     } else {
-                        throw new Exception("cannot grab date, maybe no contracts for  ISIN " +isin+"\thash "+ hashcode);
+                        throw new Exception("cannot grab date, maybe no contracts for  ISIN " + isin + "\thash " + hashcode);
                     }
-                    if (st!=FetchData.secType.FUTURE && !fase.equalsIgnoreCase("CHIUSURA"))  {
-                        throw new Exception("market not closed");                        
+                    if (st != FetchData.secType.FUTURE && !fase.equalsIgnoreCase("CHIUSURA")) {
+                        throw new Exception("market not closed");
                     }
 
-                    if (st==FetchData.secType.FUTURE && !fase.equalsIgnoreCase("Fine Servizio") )  {
-                        throw new Exception("future market not closed");                        
+                    if (st == FetchData.secType.FUTURE && !fase.equalsIgnoreCase("Fine Servizio")) {
+                        throw new Exception("future market not closed");
                     }
-                                  
+
                     this.fase = fase;
                     this.data = data;
                     Elements t = doc.select("table[class='m-table -responsive -clear-m'] tr td");
                     Elements f = doc.select("span[class='m-icon -pagination-right']");
-                    
+
                     if (t.isEmpty() || (t.size() % ROW_SIZE) != 0) {
                         throw new Exception("wrong string : " + t);
                     }
@@ -194,16 +191,15 @@ class Tintradaydata implements Runnable {
                                 m.put("TIPO", t.get(j).text().trim());
                             }
                         }
-                        
-                            list.add(m);
-                            
-                        
+
+                        list.add(m);
+
                     }
                     //<span class="m-icon -pagination-right"></span>
                     //t.forEach((x)->{System.out.println(x.text());});
                     cnt++;
-                    if (cnt>1000) {
-                        LOG.warn("reached 1000 pages, stop for isin "+isin);
+                    if (cnt > 1000) {
+                        LOG.warn("reached 1000 pages, stop for isin " + isin);
                         break;
                     }
                     if (f.isEmpty()) {
@@ -211,33 +207,32 @@ class Tintradaydata implements Runnable {
                     }
                 }
             }
-            LOG.debug("intraday data fetched for isin "+isin+"\thash " + hashcode + "\t" + data);
-            Connection conn = DriverManager.getConnection(Init.db_url);
-            try {
-        //dataarr.keySet().forEach((x) -> {
-
-    java.sql.PreparedStatement stmt = conn.prepareStatement(sql);          
-
-        if (!data.equals("") && !list.isEmpty()) {
-                //map.put(x + ";" + dataarr.get(x).data, dataarr.get(x).list);
-                try {
-                stmt.setString(1, hashcode);
-                stmt.setString(2, data);
-                stmt.setString(3, list.toString());
-                stmt.executeUpdate();
-                } catch (SQLException e) { LOG.warn(e);}
+            LOG.debug("intraday data fetched for isin " + isin + "\thash " + hashcode + "\t" + data);
+            synchronized (this) {
+                try ( Connection conn = DriverManager.getConnection(Init.db_url)) {
+                    try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        if (!data.equals("") && !list.isEmpty()) {
+                            try {
+                                stmt.setString(1, hashcode);
+                                stmt.setString(2, data);
+                                stmt.setString(3, list.toString());
+                                stmt.executeUpdate();
+                            } catch (SQLException e) {
+                                LOG.warn(e);
+                            }
+                        }
+                    }                    
+                } 
             }
-        //});
-        //stmt.executeBatch();
-
-        } finally {conn.close();}                
         } catch (Exception e) {
-            this.data = "";            
+            this.data = "";
             //ExceptionUtils.getRootCause(e).getClass().getSimpleName();
-            Throwable s=e;
-            while( s.getCause()!=null) s=s.getCause();
-            
-            LOG.warn("error loading isin "+isin+"\thash "+hashcode+"\t"+s.getClass()+"\t"+s.getMessage());
+            Throwable s = e;
+            while (s.getCause() != null) {
+                s = s.getCause();
+            }
+
+            LOG.warn("error loading isin " + isin + "\thash " + hashcode + "\t" + s.getClass() + "\t" + s.getMessage());
         }
     }
 }
@@ -247,7 +242,7 @@ class Tintradaydata implements Runnable {
  * @author a241448
  */
 public final class FetchData {
-    
+
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(FetchData.class);
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
 
@@ -255,7 +250,7 @@ public final class FetchData {
     public static enum secType {
         STOCK, ETF, ETCETN, FUTURE, BOND, CURRENCY, INDEX
     };
-    
+
     static final java.util.HashMap<String, secType> secMap = new java.util.HashMap<String, secType>() {
         {
             put("STOCK", secType.STOCK);
@@ -266,8 +261,8 @@ public final class FetchData {
             put("CURRENCY", secType.CURRENCY);
             put("INDEX", secType.INDEX);
         }
-    };    
-    
+    };
+
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
@@ -276,15 +271,15 @@ public final class FetchData {
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
-        final String FUTURES_URL="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
-        final String FUTURES_URL_DETAILS="https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
+        final String FUTURES_URL = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
+        final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
         final String ALLSHARE_URL_DETAILS = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?&isin=#";
         final String ETF_DETAILS = "https://www.borsaitaliana.it/borsa/etf/dettaglio.html?isin=#";
-        final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#";        
+        final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#";
         final String ALLSHARE_URL = "https://www.borsaitaliana.it/borsa/azioni/all-share/lista.html?&page=#";
         final String ETF_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETF&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&page=#";
         final String ETCETN_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETC&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&page=#";
-        
+
         switch (st) {
             case STOCK:
                 url = ALLSHARE_URL;
@@ -308,12 +303,12 @@ public final class FetchData {
                 market = "MLSE";
                 break;
             case FUTURE:
-                url=FUTURES_URL;
-                urldet=FUTURES_URL_DETAILS;
-                type="FUTURE";
+                url = FUTURES_URL;
+                urldet = FUTURES_URL_DETAILS;
+                type = "FUTURE";
                 currency = "EUR";
                 market = "MLSE";
-                break;                
+                break;
             default:
                 throw new Exception(st + " not yet implemented");
         }
@@ -321,9 +316,9 @@ public final class FetchData {
             try {
                 String s = url.replace("#", Integer.toString(cnt));
                 LOG.debug(s);
-                
+
                 s = new String(http.HttpGetUrl(s, Optional.of(20), Optional.empty()));
-                
+
                 Document doc = Jsoup.parse(s);
                 Elements links = doc.select("a");
                 Elements span;
@@ -340,7 +335,7 @@ public final class FetchData {
                             break;
                         case FUTURE:
                             span = doc.select("a[class=\"u-hidden -xs\"]");
-                            break;                            
+                            break;
                         default:
                             throw new Exception("not yet implemented");
                     }
@@ -353,14 +348,15 @@ public final class FetchData {
                         //LOG.debug(hashcode + "\t" + x.text().toUpperCase());
                         java.util.HashMap<String, String> map = new java.util.HashMap<>();
                         map.put("isin", isin);
-                        if (st!=secType.FUTURE)
+                        if (st != secType.FUTURE) {
                             map.put("name", x.text().toUpperCase());
-                        else map.put("name", "MINIFTSEMIB-"+x.text().toUpperCase());
+                        } else {
+                            map.put("name", "MINIFTSEMIB-" + x.text().toUpperCase());
+                        }
                         map.put("type", type);
                         map.put("currency", currency);
                         map.put("market", market);
-                        
-                        
+
                         String sd = urldet.replace("#", isin);
                         try {
                             sd = new String(http.HttpGetUrl(sd, Optional.of(30), Optional.empty()));
@@ -369,51 +365,56 @@ public final class FetchData {
                             Elements elements2 = docd.select("span[class*='t-text -right ']");
                             int min = elements.size() < elements2.size() ? elements.size() : elements2.size();
                             LOG.debug("**********" + isin + "**********");
-                            LOG.debug(isin+"\t"+x.text().toUpperCase()+"\t"+type+"\t"+currency+"\t"+market);
-                            String sector="";
+                            LOG.debug(isin + "\t" + x.text().toUpperCase() + "\t" + type + "\t" + currency + "\t" + market);
+                            String sector = "";
                             for (int i = 0; i < min; i++) {
                                 //map.put(elements.get(i).text(), elements2.get(i).text());
                                 LOG.debug(elements.get(i).text() + "\t" + elements2.get(i).text());
-                                if (elements.get(i).text().contains("Codice Alfanumerico") ) 
+                                if (elements.get(i).text().contains("Codice Alfanumerico")) {
                                     map.put("code", elements2.get(i).text());
-                                if (st==secType.STOCK && elements.get(i).text().contains("Super Sector") ) 
-                                    sector=elements2.get(i).text();
-                                    //map.put("sector", elements2.get(i).text());
-                                if (elements.get(i).text().contains("Capitalizzazione") ) 
+                                }
+                                if (st == secType.STOCK && elements.get(i).text().contains("Super Sector")) {
+                                    sector = elements2.get(i).text();
+                                }
+                                //map.put("sector", elements2.get(i).text());
+                                if (elements.get(i).text().contains("Capitalizzazione")) {
                                     map.put("capitalization", elements2.get(i).text().replace(".", ""));
-                                if ((st==secType.ETF || st==secType.ETCETN )&& (elements.get(i).text().contains("Benchmark") ||
-                                        elements.get(i).text().contains("Area Benchmark") ||
-                                        elements.get(i).text().contains("Emittente") ||
-                                        elements.get(i).text().contains("Segmento") ||
-                                        elements.get(i).text().contains("Classe") ||
-                                        elements.get(i).text().contains("Commissioni totali annue") ||
-                                        elements.get(i).text().contains("Tipo strumento") ||
-                                        elements.get(i).text().contains("Sottostante") ||
-                                        elements.get(i).text().contains("Dividendi") ||
-                                        elements.get(i).text().contains("Tipo sottostante") ||
-                                        elements.get(i).text().contains("Commissioni entrata uscita Performance"))                                         
-                                        ) sector= sector.length()==0?sector=elements.get(i).text()+"="+elements2.get(i).text():sector+";"+elements.get(i).text()+"="+elements2.get(i).text();
-                                if (st==secType.FUTURE) {
-                                    sector="NA";
+                                }
+                                if ((st == secType.ETF || st == secType.ETCETN) && (elements.get(i).text().contains("Benchmark")
+                                        || elements.get(i).text().contains("Area Benchmark")
+                                        || elements.get(i).text().contains("Emittente")
+                                        || elements.get(i).text().contains("Segmento")
+                                        || elements.get(i).text().contains("Classe")
+                                        || elements.get(i).text().contains("Commissioni totali annue")
+                                        || elements.get(i).text().contains("Tipo strumento")
+                                        || elements.get(i).text().contains("Sottostante")
+                                        || elements.get(i).text().contains("Dividendi")
+                                        || elements.get(i).text().contains("Tipo sottostante")
+                                        || elements.get(i).text().contains("Commissioni entrata uscita Performance"))) {
+                                    sector = sector.length() == 0 ? sector = elements.get(i).text() + "=" + elements2.get(i).text() : sector + ";" + elements.get(i).text() + "=" + elements2.get(i).text();
+                                }
+                                if (st == secType.FUTURE) {
+                                    sector = "NA";
                                     map.put("code", map.get("name"));
                                 }
-                                    
-                                
+
                             }
                             map.put("sector", sector);
-                            map.keySet().forEach((y)-> {LOG.debug(y+"\t"+map.get(y));});
+                            map.keySet().forEach((y) -> {
+                                LOG.debug(y + "\t" + map.get(y));
+                            });
                             LOG.debug("********************");
-                            String hash=Encoding.base64encode(getSHA1(String2Byte((map.get("isin")+market))));
+                            String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + market))));
                             if (!all.containsKey(hash)) {
                                 all.put(hash, map);
                             }
-                            
+
                         } catch (Exception e) {
                             LOG.warn(e);
                         }
                     }
                 });
-                if (span.isEmpty() || st==secType.FUTURE) {
+                if (span.isEmpty() || st == secType.FUTURE) {
                     break;
                 }
                 cnt++;
@@ -422,7 +423,7 @@ public final class FetchData {
                 break;
             }
         }
-        LOG.debug("#"+all.size());
+        LOG.debug("#" + all.size());
 
         /*
         *(all|financial|healthcare|services|utilities|industrial_goods|basic_materials|conglomerates|consumer_goods|technology)
@@ -445,10 +446,10 @@ data.FetchData lambda$fetchMLSEList$3 - SERVIZI PUBBLICI
 data.FetchData lambda$fetchMLSEList$3 - TECNOLOGIA
 data.FetchData lambda$fetchMLSEList$3 - TELECOMUNICAZIONI
 data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
-        */
+         */
         return all;
     }
-    
+
     /*static java.util.HashMap<String, java.util.HashMap<String, String>> fetchDetailsBIT(java.util.HashMap<String, java.util.HashMap<String, String>> isins) throws Exception {
         int pcount = Runtime.getRuntime().availableProcessors();
         //java.util.ArrayList<Thread> tarr=new java.util.ArrayList<>();fetchDetails
@@ -467,23 +468,22 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         });
         return isins;
     }*/
-    
     public static void fetchIntraday() throws Exception {
         int pcount = Runtime.getRuntime().availableProcessors();
         java.util.HashMap<String, Tintradaydata> dataarr = new java.util.HashMap<>();
         java.util.HashMap<String, java.util.ArrayList<java.util.HashMap<String, String>>> map = new java.util.HashMap<>();
         ExecutorService executor = Executors.newFixedThreadPool(pcount);
-        List<HashMap<String,String>> records=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
-        for (HashMap<String,String> s : records) {        
-           // LOG.debug("starting thread for "+s.get("hashcode")+"\t"+s.get("name"));
-            Tintradaydata t1 = new Tintradaydata(s.get("isin"),s.get("hashcode"), secMap.get(s.get("type")));
+        List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
+        for (HashMap<String, String> s : records) {
+            // LOG.debug("starting thread for "+s.get("hashcode")+"\t"+s.get("name"));
+            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secMap.get(s.get("type")));
             //dataarr.put(s.get("hashcode"), t1);
             executor.execute(t1);
         }
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
-/*        String sql = "insert or replace into intradayquotes (hashcode,date,quotes) values(?,?,?);";
+        /*        String sql = "insert or replace into intradayquotes (hashcode,date,quotes) values(?,?,?);";
         Connection conn = DriverManager.getConnection(Init.db_url);
         java.sql.PreparedStatement stmt = conn.prepareStatement(sql);          
         try {
@@ -501,10 +501,9 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         stmt.executeBatch();
 
         } finally {conn.close();}
-  */      //return map;
+         */      //return map;
     }
 
-    
     /*static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -599,9 +598,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         
         return list;
         
-    } */   
-    
-    /*static java.util.HashMap<String, String> getBorseitInfo(String name, String hashcode) throws Exception {        
+    } */
+ /*static java.util.HashMap<String, String> getBorseitInfo(String name, String hashcode) throws Exception {        
         java.util.HashMap<String, String> map = new java.util.HashMap<>();
         String tname = name.replace(" ", "").replaceAll("[^\\p{Print}]", "");        
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
@@ -625,8 +623,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         //map.keySet().forEach((x)->{System.out.println("*"+x+"*"+map.get(x)+"*" );});
         return map;
     }
-    */
-    /*static void DBloadEOD(java.util.HashMap<String, java.util.HashMap<String, String>> eodquotes) throws Exception {
+     */
+ /*static void DBloadEOD(java.util.HashMap<String, java.util.HashMap<String, String>> eodquotes) throws Exception {
         String sql = "insert or replace into eoddata values(?,?,?);";
         Connection conn = null;
         java.sql.PreparedStatement stmt = null;        
@@ -673,8 +671,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         
     }*/
-    
-    /*static void DBloadIntraday(java.util.HashMap<String, java.util.ArrayList<java.util.HashMap<String, String>>> iday) throws Exception {
+ /*static void DBloadIntraday(java.util.HashMap<String, java.util.ArrayList<java.util.HashMap<String, String>>> iday) throws Exception {
         String sql = "insert or replace into intradayquotes (isin,date,quotes) values(?,?,?);";
         Connection conn = null;
         java.sql.PreparedStatement stmt = null;        
@@ -713,8 +710,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             }
         }
     }
-    */
-    /*static void DBloadDetailsBIT(java.util.HashMap<String, java.util.HashMap<String, String>> details) throws Exception {
+     */
+ /*static void DBloadDetailsBIT(java.util.HashMap<String, java.util.HashMap<String, String>> details) throws Exception {
         String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
                 + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
         String usql = "update securities set bitquotes=? where hashcode=?";
@@ -809,24 +806,33 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }        
         
     }*/
-    
     public static void fetchSharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
-  //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
-        
+        //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
+
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         LOG.info("fetching Euronext");
-        try {all.putAll(fetchEuroNext());} catch (Exception e) {LOG.warn(e.getMessage());}
+        try {
+            all.putAll(fetchEuroNext());
+        } catch (Exception e) {
+            LOG.warn(e.getMessage());
+        }
         LOG.info("fetching XETRA");
-        try {all.putAll(fetchListDE());} catch (Exception e) {LOG.warn(e.getMessage());}
+        try {
+            all.putAll(fetchListDE());
+        } catch (Exception e) {
+            LOG.warn(e.getMessage());
+        }
         LOG.info("fetching MLSE");
         try {
-            all.putAll(fetchMLSEList(secType.ETCETN));        
+            all.putAll(fetchMLSEList(secType.ETCETN));
             all.putAll(fetchMLSEList(secType.ETF));
             all.putAll(fetchMLSEList(secType.STOCK));
             all.putAll(fetchMLSEList(secType.FUTURE));
-        } catch (Exception e) {LOG.warn(e.getMessage());}
-      String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
+        } catch (Exception e) {
+            LOG.warn(e.getMessage());
+        }
+        String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
         /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
                 + "	hashcode text not null,\n"
                 + "	hashcode text NOT NULL,\n"                
@@ -838,17 +844,17 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 + "	sector text not null,\n"
                 + "	primary key (hashcode) ,\n"
                 + "     unique (hashcode,market));";//,\n" */
-  
+
         Connection conn = null;
 
-        java.sql.PreparedStatement stmt = null;        
-        java.sql.PreparedStatement ustmt = null;        
+        java.sql.PreparedStatement stmt = null;
+        java.sql.PreparedStatement ustmt = null;
         //java.sql.Statement qstmt = null;        
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.prepareStatement(sql);
             conn.setAutoCommit(false);
-          //  qstmt = conn.createStatement();
+            //  qstmt = conn.createStatement();
             for (String hashcode : all.keySet()) {
                 try {
                     stmt.setString(1, hashcode);
@@ -857,14 +863,14 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                     stmt.setString(4, all.get(hashcode).get("code"));
                     stmt.setString(5, all.get(hashcode).get("type"));
                     stmt.setString(6, all.get(hashcode).get("market"));
-                    stmt.setString(7, all.get(hashcode).get("currency"));                    
+                    stmt.setString(7, all.get(hashcode).get("currency"));
                     stmt.setString(8, all.get(hashcode).get("sector"));
                     stmt.addBatch();
-                    
+
                     LOG.debug(hashcode + "\t" + all.get(hashcode).get("name") + "\t loaded");
-                    
+
                 } catch (Exception e) {
-                    LOG.warn("error loading " + hashcode +"\t"+all.get(hashcode).get("name") , e);
+                    LOG.warn("error loading " + hashcode + "\t" + all.get(hashcode).get("name"), e);
                 }
             }
             stmt.executeBatch();
@@ -886,7 +892,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 }
             } catch (SQLException e) {
             }
-            
+
             try {
                 if (conn != null) {
                     conn.setAutoCommit(true);
@@ -894,10 +900,10 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 }
             } catch (SQLException e) {
             }
-        }        
-        
+        }
+
     }
-    
+
     /*static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListSole24Ore() throws Exception {
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         String allShare = "http://finanza-mercati.ilsole24ore.com/quotazioni.php?QUOTE=Mibtel&cstdet=IndItaPan";
@@ -962,41 +968,42 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         } while (succ);
         return all;
     }
-    */
+     */
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchEuroNext() throws Exception {
-      /**
-       * 
-       * Euronext Access Brussels
-       * Euronext Access Lisbon
-       */
-        java.util.HashMap<String,String> marketMap=new java.util.HashMap<String,String>(){{
-            put("Traded not listed Brussels","TNLB");
-            put("Euronext Paris, London","XPAR");
-            put("Euronext Paris, Brussels","XPAR");
-            put("Euronext Paris, Amsterdam, Brussels","XPAR");
-            put("Euronext Paris, Amsterdam","XPAR");
-            put("Euronext Paris","XPAR");
-            put("Euronext Lisbon","XLIS");           
-            put("Euronext Growth Paris","ALXP");
-            put("Euronext Growth Lisbon","ALXL");
-            put("Euronext Growth Brussels, Paris","ALXB");
-            put("Euronext Growth Brussels","ALXB");            
-            put("Euronext Brussels, Paris","XBRU");
-            put("Euronext Brussels","XBRU");
-            put("Euronext Brussels, Amsterdam","XBRU");
-        
-            put("Euronext Amsterdam, Paris","XAMS");
-            put("Euronext Amsterdam, London","XAMS");
-            put("Euronext Amsterdam, Brussels, Paris","XAMS");
-            put("Euronext Amsterdam, Brussels","XAMS");
-            put("Euronext Amsterdam","XAMS");
-            put("Euronext Growth Dublin","AYP");
-            put("Euronext Dublin","A5G");
-            put("Euronext Growth Paris, Brussels","ALXP");            
-            put("Euronext Access Paris","XMLI");
-            put("Euronext Access Lisbon","ENXL");
-            put("Euronext Access Brussels","MLXB");
-        }};
+        /**
+         *
+         * Euronext Access Brussels Euronext Access Lisbon
+         */
+        java.util.HashMap<String, String> marketMap = new java.util.HashMap<String, String>() {
+            {
+                put("Traded not listed Brussels", "TNLB");
+                put("Euronext Paris, London", "XPAR");
+                put("Euronext Paris, Brussels", "XPAR");
+                put("Euronext Paris, Amsterdam, Brussels", "XPAR");
+                put("Euronext Paris, Amsterdam", "XPAR");
+                put("Euronext Paris", "XPAR");
+                put("Euronext Lisbon", "XLIS");
+                put("Euronext Growth Paris", "ALXP");
+                put("Euronext Growth Lisbon", "ALXL");
+                put("Euronext Growth Brussels, Paris", "ALXB");
+                put("Euronext Growth Brussels", "ALXB");
+                put("Euronext Brussels, Paris", "XBRU");
+                put("Euronext Brussels", "XBRU");
+                put("Euronext Brussels, Amsterdam", "XBRU");
+
+                put("Euronext Amsterdam, Paris", "XAMS");
+                put("Euronext Amsterdam, London", "XAMS");
+                put("Euronext Amsterdam, Brussels, Paris", "XAMS");
+                put("Euronext Amsterdam, Brussels", "XAMS");
+                put("Euronext Amsterdam", "XAMS");
+                put("Euronext Growth Dublin", "AYP");
+                put("Euronext Dublin", "A5G");
+                put("Euronext Growth Paris, Brussels", "ALXP");
+                put("Euronext Access Paris", "XMLI");
+                put("Euronext Access Lisbon", "ENXL");
+                put("Euronext Access Brussels", "MLXB");
+            }
+        };
         String u0 = "https://www.euronext.com/en/equities/directory";
         //String det = "https://www.euronext.com/en/products/equities/BE0003849669-MLXB/market-information";
         //String det = "https://www.euronext.com/en/products/equities/#/market-information";
@@ -1006,15 +1013,15 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
-        
+
         int k1 = s.indexOf("\\/en\\/popup\\/data\\/download?");
         int k2 = s.indexOf("\"", k1);
         String u1 = s.substring(k1, k2 - 1);
         //LOG.debug(u1);
-        u1 = u1.replace("\\u0026", "&");        
+        u1 = u1.replace("\\u0026", "&");
         u1 = "https://www.euronext.com" + u1.replace("/", "");
         u1 = u1.replace("\\", "/");
-        LOG.debug(u1);        
+        LOG.debug(u1);
         s = new String(httpf.HttpGetUrl(u1, Optional.empty(), Optional.empty()));
         Document doc = Jsoup.parse(s);
         java.util.HashMap<String, String> vmap = new java.util.HashMap<>();
@@ -1023,17 +1030,17 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         vmap.put("decimal_separator", "1");
         vmap.put("date_format", "1");
         vmap.put("op", "Go");
-        Elements links = doc.select("input[name=\"form_build_id\"]");        
+        Elements links = doc.select("input[name=\"form_build_id\"]");
         links.forEach((x) -> {
             vmap.put("form_build_id", x.attr("value"));
         });
-        links = doc.select("input[name=\"form_id\"]");        
+        links = doc.select("input[name=\"form_id\"]");
         links.forEach((x) -> {
             vmap.put("form_id", x.attr("value"));
         });
         HttpURLConnection post = httpf.sendPostRequest(u1, vmap);
         StringBuffer response;
-        try (BufferedReader in = new BufferedReader(
+        try ( BufferedReader in = new BufferedReader(
                 new InputStreamReader(post.getInputStream()))) {
             String inputLine;
             response = new StringBuffer();
@@ -1042,18 +1049,26 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             }
         }
         String res = response.toString();
-        String[] lines = res.split("\n");        
+        String[] lines = res.split("\n");
         for (String line : lines) {
             String[] row = line.split("\t");
-            if (row.length != 13) continue;
-            if (row[0].equalsIgnoreCase("\"Name\"")) continue;//first row
-            if (row[0].isEmpty()) continue;
+            if (row.length != 13) {
+                continue;
+            }
+            if (row[0].equalsIgnoreCase("\"Name\"")) {
+                continue;//first row
+            }
+            if (row[0].isEmpty()) {
+                continue;
+            }
             //if (row.length == 13) {
-             //   LOG.debug(row[0] + "\t" + row[1] + "\t" + row[2] + "\t" + row[3] + "\t" + row[4]);
+            //   LOG.debug(row[0] + "\t" + row[1] + "\t" + row[2] + "\t" + row[3] + "\t" + row[4]);
             //}
-            String mkt=row[3].replace("\"", "");
-            if (!marketMap.keySet().contains(mkt)) throw new Exception("market not found : "+row[3]);
-            String isin=row[1].replace("\"", "");
+            String mkt = row[3].replace("\"", "");
+            if (!marketMap.keySet().contains(mkt)) {
+                throw new Exception("market not found : " + row[3]);
+            }
+            String isin = row[1].replace("\"", "");
             //String urldet=det.replace("#", hashcode+"-"+marketMap.get(mkt));
             //String isindet = new String(httpf.HttpGetUrl(urldet, Optional.empty(), Optional.empty()));
             //String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
@@ -1062,50 +1077,54 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             //k1=isindet.indexOf("Industry");
             //k2=isindet.indexOf(",",k1);
             //String sector=isindet.substring(k2+2,isindet.indexOf("</strong>",k2));
-            String market="EURONEXT-"+marketMap.get(mkt);//+"\t"+row[3].toUpperCase();
-            String sector="NA";           
-            if (sector.isEmpty() || market.isEmpty()) continue;
+            String market = "EURONEXT-" + marketMap.get(mkt);//+"\t"+row[3].toUpperCase();
+            String sector = "NA";
+            if (sector.isEmpty() || market.isEmpty()) {
+                continue;
+            }
             java.util.HashMap<String, String> map = new java.util.HashMap<>();
             map.put("type", "STOCK");
             map.put("market", market.toUpperCase());
-            map.put("currency", row[4].replace("\"", "").toUpperCase());            
+            map.put("currency", row[4].replace("\"", "").toUpperCase());
             map.put("sector", sector);
             map.put("isin", isin);
             map.put("code", row[2].replace("\"", ""));
             map.put("name", row[0].replace("\"", ""));
-            map.keySet().forEach((x)-> {LOG.debug(x+"\t"+map.get(x));});
-                            String hash=Encoding.base64encode(getSHA1(String2Byte((map.get("isin")+map.get("market")))));
-                            if (!all.containsKey(hash)) {
-                                all.put(hash, map);
-                            }            
+            map.keySet().forEach((x) -> {
+                LOG.debug(x + "\t" + map.get(x));
+            });
+            String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
+            if (!all.containsKey(hash)) {
+                all.put(hash, map);
+            }
 
         }
         return all;
     }
-    
+
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListDE() throws Exception {
         //String XetraSuffix="ETR";
         String XetraURL = "http://www.xetra.com/xetra-en/instruments/shares/list-of-tradable-shares";
-        
-        String det ="https://www.boerse-berlin.com/index.php/Shares?isin=#";//   "http://www.boerse-berlin.com/index.php/Shares?isin=#";
+
+        String det = "https://www.boerse-berlin.com/index.php/Shares?isin=#";//   "http://www.boerse-berlin.com/index.php/Shares?isin=#";
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        
+
         String url, type = "STOCK", currency = "EUR", market = "XETRA";
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
-        
+
         String s = new String(http.HttpGetUrl(XetraURL, Optional.empty(), Optional.empty()));
         Document doc = Jsoup.parse(s);
         Elements buttons = doc.select("button[name='PageNum'");
         Elements forms = doc.select("form[class='pagination pagination-top']");
         Elements state = doc.select("input[name='state']");
-        
+
         int maxpg = 0;
         for (Element x : buttons) {
             if (x.text().matches("\\d*")) {
-                
+
                 if (Integer.parseInt(x.text()) > maxpg) {
                     maxpg = Integer.parseInt(x.text());
                 }
@@ -1113,20 +1132,18 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         //for (Element x : ll) {LOG.debug(x.text());}
         XetraURL = "http://www.xetra.com" + forms.attr("action") + "?state=" + state.attr("value") + "&sort=sTitle+asc&hitsPerPage=10&pageNum=#";
-        
-        
-        
+
         java.util.ArrayList<String> list = new java.util.ArrayList<>();
         for (int i = 0; i < maxpg; i++) {
             url = XetraURL.replace("#", Integer.toString(i));
-            
+
             s = new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
-            
+
             doc = Jsoup.parse(s);
             Elements ll = doc.select("ol[class='list search-results '] p:containsOwn(ISIN:)");
             Elements names = doc.select("ol[class='list search-results ']  li  h4  a");
             //Elements links = doc.select("ol[class='list search-results ']  li  h4  a[href]");
-            if (ll.size() != names.size() ) {
+            if (ll.size() != names.size()) {
                 throw new Exception("xml mismatch");
             }
             for (int j = 0; j < ll.size(); j++) {
@@ -1134,13 +1151,13 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 Element y = names.get(j);
                 if (!list.contains(x.text().replace("ISIN: ", ""))) {
                     String isin = x.text().replace("ISIN: ", "").trim();
-                    String tolink=names.get(j).attr("href");
-                    String name=names.get(j).text();
+                    String tolink = names.get(j).attr("href");
+                    String name = names.get(j).text();
                     list.add(isin);
                     //LOG.info(det.replace("#", isin));
-                    String isindet = new String(http.HttpGetUrl("https://www.xetra.com"+tolink, Optional.empty(), Optional.empty()));
-                    
-                    String symbol=Jsoup.parse(isindet).select("dt:containsOwn(Mnemonic) + dd").text();
+                    String isindet = new String(http.HttpGetUrl("https://www.xetra.com" + tolink, Optional.empty(), Optional.empty()));
+
+                    String symbol = Jsoup.parse(isindet).select("dt:containsOwn(Mnemonic) + dd").text();
                     //String isindet = new String(http.HttpGetUrl(det.replace("#", isin), Optional.empty(), Optional.empty()));
                     //String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
                     //String sector = Jsoup.parse(isindet).select("div[class='ln_sector line']  span").text();
@@ -1153,29 +1170,27 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                     map.put("isin", isin);
                     map.put("code", symbol);
                     map.put("name", name);
-                    if ( !symbol.isEmpty()) {
-                        
-                            String hash=Encoding.base64encode( getSHA1(String2Byte((map.get("isin")+map.get("market")))));
-                            if (!all.containsKey(hash)) {
-                                all.put(hash, map);
-                            }
-                        LOG.debug(isin + "\t" + symbol + "\t" + y.text() );
+                    if (!symbol.isEmpty()) {
+
+                        String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
+                        if (!all.containsKey(hash)) {
+                            all.put(hash, map);
+                        }
+                        LOG.debug(isin + "\t" + symbol + "\t" + y.text());
                     }
-                }                
-                
+                }
+
             }
-            
+
         }
         LOG.debug("all = " + list.size());
         return all;
     }
-    
 
     public static void main(String[] args) throws Exception {
 
-        
         fetchMLSEList(secType.FUTURE);
         //};
-    }    
-    
+    }
+
 }
