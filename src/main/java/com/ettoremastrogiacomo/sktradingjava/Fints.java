@@ -123,8 +123,18 @@ public final class Fints {
         if (k<0) throw new Exception("dates after "+d);
         return k;
     } 
-     
-    
+     /**
+      * 
+      * @param i column index
+      * @return name inside parenthesis
+      * @throws Exception 
+      */
+    public String getInnerName(int i) throws Exception {
+        String str=this.names.get(i);
+        int i1=str.lastIndexOf("("),i2=str.indexOf(")");
+        if (i1<0 || i2<0 || i1>= i2)   return str;
+        return str.substring(i1+1, i2);
+    }
     
     static public Fints removeOutliers(Fints f, int nsigma, int idx) throws Exception {
         if (nsigma < 1) {

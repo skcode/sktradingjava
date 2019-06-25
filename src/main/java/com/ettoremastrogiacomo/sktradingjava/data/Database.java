@@ -320,7 +320,7 @@ public class Database {
      *
      * @param wheresql filter sql with where , e.g. "where market='MLSE' and
      * type='STOCK'"
-     * @return array of hashmap (isin,name,code,market,type,currency,sector)
+     * @return array of hashmap (hashcode,isin,name,code,market,type,currency,sector)
      */
     public static java.util.ArrayList<java.util.HashMap<String, String>> getRecords(Optional<String> wheresql) {
         String wsql=wheresql.orElse("").trim();        
@@ -424,7 +424,7 @@ public class Database {
     
     public static String getHashcode(String code, String market) throws Exception {
         List<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList(code)), Optional.empty(), Optional.of(Arrays.asList(market)), Optional.empty(), Optional.empty());
-        if (map.size()!=1) throw new Exception(code+"."+market+" not found");
+        if (map.size()<1) throw new Exception(code+"."+market+" not found");
         return map.get(0).get("hashcode");
     }
     

@@ -11,6 +11,10 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import static com.ettoremastrogiacomo.sktradingjava.starters.BestCov.logger;
 import static com.ettoremastrogiacomo.utils.Misc.getDistinctRandom;
 import static com.ettoremastrogiacomo.utils.Misc.getTempDir;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -30,13 +34,21 @@ class Tclass implements Runnable {
     static Integer[] best = null;
     final double w2;
     final int size;
+    final HashMap<String,String> namemap,namemap2;
     
     public Tclass(final Fints f, int size) throws Exception {
         this.f = f;
         this.cov = f.getCovariance();
         this.size = size;
         w2 = Math.pow(1.0 / size, 2);
-        
+        namemap=new HashMap<>();//name to hash
+        for (int i=0;i<f.getLength();i++) {
+            String s1=f.getInnerName(i);
+            String[] v=s1.split("\\.");
+            String s2=Database.getHashcode(v[0],v[1]);            
+            namemap.put(f.getName(i), s2);     
+        }        
+        namemap2=Database.getCodeMarketName(new ArrayList<String>(namemap.values()));//hash to full        
     }
     
     static double getBestVariance() {
@@ -72,7 +84,7 @@ class Tclass implements Runnable {
                     best = idx;
                     logger.debug("thread id=" + Thread.currentThread().getId() + "\tit=" + k + "\tnew best : " + bestv);
                     for (Integer best1 : best) {
-                        logger.debug("\t" + f.getName(best1));
+                        logger.debug("\t" + f.getName(best1) +"\t"+ namemap2.get(namemap.get(f.getName(best1))));
                     }
                 }
             }
@@ -103,16 +115,22 @@ public class BestCov {
         for (String m : markets){
           if (m.contains("MLSE")||m.contains("XETRA")||m.contains("EURONEXT")){
           //  if (m.contains("EURONEXT")){
-                Fints t1=Database.getFilteredPortfolioOfClose(Optional.of(win*2), Optional.of("STOCK"), Optional.of(m), Optional.empty(),Optional.of(10), Optional.of(10), Optional.of(minvol), Optional.of(0.0));
-                if (t1==null) continue;
+                Fints t1=Database.getFilteredPortfolioOfClose(Optional.of(win*2), Optional.of("STOCK"), Optional.of(m), Optional.empty(),Optional.of(10), Optional.of(1000), Optional.of(minvol), Optional.of(0.0));
+                if (t1==null) continue;                
                 f= f.isEmpty()? t1 : f.merge(t1);
+                
             }
         
         }
+        
         if (f==null || f.isEmpty()) throw new Exception("empty series");
         logger.debug("noseries="+f.getNoSeries() + "\tlength=" + f.getLength() + "\tmaxdategap=" + f.getMaxDateGap() / (1000 * 60 * 60 * 24) +"\tlastdate=" + f.getLastDate());
         f = Fints.ER(f, 100, true).head(win);
         // Random.seed(System.currentTimeMillis());
+        
+
+        
+        
         int processors = Runtime.getRuntime().availableProcessors();
         if (f.getNoSeries() < setsize) {
             throw new Exception("too few series");
