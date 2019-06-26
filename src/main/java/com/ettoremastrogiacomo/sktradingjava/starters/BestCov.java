@@ -29,7 +29,7 @@ class Tclass implements Runnable {
     
     final double[][] cov;
     final Fints f;
-    final static long ITMAX = 500000000L;
+    final static long ITMAX = 50000000L;
     static double bestv = 1000;
     static Integer[] best = null;
     final double w2;
@@ -42,13 +42,13 @@ class Tclass implements Runnable {
         this.size = size;
         w2 = Math.pow(1.0 / size, 2);
         namemap=new HashMap<>();//name to hash
-        for (int i=0;i<f.getLength();i++) {
+        for (int i=0;i<f.getNoSeries();i++) {
             String s1=f.getInnerName(i);
             String[] v=s1.split("\\.");
             String s2=Database.getHashcode(v[0],v[1]);            
             namemap.put(f.getName(i), s2);     
         }        
-        namemap2=Database.getCodeMarketName(new ArrayList<String>(namemap.values()));//hash to full        
+        namemap2=Database.getCodeMarketName(new ArrayList<>(namemap.values()));//hash to full        
     }
     
     static double getBestVariance() {
@@ -84,6 +84,7 @@ class Tclass implements Runnable {
                     best = idx;
                     logger.debug("thread id=" + Thread.currentThread().getId() + "\tit=" + k + "\tnew best : " + bestv);
                     for (Integer best1 : best) {
+                   
                         logger.debug("\t" + f.getName(best1) +"\t"+ namemap2.get(namemap.get(f.getName(best1))));
                     }
                 }
@@ -92,7 +93,7 @@ class Tclass implements Runnable {
             if (k > ITMAX) {
                 break;
             }
-            if ((k % 5000000)==0) logger.debug("Iteration "+k+" of "+ITMAX);
+            if ((k % 5000000)==0) logger.debug("Iteration "+k+" of "+ITMAX +"\tthread id "+Thread.currentThread().getId());
         }
         
     }
