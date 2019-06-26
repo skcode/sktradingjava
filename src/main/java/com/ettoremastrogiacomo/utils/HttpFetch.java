@@ -93,7 +93,7 @@ public class HttpFetch {
             {
                 if(retryCount > MAX_RETRY_COUNT)
                 {
-                    throw new RuntimeException("Could not execute, max retries="+MAX_RETRY_COUNT, e);
+                    throw new RuntimeException("Could not fetch '"+s_url+"', max retries="+MAX_RETRY_COUNT, e);
                 }
 
                 retryCount++;
