@@ -1009,7 +1009,7 @@ public class Database {
      * @param maxold e.g. 7 gap from current date
      * @param minvol e.g. 10000 mean volumes in length samples
      * @param sharpe_treshold e.g. 0
-     * @return ArrayList isins list matching criteria
+     * @return ArrayList hashcodes list matching criteria
      * @throws Exception
      */
     public static java.util.ArrayList<String> getFilteredPortfolio(Optional<List<String>> hashcodes, Optional<Integer> length, Optional<Double> maxpcgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol, Optional<Double> sharpe_treshold) throws Exception {

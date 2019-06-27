@@ -34,21 +34,22 @@ class Tclass implements Runnable {
     static Integer[] best = null;
     final double w2;
     final int size;
-    final HashMap<String,String> namemap,namemap2;
+    final HashMap<Integer,String> namemap;
     
-    public Tclass(final Fints f, int size) throws Exception {
+    public Tclass(final Fints f, int size,HashMap<Integer,String> names) throws Exception {
         this.f = f;
         this.cov = f.getCovariance();
         this.size = size;
         w2 = Math.pow(1.0 / size, 2);
-        namemap=new HashMap<>();//name to hash
+        this.namemap=names;
+        /*namemap=new HashMap<>();//name to hash
         for (int i=0;i<f.getNoSeries();i++) {
             String s1=f.getInnerName(i);
             String[] v=s1.split("\\.");
             String s2=Database.getHashcode(v[0],v[1]);            
             namemap.put(f.getName(i), s2);     
         }        
-        namemap2=Database.getCodeMarketName(new ArrayList<>(namemap.values()));//hash to full        
+        namemap2=Database.getCodeMarketName(new ArrayList<>(namemap.values()));//hash to full        */
     }
     
     static double getBestVariance() {
@@ -85,7 +86,7 @@ class Tclass implements Runnable {
                     logger.debug("thread id=" + Thread.currentThread().getId() + "\tit=" + k + "\tnew best : " + bestv);
                     for (Integer best1 : best) {
                    
-                        logger.debug("\t" + f.getName(best1) +"\t"+ namemap2.get(namemap.get(f.getName(best1))));
+                        logger.debug("\t" + f.getName(best1) +"\t"+ namemap.get(best1));
                     }
                 }
             }
@@ -109,11 +110,22 @@ public class BestCov {
         
         int setsize = 15;
         int win = 90;
-        int minvol=50000;
+        int minvol=150000;
+        double maxpcgap=0.2;
+        int maxdaygap=6;
+        int maxold=100;
+        double sharpe_treshold=0.;
+        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE","XETRA","EURONEXT")), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes= new ArrayList<>();
+        for (HashMap<String,String> x : map) {hashcodes.add(x.get("hashcode"));}
+        hashcodes=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(win*2), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.of(sharpe_treshold));
+        
+        
+        
         List<String> markets=Database.getMarkets();
         markets.forEach((x)->{logger.debug(x);});
         Fints f=new Fints();
-        for (String m : markets){
+        /*for (String m : markets){
           if (m.contains("MLSE")||m.contains("XETRA")||m.contains("EURONEXT")){
           //  if (m.contains("EURONEXT")){
                 Fints t1=Database.getFilteredPortfolioOfClose(Optional.of(win*2), Optional.of("STOCK"), Optional.of(m), Optional.empty(),Optional.of(10), Optional.of(1000), Optional.of(minvol), Optional.of(0.0));
@@ -122,8 +134,19 @@ public class BestCov {
                 
             }
         
+        }*/
+        HashMap<Integer,String> hashcodes_ok= new HashMap<>();
+        HashMap<String,String> codemarketname_ok= new HashMap<>();
+        for ( String h: hashcodes) {
+            Fints t1= Database.getFintsQuotes(h).getSerieCopy(3);
+            if (t1==null) continue;
+            f= f.isEmpty()? t1 : f.merge(t1);
+            hashcodes_ok.put(f.getNoSeries()-1,h);            
         }
-        
+        codemarketname_ok=Database.getCodeMarketName(new ArrayList<>(hashcodes_ok.values()) );
+        for (Integer i: hashcodes_ok.keySet()) {
+            hashcodes_ok.replace(i, codemarketname_ok.get(hashcodes_ok.get(i)));
+        }
         if (f==null || f.isEmpty()) throw new Exception("empty series");
         logger.debug("noseries="+f.getNoSeries() + "\tlength=" + f.getLength() + "\tmaxdategap=" + f.getMaxDateGap() / (1000 * 60 * 60 * 24) +"\tlastdate=" + f.getLastDate());
         f = Fints.ER(f, 100, true).head(win);
@@ -132,13 +155,13 @@ public class BestCov {
 
         
         
-        int processors = Runtime.getRuntime().availableProcessors();
+        int processors = Runtime.getRuntime().availableProcessors()-1;
         if (f.getNoSeries() < setsize) {
             throw new Exception("too few series");
         }
         java.util.HashSet<Thread> tset = new java.util.HashSet<>();
         for (int i = 0; i < processors; i++) {
-            Thread t1 = new Thread(new Tclass(f, setsize));
+            Thread t1 = new Thread(new Tclass(f, setsize,hashcodes_ok));
             t1.start();
             tset.add(t1);
         }
