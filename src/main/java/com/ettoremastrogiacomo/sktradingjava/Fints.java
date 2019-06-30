@@ -382,9 +382,19 @@ public final class Fints {
         System.arraycopy(matrix[i], 0, d, 0, d.length);
         return d;
     }
+    
+    public double[] getCol(int j) {
+        double[] d= new double[this.matrix.length];
+        for (int i=0;i<d.length;i++) d[i]=this.matrix[i][j];
+        return d;
+    }
 
     public double[] getLastRow () {
         return getRow(matrix.length-1);
+    }
+    
+    public double getLastValueInCol(int i) {        
+        return this.matrix[this.matrix.length-1][i];    
     }
 
 

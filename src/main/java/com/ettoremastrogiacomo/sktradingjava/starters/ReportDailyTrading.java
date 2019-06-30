@@ -27,10 +27,12 @@ public class ReportDailyTrading {
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=250,testwin=60,sec=10;
-        long epochs=10000000L;
-        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(1500), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(500000), Optional.empty());        
+        int trainwin=120,testwin=20,sec;
+        long epochs=1000000L;
+        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(800), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(500000), Optional.empty());        
+        
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MAXPROFIT));
+        sec=ptf.getNoSecurities()/10;
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINVARBARRIER));
     }
 }

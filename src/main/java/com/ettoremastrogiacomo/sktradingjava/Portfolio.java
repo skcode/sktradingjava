@@ -681,9 +681,20 @@ public class Portfolio {
             LOG.debug("equity info "+alleq);
             step++;
         }
-        alleq = alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1)));
+        
+        alleq = alleq.merge(Fints.merge(alleq.getLinReg(0), alleq.getLinReg(1)));        
         LOG.debug("equity mdd " + alleq.getMaxDD(0));
         LOG.debug("equity bh mdd " + alleq.getMaxDD(1));
+        HashMap<String,Double> st1=DoubleArray.LinearRegression(alleq.getCol(0));
+        HashMap<String,Double> st2=DoubleArray.LinearRegression(alleq.getCol(1));
+        LOG.debug("linreg slope "+st1.get("slope"));
+        LOG.debug("linreg slope bh "+st2.get("slope"));
+        LOG.debug("linreg stderr "+st1.get("stderr"));
+        LOG.debug("linreg stderr bh "+st2.get("stderr"));
+        LOG.debug("linreg intercept "+st1.get("intercept"));
+        LOG.debug("linreg intercept bh "+st2.get("intercept"));
+        
+        
         alleq.plot("equity", "val");
 
     }
