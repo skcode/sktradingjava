@@ -192,7 +192,19 @@ public class Database {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Database.class);
     static final java.util.List<String> MONTHS = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-
+    public static enum Providers {
+        BORSAITALIANA(1),INVESTING(2),YAHOO(3),GOOGLE(4);
+        private final int priority;                
+        Providers(int priority) {this.priority=priority;}
+        int getPriority() {return priority;}   
+        String getNote() {
+            if (this.name().equals("BORSAITALIANA")) return "borsa italiana";
+            if (this.name().equals("INVESTING")) return "investing";
+            if (this.name().equals("YAHOO")) return "yahoo quotes";
+            if (this.name().equals("GOOGLE")) return "google quotes";
+            return "";
+        }
+    };
     /**
      * create db with table securities
      * (isin,name,code,type,market,currency,sector,yahooquotes,bitquotes)
@@ -223,6 +235,24 @@ public class Database {
                 + "     yahooquotes text,\n"
                 + "     googlequotes text,\n"
                 + "     PRIMARY KEY (hashcode));";
+        String sqleod2 = "CREATE TABLE IF NOT EXISTS eoddatav2 (\n"
+                + "     hashcode not null,\n"
+                + "	date text not null,\n"
+                + "	open real not null,\n"
+                + "	high real not null,\n"
+                + "	low real  not null,\n"
+                + "	close real not null,\n"
+                + "	volume real not null,\n"
+                + "	oi real not null,\n"
+                + "     provider text not null,\n"
+                + "     FOREIGN KEY(provider) REFERENCES providerseod(name),\n"                   
+                + "     PRIMARY KEY (hashcode,date,provider));";
+        String providers ="CREATE TABLE IF NOT EXISTS providerseod (\n"
+                + "     name not null,\n"
+                + "     priority integer not null,\n"
+                + "     notes text,\n"
+                + "     PRIMARY KEY (name));";
+        
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -231,6 +261,13 @@ public class Database {
             stmt.execute(sqldata);
             stmt.execute(sqlnew);
             stmt.execute(sqleod);
+            stmt.execute(sqleod2);
+            stmt.execute(providers);
+            Providers[] p=Providers.values();
+            for (Providers p1 : p) {
+                String s1 = "insert or replace into providerseod(name,priority,notes) values(" + p1.name() + "," + p1.getPriority() + "," + p1.getNote() + ")";
+                stmt.execute(s1);
+            }
         } catch (SQLException e) {
             LOG.error(e, e);
         } finally {
@@ -676,6 +713,9 @@ public class Database {
         URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
 
         HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+        }        
         String res = new String(http.HttpGetUrl(url.toString(), Optional.empty(), Optional.empty()));
         int k0 = res.indexOf("action=\"/consent\"");
 

@@ -11,6 +11,7 @@ import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,18 +22,43 @@ public class ReportDailyTrading {
     static Logger logger = Logger.getLogger(ReportDailyTrading.class);
  
 
-    public static void main(String[] args) throws Exception {
+    static void checkStock() throws Exception {
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE","XETRA","EURONEXT")), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes= new ArrayList<>();
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=120,testwin=20,sec;
-        long epochs=1000000L;
-        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(800), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(500000), Optional.empty());        
-        
+        int trainwin=60,testwin=10,sec;
+        long epochs=1000000L;                                             
+        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(800), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(500000), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINVARBARRIER));
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
+    }
+    
+    static void checkETF() throws Exception {
+        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and sector like '%CLASSE 2 IND AZIONARIO%' and not sector like '%Benchmark:=COMMODITIES%' and not sector like '%HEDGED%'"));
+        //ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF-STOCK")), Optional.of(Arrays.asList("MLSE")), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes= new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        int trainwin=1800,testwin=200,sec;
+        int minvol=1000;
+        int maxold=10;
+        long epochs=1000000L;                                             
+        int maxdaygap=10;
+        double maxgap=.15;
+        int minlen=2000;
+        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
+        Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        sec=ptf.getNoSecurities()/10;
+        if (sec>10) sec=10;
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        checkETF();
     }
 }

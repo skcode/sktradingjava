@@ -171,17 +171,19 @@ public class Portfolio {
         double[][] m = subf.getMatrixCopy();
         double[][] mlog = subflog.getMatrixCopy();
         long DEFEPOCHS = 1000000L;
-        ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        int avproc=Runtime.getRuntime().availableProcessors();
+        long effepochs=epoch.orElse(DEFEPOCHS)/avproc;
+        ExecutorService pool = Executors.newFixedThreadPool(avproc);
         java.util.ArrayList<Future> futures = new java.util.ArrayList<>();
         switch (met) {
             case MINVAR: {
                 double[][] c = DoubleDoubleArray.cov(m);
                 double w = 1.0 / setsize;
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             double var = 0;
                             for (Integer sa1 : set) {
@@ -212,11 +214,11 @@ public class Portfolio {
                 double[][] c = DoubleDoubleArray.cov(mlog);
                 double[] mm=DoubleDoubleArray.mean(mlog);
                 double w = 1.0 / setsize;
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             boolean notgood=false;
                             for (Integer sa1 : set) {
@@ -259,11 +261,11 @@ public class Portfolio {
                 double[] lr=smasharpe.getLastRow();
                 //double[] mm=DoubleDoubleArray.mean(mlog);
                 double w = 1.0 / setsize;
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             boolean notgood=false;
                             for (Integer sa1 : set) {
@@ -300,11 +302,11 @@ public class Portfolio {
 
             case MAXSHARPE: {
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             for (int i = 0; i < samplelen; i++) {
                                 double mean = 0;
@@ -336,11 +338,11 @@ public class Portfolio {
             break;
             case MAXSLOPE: {
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             for (int i = 0; i < samplelen; i++) {
                                 double mean = 0;
@@ -372,11 +374,11 @@ public class Portfolio {
             break;
             case MINSTDERR: {
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             for (int i = 0; i < samplelen; i++) {
                                 double mean = 0;
@@ -408,11 +410,11 @@ public class Portfolio {
             break;
             case PROFITMINDDRATIO: {
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             for (int i = 0; i < samplelen; i++) {
                                 double mean = 0;
@@ -446,11 +448,11 @@ public class Portfolio {
             case MAXPROFIT: {
                 //double [][] c=DoubleDoubleArray.cov(m);
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
                             for (int i = 0; i < samplelen; i++) {
                                 double mean = 0;
@@ -481,11 +483,11 @@ public class Portfolio {
             break;
             case MINDD: {
                 double[] eqt = new double[samplelen];
-                for (int k = 0; k < Runtime.getRuntime().availableProcessors(); k++) {
+                for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
-                        for (long t = 0; t < epoch.orElse(DEFEPOCHS); t++) {
+                        for (long t = 0; t < effepochs; t++) {
                             Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
 
                             for (int i = 0; i < samplelen; i++) {
@@ -654,7 +656,8 @@ public class Portfolio {
         LOG.debug("opt method " + optype);
         LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
         LOG.debug("epochs " + epochs);
-        LOG.debug("START " + closeER.getFirstDate()+"\t"+closeER.getLastDate());
+        LOG.debug("date range " + closeER.getFirstDate()+"\t->\t"+closeER.getLastDate());
+        LOG.debug("START");
         //LOG.debug("pool " + exret);
         Fints alleq = new Fints();
         while (true) {
@@ -674,8 +677,8 @@ public class Portfolio {
             } else {
                 alleq = Fints.append(alleq, eq);
             }
-            lastequity = alleq.getLastRow()[0];
-            lastequitybh = alleq.getLastRow()[1];
+            lastequity = alleq.getLastValueInCol(0);// getLastRow()[0];
+            lastequitybh = alleq.getLastValueInCol(1);
             LOG.debug("equity optimized " + lastequity+"\tmdd="+alleq.getMaxDD(0));
             LOG.debug("equity bh " + lastequitybh+"\tmdd="+alleq.getMaxDD(1));
             LOG.debug("equity info "+alleq);
