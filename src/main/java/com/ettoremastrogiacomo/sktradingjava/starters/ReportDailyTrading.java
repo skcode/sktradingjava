@@ -28,12 +28,17 @@ public class ReportDailyTrading {
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=60,testwin=10,sec;
+        int trainwin=250,testwin=60,sec;
+        int minvol=5000;
+        int maxold=10;
         long epochs=1000000L;                                             
-        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(800), Optional.of(.15), Optional.of(10), Optional.empty(), Optional.of(500000), Optional.empty());               
+        int maxdaygap=10;
+        double maxgap=.15;
+        int minlen=2000;        
+        ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MAXSLOPE));    
     }
     
     static void checkETF() throws Exception {
@@ -43,8 +48,8 @@ public class ReportDailyTrading {
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=1800,testwin=200,sec;
-        int minvol=1000;
+        int trainwin=250,testwin=250,sec;
+        int minvol=500;
         int maxold=10;
         long epochs=1000000L;                                             
         int maxdaygap=10;
@@ -53,12 +58,13 @@ public class ReportDailyTrading {
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
-        if (sec>10) sec=10;
+        //if (sec>10) sec=10;
         ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
     }
 
 
     public static void main(String[] args) throws Exception {
-        checkETF();
+        //checkETF();
+        checkStock();
     }
 }

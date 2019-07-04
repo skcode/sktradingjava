@@ -131,8 +131,7 @@ public class Portfolio {
     
     public Fints opttest(Set<Integer> set, UDate startdate, UDate enddate, Optional<Double> lastequity, Optional<Double> lastequitybh) throws Exception {
         Fints subf = closeER.Sub(startdate, enddate);
-        double[][] m = subf.getMatrixCopy();
-        LOG.debug("\nTEST " + subf.toString()+"\n"+set+"\n"+set2names(set));
+        double[][] m = subf.getMatrixCopy();        
         int setsize = set.size();
         int poolsize = subf.getNoSeries();
         int len = subf.getLength();
@@ -161,8 +160,7 @@ public class Portfolio {
 
     public Entry opttrain(int setsize, UDate startdate, UDate enddate, optMethod met, Optional<Long> epoch) throws Exception {
         Fints subf = closeER.Sub(startdate, enddate);
-        Fints subflog = closeERlog.Sub(startdate, enddate);
-        LOG.debug("\nTRAIN " + subf.toString());
+        Fints subflog = closeERlog.Sub(startdate, enddate);        
         int poolsize = subf.getNoSeries();
         int samplelen = subf.getLength();
         if (setsize > poolsize) {
@@ -177,10 +175,10 @@ public class Portfolio {
         java.util.ArrayList<Future> futures = new java.util.ArrayList<>();
         switch (met) {
             case MINVAR: {
-                double[][] c = DoubleDoubleArray.cov(m);
-                double w = 1.0 / setsize;
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[][] c = DoubleDoubleArray.cov(m);
+                        double w = 1.0 / setsize;                        
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -211,11 +209,11 @@ public class Portfolio {
             }
             break;
             case MINVARBARRIER: {
-                double[][] c = DoubleDoubleArray.cov(mlog);
-                double[] mm=DoubleDoubleArray.mean(mlog);
-                double w = 1.0 / setsize;
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[][] c = DoubleDoubleArray.cov(mlog);
+                        double[] mm=DoubleDoubleArray.mean(mlog);
+                        double w = 1.0 / setsize;                        
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -256,13 +254,12 @@ public class Portfolio {
             break;
             case SMASHARPE: {
                 if (mlog.length<250) throw new Exception("SMASHARPE , trainingsamples<250:"+mlog.length);
-                double[][] c = DoubleDoubleArray.cov(mlog);
-                Fints smasharpe=Fints.SMA(Fints.Sharpe(subflog,200), 20);
-                double[] lr=smasharpe.getLastRow();
-                //double[] mm=DoubleDoubleArray.mean(mlog);
-                double w = 1.0 / setsize;
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[][] c = DoubleDoubleArray.cov(mlog);
+                        Fints smasharpe=Fints.SMA(Fints.Sharpe(subflog,200), 20);
+                        double[] lr=smasharpe.getLastRow();
+                        double w = 1.0 / setsize;
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -301,9 +298,10 @@ public class Portfolio {
             break;
 
             case MAXSHARPE: {
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -317,7 +315,14 @@ public class Portfolio {
                                 eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
                             }                            
                             HashMap<String,Double> map=DoubleArray.LinearRegression(eqt);
-                            double fitness = map.get("slope")/map.get("stderr");
+                            double[] newm=new double[eqt.length];
+                            double reg_a=map.get("intercept"),reg_b=map.get("slope");
+                            for (int i=0;i<newm.length;i++) newm[i]=reg_a+reg_b*i;
+                            double var=0;
+                            for (int i=0;i<newm.length;i++){
+                                var+=Math.pow(eqt[i]-newm[i],2);
+                            }                                                        
+                            double fitness = Math.sqrt(var/newm.length);
                             if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
                                 fitness = Double.NEGATIVE_INFINITY;
                             }
@@ -337,9 +342,10 @@ public class Portfolio {
             }
             break;
             case MAXSLOPE: {
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -373,9 +379,10 @@ public class Portfolio {
             }
             break;
             case MINSTDERR: {
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -409,9 +416,10 @@ public class Portfolio {
             }
             break;
             case PROFITMINDDRATIO: {
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -447,9 +455,10 @@ public class Portfolio {
             
             case MAXPROFIT: {
                 //double [][] c=DoubleDoubleArray.cov(m);
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -482,9 +491,10 @@ public class Portfolio {
             }
             break;
             case MINDD: {
-                double[] eqt = new double[samplelen];
+                
                 for (int k = 0; k < avproc; k++) {
                     futures.add(pool.submit(() -> {
+                        double[] eqt = new double[samplelen];
                         double localbest = Double.NEGATIVE_INFINITY;
                         Set<Integer> localbestset = new TreeSet<>();
                         for (long t = 0; t < effepochs; t++) {
@@ -668,10 +678,26 @@ public class Portfolio {
             if ((offset + trainWin + testWin) >= closeER.getLength()) {
                 break;
             }
-            //LOG.debug("date range  " + closeER.getDate(offset) + "\t" + closeER.getDate(offset + trainWin + testWin));
-            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, closeER.getDate(offset), closeER.getDate(offset + trainWin - 1), optype, epochs);
-            LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue()+"\n"+set2names(winner.getValue()));
-            Fints eq = this.opttest(winner.getValue(), closeER.getDate(offset + trainWin), closeER.getDate(offset + trainWin + testWin - 1), Optional.of(lastequity), Optional.of(lastequitybh));
+            UDate startdate,enddate;
+            //begin train
+            LOG.debug("\nTRAIN");
+            startdate=closeER.getDate(offset);
+            enddate=closeER.getDate(offset + trainWin - 1);
+            LOG.debug("date range  " + startdate + " -> " + enddate);
+            LOG.debug("database "+closeER.Sub(startdate, enddate));
+            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, startdate, enddate, optype, epochs);
+            Fints eqtrain = opttest(winner.getValue(), startdate, enddate, Optional.empty(), Optional.empty());
+            LOG.debug("train profit "+eqtrain.getLastValueInCol(0));
+            LOG.debug("train profit BH "+eqtrain.getLastValueInCol(1));
+            LOG.debug("maxdd "+eqtrain.getMaxDD(0));
+            LOG.debug("maxdd BH "+eqtrain.getMaxDD(1));            
+            LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue()+"\n"+set2names(winner.getValue()));            
+            //begin test
+            startdate=closeER.getDate(offset + trainWin);
+            enddate=closeER.getDate(offset + trainWin+testWin-1);
+            LOG.debug("\nTEST");
+            LOG.debug("winner set "+winner.getValue()+"\n"+set2names(winner.getValue()));
+            Fints eq = this.opttest(winner.getValue(), startdate, enddate, Optional.of(lastequity), Optional.of(lastequitybh));
             if (alleq.isEmpty()) {
                 alleq = eq;
             } else {
