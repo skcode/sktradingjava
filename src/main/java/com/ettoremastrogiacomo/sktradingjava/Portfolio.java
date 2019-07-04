@@ -10,7 +10,6 @@ import com.joptimizer.functions.LinearMultivariateRealFunction;
 import com.joptimizer.functions.PDQuadraticMultivariateRealFunction;
 import com.joptimizer.optimizers.JOptimizer;
 import com.joptimizer.optimizers.OptimizationRequest;
-import com.sun.org.apache.bcel.internal.generic.AALOAD;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -675,29 +674,47 @@ public class Portfolio {
             int offset = step * testWin;
             //LOG.debug("offset " + offset);
 
-            if ((offset + trainWin + testWin) >= closeER.getLength()) {
+            if ((offset + trainWin + 2) >= closeER.getLength()) {
+                LOG.debug("too few samples to test, ending");
                 break;
             }
-            UDate startdate,enddate;
+            UDate train_startdate,train_enddate;
+            UDate test_startdate,test_enddate;
+            train_startdate=closeER.getDate(offset);
+            train_enddate=closeER.getDate(offset + trainWin - 1);
+            
+            if ((offset + trainWin + testWin) >= closeER.getLength()) {
+                test_startdate=closeER.getDate(offset + trainWin);
+                test_enddate=closeER.getLastDate();
+            } else {
+                test_startdate=closeER.getDate(offset + trainWin);
+                test_enddate=closeER.getDate(offset + trainWin+testWin-1);
+            }
             //begin train
             LOG.debug("\nTRAIN");
-            startdate=closeER.getDate(offset);
-            enddate=closeER.getDate(offset + trainWin - 1);
-            LOG.debug("date range  " + startdate + " -> " + enddate);
-            LOG.debug("database "+closeER.Sub(startdate, enddate));
-            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, startdate, enddate, optype, epochs);
-            Fints eqtrain = opttest(winner.getValue(), startdate, enddate, Optional.empty(), Optional.empty());
+            LOG.debug("date range  " + train_startdate + " -> " + train_enddate);
+            LOG.debug("database "+closeER.Sub(train_startdate, train_enddate));
+            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
+            Fints eqtrain = opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
             LOG.debug("train profit "+eqtrain.getLastValueInCol(0));
             LOG.debug("train profit BH "+eqtrain.getLastValueInCol(1));
-            LOG.debug("maxdd "+eqtrain.getMaxDD(0));
+            LOG.debug("maxdd "+eqtrain.getMaxDD(0));            
             LOG.debug("maxdd BH "+eqtrain.getMaxDD(1));            
+            LOG.debug("samples "+eqtrain.getLength());
+            LOG.debug("series "+closeER.getNoSeries());
             LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue()+"\n"+set2names(winner.getValue()));            
             //begin test
-            startdate=closeER.getDate(offset + trainWin);
-            enddate=closeER.getDate(offset + trainWin+testWin-1);
             LOG.debug("\nTEST");
-            LOG.debug("winner set "+winner.getValue()+"\n"+set2names(winner.getValue()));
-            Fints eq = this.opttest(winner.getValue(), startdate, enddate, Optional.of(lastequity), Optional.of(lastequitybh));
+            LOG.debug("date range  " + test_startdate + " -> " + test_enddate);
+//            LOG.debug("winner set "+winner.getValue()+"\n"+set2names(winner.getValue()));
+            Fints eq = this.opttest(winner.getValue(), test_startdate, test_enddate, Optional.of(lastequity), Optional.of(lastequitybh));
+            LOG.debug("test profit "+eq.getLastValueInCol(0));
+            LOG.debug("test profit BH "+eq.getLastValueInCol(1));
+            LOG.debug("maxdd "+eq.getMaxDD(0));            
+            LOG.debug("maxdd BH "+eq.getMaxDD(1));            
+            LOG.debug("samples "+eq.getLength());
+            LOG.debug("series "+winner.getValue().size());
+            
             if (alleq.isEmpty()) {
                 alleq = eq;
             } else {
@@ -705,9 +722,9 @@ public class Portfolio {
             }
             lastequity = alleq.getLastValueInCol(0);// getLastRow()[0];
             lastequitybh = alleq.getLastValueInCol(1);
-            LOG.debug("equity optimized " + lastequity+"\tmdd="+alleq.getMaxDD(0));
-            LOG.debug("equity bh " + lastequitybh+"\tmdd="+alleq.getMaxDD(1));
-            LOG.debug("equity info "+alleq);
+            LOG.debug("ALL test equity optimized " + lastequity+"\tmdd="+alleq.getMaxDD(0));
+            LOG.debug("ALL test equity bh " + lastequitybh+"\tmdd="+alleq.getMaxDD(1));
+            LOG.debug("ALL test equity info "+alleq);
             step++;
         }
         
