@@ -157,6 +157,109 @@ public class Portfolio {
         return new Fints(subf.getDate(), Arrays.asList("equity", "equityBH"), subf.getFrequency(), eqm);
     }
 
+    
+    public Entry opttrain2(int setsize, UDate startdate, UDate enddate, optMethod met, Optional<Long> epoch) throws Exception {
+        Fints subf = closeER.Sub(startdate, enddate);               
+        int poolsize = subf.getNoSeries();
+        int samplelen = subf.getLength();
+        if (setsize > poolsize) {
+            throw new Exception("optimal set greather than available set " + setsize + ">" + poolsize);
+        }
+        double[][] m = subf.getMatrixCopy();        
+        long DEFEPOCHS = 1000000L;
+        int avproc=Runtime.getRuntime().availableProcessors();
+        long effepochs=epoch.orElse(DEFEPOCHS)/avproc;
+        ExecutorService pool = Executors.newFixedThreadPool(avproc);
+        java.util.ArrayList<Future> futures = new java.util.ArrayList<>();
+        double[][] covmat = DoubleDoubleArray.cov(m);
+        double[] meanbycols=DoubleDoubleArray.mean(m);
+        //double[] meanbyrows=DoubleDoubleArray.mean(DoubleDoubleArray.transpose(m));
+        double w = 1.0 / setsize;
+        for (int k = 0; k < avproc; k++) {
+            futures.add(pool.submit(() -> {
+                double localbest = Double.NEGATIVE_INFINITY;
+                Set<Integer> localbestset = new TreeSet<>();
+                double[] eqt = new double[samplelen];
+                double fitness = Double.NEGATIVE_INFINITY;
+                for (long t = 0; t < effepochs; t++) {
+                    Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
+                    //build var
+                    double var = 0,meanret=0;
+                    for (Integer sa1 : set) {
+                        for (Integer sa2 : set) {
+                            var += w * w * covmat[sa1][sa2];
+                        }
+                        meanret+=meanbycols[sa1];
+                    }                    
+                    meanret/=setsize;
+                    //build equity
+                    for (int i = 0; i < samplelen; i++) {
+                        double mean = 0;
+                        for (Integer sa1 : set) {
+                            mean += m[i][sa1];
+                        }
+                        mean = mean / setsize;
+                        eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
+                    }                       
+                    HashMap<String,Double> lrmap=DoubleArray.LinearRegression(eqt);
+                    
+                    switch (met){
+                            case MAXPROFIT:{fitness=eqt[eqt.length-1];}
+                            break;
+                            case MINDD:{fitness=DoubleArray.maxDrowDownPerc(eqt);}
+                            break;
+                            case MAXSLOPE:{fitness=lrmap.get("slope");}
+                            break;
+                            case MAXSHARPE:{fitness=lrmap.get("slope")/lrmap.get("stderr");}
+                            break;
+                            case MINSTDERR:{fitness=1.0/lrmap.get("stderr");}
+                            break;
+                            case PROFITMINDDRATIO :{
+                                fitness=eqt[eqt.length-1]/Math.abs(DoubleArray.maxDrowDownPerc(eqt));}
+                            break;
+                            case MINVAR:{fitness=1.0/var;}
+                            break;           
+                            case SMASHARPE:{fitness=meanret/var;}
+                            break;
+                            default:
+                                throw new Exception("not yet implemented");
+                            
+                    }
+                    
+                    
+                    if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
+                        fitness = Double.NEGATIVE_INFINITY;
+                    }
+                    if (t == 0) {
+                        localbest = fitness;
+                        localbestset = set;
+                    } else {
+                        if (fitness > localbest) {
+                            localbest = fitness;
+                            localbestset = set;
+                        }
+                    }
+                }
+                return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
+            }));
+        }
+        pool.shutdown();
+        try {
+            pool.awaitTermination(1, TimeUnit.HOURS);//wait 1 hour
+        } catch (InterruptedException e) {
+            LOG.error(e);
+        }
+
+        Entry<Double, Set> bestentry = new AbstractMap.SimpleEntry<>(Double.NEGATIVE_INFINITY, new TreeSet<Integer>());
+        for (Future f : futures) {
+            Entry<Double, Set> entry = (Entry) f.get();
+            if (entry.getKey() > bestentry.getKey()) {
+                bestentry = entry;
+            }
+        }
+        return bestentry;        
+    }
+    
     public Entry opttrain(int setsize, UDate startdate, UDate enddate, optMethod met, Optional<Long> epoch) throws Exception {
         Fints subf = closeER.Sub(startdate, enddate);
         Fints subflog = closeERlog.Sub(startdate, enddate);        
@@ -694,7 +797,7 @@ public class Portfolio {
             LOG.debug("\nTRAIN");
             LOG.debug("date range  " + train_startdate + " -> " + train_enddate);
             LOG.debug("database "+closeER.Sub(train_startdate, train_enddate));
-            Entry<Double, Set<Integer>> winner = this.opttrain(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
+            Entry<Double, Set<Integer>> winner = this.opttrain2(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
             Fints eqtrain = opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
             LOG.debug("train profit "+eqtrain.getLastValueInCol(0));
             LOG.debug("train profit BH "+eqtrain.getLastValueInCol(1));
