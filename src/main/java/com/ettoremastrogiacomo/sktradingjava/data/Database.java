@@ -265,7 +265,7 @@ public class Database {
             stmt.execute(providers);
             Providers[] p=Providers.values();
             for (Providers p1 : p) {
-                String s1 = "insert or replace into providerseod(name,priority,notes) values(" + p1.name() + "," + p1.getPriority() + "," + p1.getNote() + ")";
+                String s1 = "insert or replace into providerseod(name,priority,notes) values('" + p1.name() + "'," + p1.getPriority() + ",'" + p1.getNote() + "')";
                 stmt.execute(s1);
             }
         } catch (SQLException e) {

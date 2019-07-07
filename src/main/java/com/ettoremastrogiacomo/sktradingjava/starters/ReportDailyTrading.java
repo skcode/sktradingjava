@@ -11,7 +11,6 @@ import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,7 +30,7 @@ public class ReportDailyTrading {
         int trainwin=1000,testwin=500,sec;
         int minvol=5000;
         int maxold=10;
-        long epochs=5000000L;                                             
+        long epochs=3000000L;                                             
         int maxdaygap=10;
         double maxgap=.15;
         int minlen=2000;        
@@ -48,13 +47,13 @@ public class ReportDailyTrading {
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=1000,testwin=1000,sec;
+        int trainwin=1500,testwin=500,sec;
         int minvol=1000;
         int maxold=10;
-        long epochs=5000000L;                                             
+        long epochs=1000000L;                                             
         int maxdaygap=10;
         double maxgap=.15;
-        int minlen=1000;
+        int minlen=2100;
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
@@ -64,7 +63,7 @@ public class ReportDailyTrading {
 
 
     public static void main(String[] args) throws Exception {
-        checkETF();
-        //checkStock();
+        //checkETF();
+        checkStock();
     }
 }

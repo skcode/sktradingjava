@@ -93,9 +93,9 @@ public org.jgap.IChromosome getParams(){
     public java.util.HashMap<String,Double> getRealParams(Object params)throws Exception {
         if (params instanceof int[]){
                 int[] temp=(int[]) params;
-                java.util.HashMap<String,Double> map=new java.util.HashMap<>();
-                map.put("param1:"+ind.getName(temp[0]), new Double(MIN_PERIOD+temp[0]));
-                map.put("param2:"+ind.getName(temp[1]), new Double(MIN_PERIOD+temp[1]));
+                java.util.HashMap<String,Double> map=new java.util.HashMap<>();                
+                map.put("param1:"+ind.getName(temp[0]), (double)(MIN_PERIOD+temp[0]));
+                map.put("param2:"+ind.getName(temp[1]), (double)(MIN_PERIOD+temp[1]));
                 return map;        
         }
         else throw new Exception("bad params object : "+params.getClass().getName()); //To change body of generated methods, choose Tools | Templates.
