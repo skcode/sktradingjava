@@ -129,10 +129,10 @@ class GeneticOpt {
             Genotype.of(IntegerChromosome.of(0, poolsize-1, setmin))
                 : Genotype.of(IntegerChromosome.of(IntRange.of(0, poolsize-1),IntRange.of(setmin, setmax)));// 
         Engine< IntegerGene, Double> engine = Engine
-            .builder(GeneticOpt::eval, gtf)
+            .builder(GeneticOpt::eval, gtf).populationSize(10000)
             .build();        
         Genotype<IntegerGene> result = engine.stream()
-            .limit(100000)
+            .limit(1000)
             .collect(EvolutionResult.toBestGenotype());        
         //Genotype<IntegerGene> resultEff= duplicates ? result: result.stream().distinct().sorted();
         System.out.println("risultato: \n \t");

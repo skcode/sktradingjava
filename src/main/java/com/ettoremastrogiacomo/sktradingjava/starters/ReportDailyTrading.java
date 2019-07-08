@@ -27,7 +27,7 @@ public class ReportDailyTrading {
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));
         });
-        int trainwin=1000,testwin=250,sec;
+        int trainwin=1500,testwin=250,sec;
         int minvol=5000;
         int maxold=10;
         long epochs=2000000L;                                             
@@ -37,7 +37,7 @@ public class ReportDailyTrading {
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MAXSHARPE));    
     }
     
     static void checkETF() throws Exception {
