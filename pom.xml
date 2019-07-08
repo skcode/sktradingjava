@@ -50,53 +50,53 @@
         <dependency>
             <groupId>io.jenetics</groupId>
             <artifactId>jenetics</artifactId>
-            <version>3.9.0</version>
+            <version>5.0.0</version>
         </dependency>             
     </dependencies>
     <build>
-    <resources>
-        <resource>
-            <directory>src/main/java</directory>
-            <includes>
-                <include>**/*.properties</include>
-            </includes>
-        </resource>
-    </resources>        
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                </includes>
+            </resource>
+        </resources>        
         <plugins>
 
-       <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.8.0</version>
-            <configuration>
-                <source>1.8</source>
-                <target>1.8</target>
-            </configuration>
-        </plugin>            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>            
 
-		<!-- Maven Shade Plugin -->
-		<plugin>
-		  <groupId>org.apache.maven.plugins</groupId>
-		  <artifactId>maven-shade-plugin</artifactId>
-		  <version>2.3</version>
-		  <executions>
-		     <!-- Run shade goal on package phase -->
-		    <execution>
-			<phase>package</phase>
-			<goals>
-				<goal>shade</goal>
-			</goals>
-			<configuration>
-			  <transformers>
-				<!-- add Main-Class to manifest file -->
+            <!-- Maven Shade Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.3</version>
+                <executions>
+                    <!-- Run shade goal on package phase -->
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <!-- add Main-Class to manifest file -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-					<mainClass></mainClass>
-				</transformer>
-			  </transformers>
-			</configuration>
-		      </execution>
-		  </executions>
-		</plugin>            
+                                    <mainClass></mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>            
                                     
         </plugins>
     </build>      
