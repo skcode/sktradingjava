@@ -46,8 +46,9 @@ class GeneticOpt {
      static Portfolio.optMethod met;
      static double[][]cov;
      static double[] meanbycols;
+     static boolean duplicates;
     private  static double eval(Genotype<IntegerGene> gt) {
-        IntegerGene [] set=gt.getChromosome().as(IntegerChromosome.class).stream().distinct().toArray(IntegerGene[]::new);
+        IntegerGene [] set= duplicates ? gt.getChromosome().as(IntegerChromosome.class).stream().toArray(IntegerGene[]::new) : gt.getChromosome().as(IntegerChromosome.class).stream().distinct().toArray(IntegerGene[]::new);
         double fitness=Double.NEGATIVE_INFINITY;
         double[] eqt=new double[samplelen];
         double w=1.0/set.length;        
@@ -106,20 +107,21 @@ class GeneticOpt {
         return fitness;
     }
     
-    GeneticOpt(double[][]m,int setmin,int setmax,Portfolio.optMethod met)throws Exception {
+    GeneticOpt(double[][]m,int setmin,int setmax,Portfolio.optMethod met,boolean duplicates)throws Exception {
         GeneticOpt.m=m;
         GeneticOpt.setmax=setmax;GeneticOpt.setmin=setmin;GeneticOpt.met=met;
         GeneticOpt.cov=DoubleDoubleArray.cov(m);
         GeneticOpt.poolsize=cov.length;
         GeneticOpt.samplelen=m.length;
         GeneticOpt.meanbycols=DoubleDoubleArray.mean(m);
+        GeneticOpt.duplicates=duplicates;
         if (setmax > poolsize) {
             throw new Exception("optimal set greather than available set " + setmax + ">" + poolsize);
         }
         if (setmin>setmax) throw new Exception("wrong set size "+setmin+">"+setmax);
         if (setmin<2) throw new Exception("setmin too short "+setmin);
     }
-    public AbstractMap.SimpleEntry<Double,Set<Integer>> go() {
+    public AbstractMap.SimpleEntry<Double,ArrayList<Integer>> go() {
         Factory<Genotype<IntegerGene>> gtf = setmin==setmax?
             Genotype.of(IntegerChromosome.of(0, poolsize-1, setmin))
                 : Genotype.of(IntegerChromosome.of(IntRange.of(0, poolsize-1),IntRange.of(setmin, setmax)));// 
@@ -132,13 +134,12 @@ class GeneticOpt {
         System.out.println("risultato: \n \t" + result);
         double mfit=GeneticOpt.eval(result);
         System.out.println("eval: \n \t" + mfit);
-        IntegerGene[] g=result.getChromosome().stream().distinct().sorted().toArray(IntegerGene[]::new);        
-        TreeSet<Integer> res= new TreeSet<>();
+        IntegerGene[] g=duplicates ? result.getChromosome().stream().sorted().toArray(IntegerGene[]::new):result.getChromosome().stream().distinct().sorted().toArray(IntegerGene[]::new);        
+        ArrayList<Integer> res= new ArrayList<>();
         for (IntegerGene g1 : g) {
             res.add(g1.intValue());
         }        
-        return new AbstractMap.SimpleEntry<>(mfit,res);
-        
+        return new AbstractMap.SimpleEntry<>(mfit,res);        
     }
 
 }
@@ -343,7 +344,7 @@ public class Portfolio {
      * @return
      * @throws Exception
      */
-    public Fints opttest(Set<Integer> set, UDate startdate, UDate enddate, Optional<Double> lastequity, Optional<Double> lastequitybh) throws Exception {
+    public Fints opttest(ArrayList<Integer> set, UDate startdate, UDate enddate, Optional<Double> lastequity, Optional<Double> lastequitybh) throws Exception {
         Fints subf = closeER.Sub(startdate, enddate);
         double[][] m = subf.getMatrixCopy();        
         int setsize = set.size();
@@ -654,12 +655,12 @@ public class Portfolio {
             LOG.debug("\nTRAIN");
             LOG.debug("date range  " + train_startdate + " -> " + train_enddate);
             LOG.debug("database "+closeER.Sub(train_startdate, train_enddate));
-            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),sizeOptimalSet-5,sizeOptimalSet+5,optype);
+            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),sizeOptimalSet-5,sizeOptimalSet+5,optype,false);
             
             //NavigableMap<Double, Set<Integer>> ranking=this.opttrain(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
 
             //Entry<Double, Set<Integer>> winner = ranking.firstEntry();
-            Entry<Double, Set<Integer>> winner = go.go();
+            Entry<Double, ArrayList<Integer>> winner = go.go();
             Fints eqtrain = opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
             LOG.debug("train profit "+eqtrain.getLastValueInCol(0));
             LOG.debug("train profit BH "+eqtrain.getLastValueInCol(1));
@@ -683,7 +684,7 @@ public class Portfolio {
             LOG.debug("maxdd BH "+eq.getMaxDD(1));            
             LOG.debug("samples "+eq.getLength());
             LOG.debug("series "+winner.getValue().size());
-            List<String> fullnames=set2names(winner.getValue());
+            List<String> fullnames=list2names(winner.getValue());
             fullnames.forEach((x)->{LOG.debug(x);});                
             if (alleq.isEmpty()) {
                 alleq = eq;
