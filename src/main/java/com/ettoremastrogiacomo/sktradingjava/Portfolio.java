@@ -47,8 +47,11 @@ class GeneticOpt {
      static double[][]cov;
      static double[] meanbycols;
      static boolean duplicates;
+     
     private  static double eval(Genotype<IntegerGene> gt) {
-        IntegerGene [] set= duplicates ? gt.getChromosome().as(IntegerChromosome.class).stream().toArray(IntegerGene[]::new) : gt.getChromosome().as(IntegerChromosome.class).stream().distinct().toArray(IntegerGene[]::new);
+
+        IntegerGene [] set= duplicates ? gt.getChromosome().as(IntegerChromosome.class).stream().sorted().toArray(IntegerGene[]::new) : 
+                gt.getChromosome().as(IntegerChromosome.class).stream().sorted().distinct().toArray(IntegerGene[]::new);
         double fitness=Double.NEGATIVE_INFINITY;
         double[] eqt=new double[samplelen];
         double w=1.0/set.length;        
@@ -129,12 +132,19 @@ class GeneticOpt {
             .builder(GeneticOpt::eval, gtf)
             .build();        
         Genotype<IntegerGene> result = engine.stream()
-            .limit(10000)
+            .limit(100000)
             .collect(EvolutionResult.toBestGenotype());        
-        System.out.println("risultato: \n \t" + result);
+        //Genotype<IntegerGene> resultEff= duplicates ? result: result.stream().distinct().sorted();
+        System.out.println("risultato: \n \t");
+        //duplicates? result.stream().sorted():result.stream().distinct().sorted()).forEach(x->{System.out.print(x);});
+        if (duplicates)
+            result.stream().sorted().forEach((x)->{System.out.print(x+"  ");}) ;
+        else
+            result.stream().distinct().sorted().forEach((x)->{System.out.print(x+"  ");}) ;
         double mfit=GeneticOpt.eval(result);
-        System.out.println("eval: \n \t" + mfit);
-        IntegerGene[] g=duplicates ? result.getChromosome().stream().sorted().toArray(IntegerGene[]::new):result.getChromosome().stream().distinct().sorted().toArray(IntegerGene[]::new);        
+        System.out.println("\neval: \n \t" + mfit);
+        IntegerGene[] g=duplicates ? result.getChromosome().stream().sorted().toArray(IntegerGene[]::new):
+                result.getChromosome().stream().distinct().sorted().toArray(IntegerGene[]::new);        
         ArrayList<Integer> res= new ArrayList<>();
         for (IntegerGene g1 : g) {
             res.add(g1.intValue());
@@ -655,7 +665,7 @@ public class Portfolio {
             LOG.debug("\nTRAIN");
             LOG.debug("date range  " + train_startdate + " -> " + train_enddate);
             LOG.debug("database "+closeER.Sub(train_startdate, train_enddate));
-            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),sizeOptimalSet-5,sizeOptimalSet+5,optype,false);
+            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),sizeOptimalSet-5,sizeOptimalSet+5,optype,true);
             
             //NavigableMap<Double, Set<Integer>> ranking=this.opttrain(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
 
