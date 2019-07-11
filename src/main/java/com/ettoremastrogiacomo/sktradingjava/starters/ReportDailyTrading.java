@@ -30,14 +30,16 @@ public class ReportDailyTrading {
         int trainwin=1500,testwin=250,sec;
         int minvol=5000;
         int maxold=10;
-        long epochs=2000000L;                                             
+        int popsize=40000;
+        int ngen=5000;
+        boolean dup=true;
         int maxdaygap=10;
         double maxgap=.15;
         int minlen=2500;        
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());               
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MAXSHARPE));    
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(sec),Optional.of(dup),Optional.of(Portfolio.optMethod.MINDD));    
     }
     
     static void checkETF() throws Exception {
@@ -50,7 +52,9 @@ public class ReportDailyTrading {
         int trainwin=1500,testwin=500,sec;
         int minvol=1000;
         int maxold=10;
-        long epochs=1000000L;                                             
+        int popsize=10000;
+        int ngen=1000;
+        boolean dup=false;                                             
         int maxdaygap=10;
         double maxgap=.15;
         int minlen=2100;
@@ -58,7 +62,8 @@ public class ReportDailyTrading {
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         sec=ptf.getNoSecurities()/10;
         //if (sec>10) sec=10;
-        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
+        ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(sec),Optional.of(dup),Optional.of(Portfolio.optMethod.MINDD));    
+        //ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(epochs), Optional.of(sec),Optional.of(Portfolio.optMethod.MINDD));    
     }
 
 

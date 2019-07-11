@@ -4,7 +4,6 @@ import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
-import com.ettoremastrogiacomo.utils.Misc;
 import com.joptimizer.functions.ConvexMultivariateRealFunction;
 import com.joptimizer.functions.LinearMultivariateRealFunction;
 import com.joptimizer.functions.PDQuadraticMultivariateRealFunction;
@@ -17,16 +16,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 //import javafx.util.Pair;
 import org.apache.log4j.Logger;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 
@@ -41,36 +34,63 @@ import io.jenetics.util.IntRange;
 
 
 class GeneticOpt {
-    static double [][]m;
-     static int setmin,setmax,poolsize,samplelen;
-     static Portfolio.optMethod met;
-     static double[][]cov;
-     static double[] meanbycols;
-     static boolean duplicates;
+     static  double [][]m;
+     static  int setmin,setmax,poolsize,samplelen;
+     static  Portfolio.optMethod met;
+     static  double[][]cov;
+     static  double[] meanbycols;
+     static  boolean duplicates;
+     static  int popsize,generations;
+    GeneticOpt(double[][]m,int setmin,int setmax,Portfolio.optMethod met,Optional<Boolean> duplicates,Optional<Integer> popsize,Optional<Integer> generations)throws Exception {
+        GeneticOpt.m=m;
+        GeneticOpt.setmax=setmax;GeneticOpt.setmin=setmin;GeneticOpt.met=met;
+        GeneticOpt.cov=DoubleDoubleArray.cov(m);
+        GeneticOpt.poolsize=cov.length;
+        GeneticOpt.samplelen=m.length;
+        GeneticOpt.meanbycols=DoubleDoubleArray.mean(m);
+        GeneticOpt.duplicates=duplicates.orElse(false);
+        GeneticOpt.popsize=popsize.orElse(10000);
+        GeneticOpt.generations=generations.orElse(1000);
+        if (setmax > poolsize) {
+            throw new Exception("optimal set greather than available set " + setmax + ">" + poolsize);
+        }
+        if (setmin>setmax) throw new Exception("wrong set size "+setmin+">"+setmax);
+        if (setmin<2) throw new Exception("setmin too short "+setmin);
+    }     
+     private static ArrayList<Integer> toArray(Genotype<IntegerGene> gt) {
+       
+        ArrayList<Integer> arr= new ArrayList<>();
+          
+          if (duplicates) {
+              gt.getChromosome().as(IntegerChromosome.class).stream().sorted().forEach((x)->{arr.add(x.intValue());});
+          }else {
+              gt.getChromosome().as(IntegerChromosome.class).stream().distinct().sorted().forEach((x)->{arr.add(x.intValue());});
+          }
+        return arr;
+    }
      
     private  static double eval(Genotype<IntegerGene> gt) {
-
-        IntegerGene [] set= duplicates ? gt.getChromosome().as(IntegerChromosome.class).stream().sorted().toArray(IntegerGene[]::new) : 
-                gt.getChromosome().as(IntegerChromosome.class).stream().sorted().distinct().toArray(IntegerGene[]::new);
+         ArrayList<Integer> set= toArray(gt);         
         double fitness=Double.NEGATIVE_INFINITY;
+        if (set.size()<setmin) return fitness;
         double[] eqt=new double[samplelen];
-        double w=1.0/set.length;        
+        double w=1.0/set.size();        
         //build var
         double var = 0,meanret=0;
-        for (IntegerGene sa1 : set) {
-            for (IntegerGene sa2 : set) {
-                var += w * w * cov[sa1.intValue()][sa2.intValue()];
+        for (Integer sa1 : set) {
+            for (Integer sa2 : set) {
+                var += w * w * cov[sa1][sa2];
             }
-            meanret+=meanbycols[sa1.intValue()];
+            meanret+=meanbycols[sa1];
         }                    
-        meanret/=set.length;
+        meanret/=set.size();
         //build equity
         for (int i = 0; i < samplelen; i++) {
             double mean = 0;
-            for (IntegerGene  sa1 : set) {
-                mean += m[i][sa1.intValue()];
+            for (Integer  sa1 : set) {
+                mean += m[i][sa1];
             }
-            mean = mean / set.length;
+            mean = mean / set.size();
             eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
         }                       
         HashMap<String,Double> lrmap=new HashMap<>();
@@ -110,46 +130,24 @@ class GeneticOpt {
         return fitness;
     }
     
-    GeneticOpt(double[][]m,int setmin,int setmax,Portfolio.optMethod met,boolean duplicates)throws Exception {
-        GeneticOpt.m=m;
-        GeneticOpt.setmax=setmax;GeneticOpt.setmin=setmin;GeneticOpt.met=met;
-        GeneticOpt.cov=DoubleDoubleArray.cov(m);
-        GeneticOpt.poolsize=cov.length;
-        GeneticOpt.samplelen=m.length;
-        GeneticOpt.meanbycols=DoubleDoubleArray.mean(m);
-        GeneticOpt.duplicates=duplicates;
-        if (setmax > poolsize) {
-            throw new Exception("optimal set greather than available set " + setmax + ">" + poolsize);
-        }
-        if (setmin>setmax) throw new Exception("wrong set size "+setmin+">"+setmax);
-        if (setmin<2) throw new Exception("setmin too short "+setmin);
-    }
-    public AbstractMap.SimpleEntry<Double,ArrayList<Integer>> go() {
+
+    public AbstractMap.SimpleEntry<Double,ArrayList<Integer>> run() {
         Factory<Genotype<IntegerGene>> gtf = setmin==setmax?
             Genotype.of(IntegerChromosome.of(0, poolsize-1, setmin))
                 : Genotype.of(IntegerChromosome.of(IntRange.of(0, poolsize-1),IntRange.of(setmin, setmax)));// 
+        
         Engine< IntegerGene, Double> engine = Engine
-            .builder(GeneticOpt::eval, gtf).populationSize(10000)
+            .builder(GeneticOpt::eval, gtf).populationSize(GeneticOpt.popsize)
             .build();        
         Genotype<IntegerGene> result = engine.stream()
-            .limit(1000)
+            .limit(GeneticOpt.generations)
             .collect(EvolutionResult.toBestGenotype());        
         //Genotype<IntegerGene> resultEff= duplicates ? result: result.stream().distinct().sorted();
-        System.out.println("risultato: \n \t");
-        //duplicates? result.stream().sorted():result.stream().distinct().sorted()).forEach(x->{System.out.print(x);});
-        if (duplicates)
-            result.stream().sorted().forEach((x)->{System.out.print(x+"  ");}) ;
-        else
-            result.stream().distinct().sorted().forEach((x)->{System.out.print(x+"  ");}) ;
+        ArrayList<Integer> aresult=toArray(result);
+       // System.out.println("risultato:  \t"+aresult);
         double mfit=GeneticOpt.eval(result);
-        System.out.println("\neval: \n \t" + mfit);
-        IntegerGene[] g=duplicates ? result.getChromosome().stream().sorted().toArray(IntegerGene[]::new):
-                result.getChromosome().stream().distinct().sorted().toArray(IntegerGene[]::new);        
-        ArrayList<Integer> res= new ArrayList<>();
-        for (IntegerGene g1 : g) {
-            res.add(g1.intValue());
-        }        
-        return new AbstractMap.SimpleEntry<>(mfit,res);        
+        //System.out.println("\neval:  \t" + mfit);
+        return new AbstractMap.SimpleEntry<>(mfit,aresult);        
     }
 
 }
@@ -385,131 +383,6 @@ public class Portfolio {
 
     
     
-    /**
-     *
-     * @param setsize
-     * @param startdate
-     * @param enddate
-     * @param met
-     * @param epoch
-     * @return
-     * @throws Exception
-     */
-    public NavigableMap opttrain(int setsize, UDate startdate, UDate enddate, optMethod met, Optional<Long> epoch) throws Exception {
-        Fints subf = closeER.Sub(startdate, enddate);               
-        int poolsize = subf.getNoSeries();
-        int samplelen = subf.getLength();
-        if (setsize > poolsize) {
-            throw new Exception("optimal set greather than available set " + setsize + ">" + poolsize);
-        }
-        double[][] m = subf.getMatrixCopy();        
-        long DEFEPOCHS = 1000000L;
-        int avproc=Runtime.getRuntime().availableProcessors();
-        long effepochs=epoch.orElse(DEFEPOCHS)/avproc;
-        ExecutorService pool = Executors.newFixedThreadPool(avproc);
-        java.util.ArrayList<Future> futures = new java.util.ArrayList<>();
-        double[][] covmat = DoubleDoubleArray.cov(m);
-        double[] meanbycols=DoubleDoubleArray.mean(m);
-        TreeMap<Double,Set<Integer>> ranking= new TreeMap<>();
-        
-        ranking.put(Double.NEGATIVE_INFINITY, new TreeSet<>());//base entry
-                //double[] meanbyrows=DoubleDoubleArray.mean(DoubleDoubleArray.transpose(m));
-        double w = 1.0 / setsize;
-        for (int k = 0; k < avproc; k++) {
-            futures.add(pool.submit(() -> {
-                double localbest = Double.NEGATIVE_INFINITY;
-                Set<Integer> localbestset = new TreeSet<>();
-                double[] eqt = new double[samplelen];
-                double fitness = Double.NEGATIVE_INFINITY;
-                for (long t = 0; t < effepochs; t++) {
-                    Set<Integer> set = Misc.getDistinctRandom(setsize, poolsize);
-                    //build var
-                    double var = 0,meanret=0;
-                    for (Integer sa1 : set) {
-                        for (Integer sa2 : set) {
-                            var += w * w * covmat[sa1][sa2];
-                        }
-                        meanret+=meanbycols[sa1];
-                    }                    
-                    meanret/=setsize;
-                    //build equity
-                    for (int i = 0; i < samplelen; i++) {
-                        double mean = 0;
-                        for (Integer sa1 : set) {
-                            mean += m[i][sa1];
-                        }
-                        mean = mean / setsize;
-                        eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
-                    }                       
-                    HashMap<String,Double> lrmap=DoubleArray.LinearRegression(eqt);
-                    
-                    switch (met){
-                            case MAXPROFIT:{fitness=eqt[eqt.length-1];}
-                            break;
-                            case MINDD:{fitness=DoubleArray.maxDrowDownPerc(eqt);}
-                            break;
-                            case MAXSLOPE:{fitness=lrmap.get("slope");}
-                            break;
-                            case MAXSHARPE:{fitness=lrmap.get("slope")/lrmap.get("stderr");}
-                            break;
-                            case MINSTDERR:{fitness=1.0/lrmap.get("stderr");}
-                            break;
-                            case PROFITMINDDRATIO :{
-                                fitness=eqt[eqt.length-1]/Math.abs(DoubleArray.maxDrowDownPerc(eqt));}
-                            break;
-                            case MINVAR:{fitness=1.0/var;}
-                            break;           
-                            case SMASHARPE:{fitness=meanret/var;}
-                            break;
-                            default:
-                                throw new Exception("not yet implemented");
-                            
-                    }
-                    
-                    
-                    if (Double.isNaN(fitness) || Double.isInfinite(fitness)) {
-                        fitness = Double.NEGATIVE_INFINITY;
-                    }
-                    if (t == 0) {
-                        localbest = fitness;
-                        localbestset = set;
-                        synchronized (this) {
-                            ranking.put(localbest, localbestset);
-                        }
-
-                    } else {
-                        if (fitness > localbest) {
-                            localbest = fitness;
-                            localbestset = set;
-                            synchronized (this) {
-                                ranking.put(localbest, localbestset);
-                            }                            
-                        }
-                    }
-                }
-                return new AbstractMap.SimpleEntry<Double, Set>(localbest, localbestset);
-            }));
-        }
-        pool.shutdown();
-        try {
-            pool.awaitTermination(1, TimeUnit.HOURS);//wait 1 hour
-        } catch (InterruptedException e) {
-            LOG.error(e);
-        }
-
-        Entry<Double, Set> bestentry = new AbstractMap.SimpleEntry<>(Double.NEGATIVE_INFINITY, new TreeSet<Integer>());
-        for (Future f : futures) {
-            Entry<Double, Set> entry = (Entry) f.get();
-            if (entry.getKey() > bestentry.getKey()) {
-                bestentry = entry;
-            }
-        }        
-        LOG.debug("bestentry "+bestentry);        
-        //return bestentry;        
-        
-        return ranking.descendingMap();
-    }
-    
 
     /**
      *
@@ -611,19 +484,24 @@ public class Portfolio {
     }
 
     /**
-     *
-     * @param train_window
-     * @param test_window
-     * @param epochs
-     * @param equalWeightSec
-     * @param optmet
-     * @throws Exception
+     * 
+     * @param train_window default 250
+     * @param test_window default 60
+     * @param populationSize default 10000
+     * @param generations default 1000
+     * @param equalWeightSec default 10
+     * @param duplicates default false
+     * @param optmet default MAXSHARPE
+     * @throws Exception 
      */
-    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Long> epochs, Optional<Integer> equalWeightSec, Optional<Portfolio.optMethod> optmet) throws Exception {
+    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Integer> populationSize,Optional<Integer> generations, Optional<Integer> equalWeightSec, Optional<Boolean> duplicates,Optional<Portfolio.optMethod> optmet) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
         Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
+        int popsize=populationSize.orElse(10000);
+        int ngen=generations.orElse(1000);
+        boolean dups=duplicates.orElse(Boolean.FALSE);
         //Fints exret = Fints.ER(this.close, 1, false);
         //double[][] exretmat = exret.getMatrixCopy();
         int step = 0;
@@ -631,11 +509,16 @@ public class Portfolio {
 
         double lastequity = 1;
         double lastequitybh = 1;
+        int setmin=sizeOptimalSet - (sizeOptimalSet/5);
+        int setmax=sizeOptimalSet + (sizeOptimalSet/5);        
         LOG.debug("trainWin " + trainWin);
         LOG.debug("testWin " + testWin);
         LOG.debug("opt method " + optype);
         LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
-        LOG.debug("epochs " + epochs);
+        LOG.debug("population size " + popsize);
+        LOG.debug("generations " + ngen);
+        LOG.debug("duplicates " + dups);
+        LOG.debug("set size "+sizeOptimalSet +"\t["+setmin+","+setmax+"]");
         LOG.debug("date range " + closeER.getFirstDate()+"\t->\t"+closeER.getLastDate());
         LOG.debug("START");
         //LOG.debug("pool " + exret);
@@ -665,12 +548,9 @@ public class Portfolio {
             LOG.debug("\nTRAIN");
             LOG.debug("date range  " + train_startdate + " -> " + train_enddate);
             LOG.debug("database "+closeER.Sub(train_startdate, train_enddate));
-            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),sizeOptimalSet-5,sizeOptimalSet+5,optype,true);
-            
-            //NavigableMap<Double, Set<Integer>> ranking=this.opttrain(sizeOptimalSet, train_startdate, train_enddate, optype, epochs);
 
-            //Entry<Double, Set<Integer>> winner = ranking.firstEntry();
-            Entry<Double, ArrayList<Integer>> winner = go.go();
+            GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),setmin,setmax,optype,Optional.of(dups),Optional.of(popsize),Optional.of(ngen));
+            Entry<Double, ArrayList<Integer>> winner = go.run();
             Fints eqtrain = opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
             LOG.debug("train profit "+eqtrain.getLastValueInCol(0));
             LOG.debug("train profit BH "+eqtrain.getLastValueInCol(1));
@@ -685,8 +565,6 @@ public class Portfolio {
             //begin test
             LOG.debug("\nTEST");
             LOG.debug("date range  " + test_startdate + " -> " + test_enddate);
-//            LOG.debug("winner set "+winner.getValue()+"\n"+set2names(winner.getValue()));
-            //Fints eq = this.opttest(new ArrayList<>(winner.getValue()), test_startdate, test_enddate, Optional.of(lastequity), Optional.of(lastequitybh));
             Fints eq = this.opttest(winner.getValue(), test_startdate, test_enddate, Optional.of(lastequity), Optional.of(lastequitybh));
             LOG.debug("test profit "+eq.getLastValueInCol(0));
             LOG.debug("test profit BH "+eq.getLastValueInCol(1));
