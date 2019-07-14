@@ -228,32 +228,13 @@ public class Temp {
     }
  
     public static void main(String[] args) throws Exception {
-        TreeSet<UDate> d=Database.getIntradayDates();
-        ArrayList<TreeSet<UDate>> m= timesegments(d, 1000*60*60*24*5);
-        m.forEach((x)->{
-            LOG.debug(x.size()+"\t"+x);            
+        HashMap<String,HashMap<String,String>> m= Database.NYSE();
+        m.keySet().forEach((x)->{
+            LOG.debug(x+"\t"+m.get(x));
         });
-        Set l=longestSet(m);
-        LOG.debug(l.size()+"\t"+l);
         
-        
-  //      testCookies();
-//LOG.debug(Database.getGoogleQuotes("BIT:ENEL"));
-        /*java.util.HashMap<String,TreeSet<UDate>> map=new HashMap<String, TreeSet<UDate>>();
-        map=Database.intradayDates();
-        for (String h : map.keySet()){
-            TreeSet<UDate> ts= map.get(h);
-            ts.forEach((d)->{LOG.debug(h+"\t"+d);});
-        
-        }*/
-       
-
+        LOG.debug(m.size());
         if (true) return;
-//fetchEuroNext();
-        //Fints f=Database.getFintsQuotes(Optional.of("XMIB"),Optional.of("MLSE") , Optional.empty());
-        //f.getSerieCopy(3).plot("xmib", "price");
-        //LOG.debug(Database.getGoogleQuotes("BIT:ENEL"));
-        // LOG.debug(com.ettoremastrogiacomo.utils.Encoding.base64encode(com.ettoremastrogiacomo.utils.Encoding.getSHA1("prova".getBytes())));;
 
     }
 }

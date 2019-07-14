@@ -806,6 +806,47 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }        
         
     }*/
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> NYSE() throws Exception {
+        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+        }
+        java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
+        //Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size
+        String details = "https://it.finance.yahoo.com/quote/MSFT/profile?p=#";
+        String url_nasdaq = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt";
+        //ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol
+        String url_others = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt";
+        String nasdaq = new String(http.FTPGetUrl(url_nasdaq));
+        String others = new String(http.FTPGetUrl(url_others)) + "\n" + nasdaq;
+        String[] lines = others.split("\n");
+        for (String x : lines) {
+            String[] s = x.split("\\|");
+            if (s.length < 5) {
+                continue;
+            }
+            if (s[1].contains("Common Stock")) {
+                String name = s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                if (name.equals("")) {
+                    continue;
+                }
+                LOG.info(s[0] + "\t" + name);
+                java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                long hc=Math.abs(9999999999L-Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                map.put("isin", "US" + Long.toString(hc));
+                map.put("name", name);
+                map.put("code", s[0]);
+                map.put("type", "STOCK");
+                map.put("currency", "USD");
+                map.put("market", "NYSE");
+                map.put("sector", "NA");
+                all.put(map.get("isin"), map);
+            }
+        }
+        return all;
+    }
+    
+    
     public static void fetchSharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
@@ -823,6 +864,12 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         } catch (Exception e) {
             LOG.warn(e.getMessage());
         }
+        LOG.info("fetching NYSE");
+        try {
+            all.putAll(NYSE());
+        } catch (Exception e) {
+            LOG.warn(e.getMessage());
+        }        
         LOG.info("fetching MLSE");
         try {
             all.putAll(fetchMLSEList(secType.ETCETN));
