@@ -492,9 +492,10 @@ public class Portfolio {
      * @param equalWeightSec default 10
      * @param duplicates default false
      * @param optmet default MAXSHARPE
+     * @return 
      * @throws Exception 
      */
-    public void walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Integer> populationSize,Optional<Integer> generations, Optional<Integer> equalWeightSec, Optional<Boolean> duplicates,Optional<Portfolio.optMethod> optmet) throws Exception {
+    public Fints walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Integer> populationSize,Optional<Integer> generations, Optional<Integer> equalWeightSec, Optional<Boolean> duplicates,Optional<Portfolio.optMethod> optmet) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
         int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
@@ -509,8 +510,8 @@ public class Portfolio {
 
         double lastequity = 1;
         double lastequitybh = 1;
-        int setmin=sizeOptimalSet - (sizeOptimalSet/5);
-        int setmax=sizeOptimalSet + (sizeOptimalSet/5);        
+        int setmin=sizeOptimalSet - (sizeOptimalSet/4);
+        int setmax=sizeOptimalSet + (sizeOptimalSet/4);        
         LOG.debug("trainWin " + trainWin);
         LOG.debug("testWin " + testWin);
         LOG.debug("opt method " + optype);
@@ -599,8 +600,19 @@ public class Portfolio {
         LOG.debug("linreg intercept "+st1.get("intercept"));
         LOG.debug("linreg intercept bh "+st2.get("intercept"));
         
-        
+        double efficiency=((alleq.getLastValueInCol(0)-alleq.getLastValueInCol(1))/alleq.getLastValueInCol(1))*(alleq.getMaxDD(1)/alleq.getMaxDD(0))/Math.log(alleq.getLength());
+        LOG.debug("efficiency "+efficiency);
         alleq.plot("equity", "val");
+        return alleq;
+        //check BH eq
+        /*
+        double[][] check_BH=closeER.Sub(alleq.getFirstDate(), alleq.getLastDate()).getMatrixCopy();        
+        double [] checkeq= new double[check_BH.length];
+        for (int i=0;i<check_BH.length;i++){
+            double t1=DoubleArray.sum(check_BH[i])/check_BH[i].length;
+            if (i==0) checkeq[0]=1+t1; else checkeq[i]=checkeq[i-1]*(1+t1);
+        }
+        LOG.debug("check eq BH = "+checkeq[checkeq.length-1]);*/
 
     }
 
