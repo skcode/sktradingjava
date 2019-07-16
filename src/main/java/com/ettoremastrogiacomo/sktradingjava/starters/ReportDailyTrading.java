@@ -27,7 +27,7 @@ public class ReportDailyTrading {
     static Logger logger = Logger.getLogger(ReportDailyTrading.class);
  
     
-    static HashMap<String,String> checkStock(int trainwin,int testwin, optMethod opt, Optional<Boolean> duplicates,Optional<Integer> optSet) throws Exception {        
+    static HashMap<String,String> checkStock(int trainwin,int testwin, optMethod opt, Optional<Boolean> duplicates,Optional<Integer> optSetMin,Optional<Integer> optSetMax) throws Exception {        
         HashMap<String,String> results= new HashMap<>();
         results.put("trainwin", String.valueOf(trainwin)  );
         results.put("testwin", String.valueOf(testwin));    
@@ -48,11 +48,13 @@ public class ReportDailyTrading {
         });
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());                       
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        int sec=optSet.orElse(ptf.getNoSecurities()/10);
-        results.put("suboptset",String.valueOf(sec));
+        int secmin=optSetMin.orElse(ptf.getNoSecurities()/10);
+        int secmax=optSetMax.orElse(ptf.getNoSecurities()/10);
+        results.put("suboptsetmin",String.valueOf(secmin));
+        results.put("suboptsetmax",String.valueOf(secmax));
         results.put("totalset",String.valueOf(ptf.getNoSecurities()));
         results.put("total_samples",String.valueOf(ptf.getLength()));
-        Fints alleq=ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(sec),Optional.of(dup),Optional.of(opt));    
+        Fints alleq=ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(secmin), Optional.of(secmax),Optional.of(dup),Optional.of(opt));    
         double efficiency=((alleq.getLastValueInCol(0)-alleq.getLastValueInCol(1))/alleq.getLastValueInCol(1))*(alleq.getMaxDD(1)/alleq.getMaxDD(0))/Math.log(alleq.getLength());        
         results.put("profit", String.valueOf(alleq.getLastValueInCol(0)));
         results.put("maxdd", String.valueOf(alleq.getMaxDD(0)));
@@ -62,13 +64,13 @@ public class ReportDailyTrading {
         return results;
     }
     
-    static HashMap<String,String> checkETF(int trainwin,int testwin, optMethod opt, Optional<Boolean> duplicates,Optional<Integer> optSet) throws Exception {
+    static HashMap<String,String> checkETF(int trainwin,int testwin, optMethod opt, Optional<Boolean> duplicates,Optional<Integer> optSetMin,Optional<Integer> optSetMax) throws Exception {
         
         HashMap<String,String> results= new HashMap<>();
         results.put("trainwin", String.valueOf(trainwin)  );
         results.put("testwin", String.valueOf(testwin));    
         results.put("optmethod", opt.toString());    
-        int minvol=500;
+        int minvol=100;
         int maxold=10;
         int popsize=20000;
         int ngen=2000;
@@ -84,11 +86,13 @@ public class ReportDailyTrading {
         });
         ArrayList<String> list=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());                       
         Portfolio ptf= new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        int sec=optSet.orElse(ptf.getNoSecurities()/10);
-        results.put("suboptset",String.valueOf(sec));
+        int secmin=optSetMin.orElse(ptf.getNoSecurities()/10);
+        int secmax=optSetMax.orElse(ptf.getNoSecurities()/10);
+        results.put("suboptsetmin",String.valueOf(secmin));
+        results.put("suboptsetmax",String.valueOf(secmax));
         results.put("totalset",String.valueOf(ptf.getNoSecurities()));
         results.put("total_samples",String.valueOf(ptf.getLength()));
-        Fints alleq=ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(sec),Optional.of(dup),Optional.of(opt));    
+        Fints alleq=ptf.walkForwardTest(Optional.of(trainwin), Optional.of(testwin), Optional.of(popsize), Optional.of(ngen), Optional.of(secmin), Optional.of(secmax),Optional.of(dup),Optional.of(opt));    
         double efficiency=((alleq.getLastValueInCol(0)-alleq.getLastValueInCol(1))/alleq.getLastValueInCol(1))*(alleq.getMaxDD(1)/alleq.getMaxDD(0))/Math.log(alleq.getLength());        
         results.put("profit", String.valueOf(alleq.getLastValueInCol(0)));
         results.put("maxdd", String.valueOf(alleq.getMaxDD(0)));
@@ -104,7 +108,7 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
         //checkETF();
-    checkETF(2000,100,optMethod.MINDD,Optional.of(false),Optional.of(10));
+    checkETF(2000,100,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(15));
     if (true) return;
         ArrayList<HashMap<String,String>> l= new ArrayList<>();
         
@@ -112,7 +116,7 @@ public class ReportDailyTrading {
         try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt")))) {
             for (int i=150;i<=250;i=i+10){
                 for (int j=20;j<=60;j=j+10) {
-                    HashMap<String,String> m=checkStock(i,j,optMethod.MAXSLOPE,Optional.of(false),Optional.of(10));
+                    HashMap<String,String> m=checkStock(i,j,optMethod.MAXSLOPE,Optional.of(false),Optional.of(7),Optional.of(15));
                     if (l.isEmpty()) {
                         for (String x: m.keySet()){ bwr.write(x+";");}                                    
                     }

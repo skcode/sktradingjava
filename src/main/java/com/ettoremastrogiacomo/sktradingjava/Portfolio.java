@@ -489,16 +489,17 @@ public class Portfolio {
      * @param test_window default 60
      * @param populationSize default 10000
      * @param generations default 1000
-     * @param equalWeightSec default 10
+     * @param optsetmin default 8
+     * @param optsetmax default 12
      * @param duplicates default false
      * @param optmet default MAXSHARPE
      * @return 
      * @throws Exception 
      */
-    public Fints walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Integer> populationSize,Optional<Integer> generations, Optional<Integer> equalWeightSec, Optional<Boolean> duplicates,Optional<Portfolio.optMethod> optmet) throws Exception {
+    public Fints walkForwardTest(Optional<Integer> train_window, Optional<Integer> test_window, Optional<Integer> populationSize,Optional<Integer> generations, Optional<Integer> optsetmin,Optional<Integer> optsetmax, Optional<Boolean> duplicates,Optional<Portfolio.optMethod> optmet) throws Exception {
         int testWin = test_window.orElse(60);//default 60 samples for test window
         int trainWin = train_window.orElse(250);//default 250 samples for train window
-        int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
+        //int sizeOptimalSet = equalWeightSec.orElse(10);//default 10 stock to pick each time        
         Portfolio.optMethod optype = optmet.orElse(Portfolio.optMethod.MAXSHARPE);
         int popsize=populationSize.orElse(10000);
         int ngen=generations.orElse(1000);
@@ -510,8 +511,9 @@ public class Portfolio {
 
         double lastequity = 1;
         double lastequitybh = 1;
-        int setmin=sizeOptimalSet - (sizeOptimalSet/4);
-        int setmax=sizeOptimalSet + (sizeOptimalSet/4);        
+        int setmin=optsetmin.orElse(8) ;//  sizeOptimalSet - (sizeOptimalSet/4);
+        int setmax=optsetmax.orElse(12);//sizeOptimalSet + (sizeOptimalSet/4);        
+        if (setmin<1 || setmin>setmax || setmax>closeER.getNoSeries()) throw new Exception("bad min max opt set size");
         LOG.debug("trainWin " + trainWin);
         LOG.debug("testWin " + testWin);
         LOG.debug("total samples " + closeER.getLength());
@@ -521,7 +523,7 @@ public class Portfolio {
         LOG.debug("population size " + popsize);
         LOG.debug("generations " + ngen);
         LOG.debug("duplicates " + dups);
-        LOG.debug("set size "+sizeOptimalSet +"\t["+setmin+","+setmax+"]");
+        LOG.debug("set size "+"\t["+setmin+","+setmax+"]");
         LOG.debug("START");
         //LOG.debug("pool " + exret);
         Fints alleq = new Fints();
