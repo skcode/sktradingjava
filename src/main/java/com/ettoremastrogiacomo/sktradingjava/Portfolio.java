@@ -514,13 +514,14 @@ public class Portfolio {
         int setmax=sizeOptimalSet + (sizeOptimalSet/4);        
         LOG.debug("trainWin " + trainWin);
         LOG.debug("testWin " + testWin);
+        LOG.debug("total samples " + closeER.getLength());
+        LOG.debug("date range " + closeER.getFirstDate()+"\t->\t"+closeER.getLastDate());
         LOG.debug("opt method " + optype);
         LOG.debug("runtime processors " + Runtime.getRuntime().availableProcessors());
         LOG.debug("population size " + popsize);
         LOG.debug("generations " + ngen);
         LOG.debug("duplicates " + dups);
         LOG.debug("set size "+sizeOptimalSet +"\t["+setmin+","+setmax+"]");
-        LOG.debug("date range " + closeER.getFirstDate()+"\t->\t"+closeER.getLastDate());
         LOG.debug("START");
         //LOG.debug("pool " + exret);
         Fints alleq = new Fints();
@@ -602,7 +603,7 @@ public class Portfolio {
         
         double efficiency=((alleq.getLastValueInCol(0)-alleq.getLastValueInCol(1))/alleq.getLastValueInCol(1))*(alleq.getMaxDD(1)/alleq.getMaxDD(0))/Math.log(alleq.getLength());
         LOG.debug("efficiency "+efficiency);
-        alleq.plot("equity", "val");
+        //alleq.plot("equity", "val");
         return alleq;
         //check BH eq
         /*
