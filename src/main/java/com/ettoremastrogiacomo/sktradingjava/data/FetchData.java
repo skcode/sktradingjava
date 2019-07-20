@@ -1051,7 +1051,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 put("Euronext Access Brussels", "MLXB");
             }
         };
-        String u0 = "https://www.euronext.com/en/equities/directory";
+        String u0 = "https://live.euronext.com/en/products/equities/list";
+        //String u0 = "https://www.euronext.com/en/equities/directory";
         //String det = "https://www.euronext.com/en/products/equities/BE0003849669-MLXB/market-information";
         //String det = "https://www.euronext.com/en/products/equities/#/market-information";
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
@@ -1060,13 +1061,15 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
-
-        int k1 = s.indexOf("\\/en\\/popup\\/data\\/download?");
+        
+        //\/pd\/data\/stocks\/download
+        //int k1 = s.indexOf("\\/en\\/popup\\/data\\/download?");
+        int k1 = s.indexOf("\\/pd\\/data\\/stocks\\/download?");
         int k2 = s.indexOf("\"", k1);
         String u1 = s.substring(k1, k2 - 1);
         //LOG.debug(u1);
         u1 = u1.replace("\\u0026", "&");
-        u1 = "https://www.euronext.com" + u1.replace("/", "");
+        u1 = "https://live.euronext.com/en" + u1.replace("/", "");
         u1 = u1.replace("\\", "/");
         LOG.debug(u1);
         s = new String(httpf.HttpGetUrl(u1, Optional.empty(), Optional.empty()));

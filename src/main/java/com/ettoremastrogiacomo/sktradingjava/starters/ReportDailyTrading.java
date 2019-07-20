@@ -34,11 +34,11 @@ public class ReportDailyTrading {
         results.put("optmethod", opt.toString());    
         int minvol=5000;
         int maxold=10;
-        int popsize=10000;
-        int ngen=1000;
+        int popsize=20000;
+        int ngen=2000;
         int maxdaygap=10;
         double maxgap=.2;
-        int minlen=3000;  
+        int minlen=2000;  
         boolean dup=duplicates.orElse(Boolean.FALSE);
         results.put("duplicate", String.valueOf(dup));   
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE","XETRA","EURONEXT")), Optional.empty(), Optional.empty());
@@ -108,7 +108,8 @@ public class ReportDailyTrading {
 
     public static void main(String[] args) throws Exception {
         //checkETF();
-    checkETF(2000,100,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(15));
+    //checkETF(2000,100,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(25));
+    checkStock(2000,500,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(25));
     if (true) return;
         ArrayList<HashMap<String,String>> l= new ArrayList<>();
         
