@@ -84,6 +84,10 @@ class Teoddata implements Runnable {
             } else if (market.toUpperCase().contains("EURONEXT-XMLI") && type.toUpperCase().contains("STOCK")) {
                 // map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
                 map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
+            }
+            else if (market.toUpperCase().contains("EURONEXT-VPXB") && type.toUpperCase().contains("STOCK")) {
+                // map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
+                map.put("yahooquotes", Database.getYahooQuotes(code + ".AS"));
             } else if (market.toUpperCase().contains("EURONEXT-XBRU") && type.toUpperCase().contains("STOCK")) {
                 // map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
                 map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));

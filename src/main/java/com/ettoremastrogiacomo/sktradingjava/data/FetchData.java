@@ -12,6 +12,7 @@ import static com.ettoremastrogiacomo.utils.Encoding.getSHA1;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
@@ -1037,7 +1038,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 put("Euronext Brussels, Paris", "XBRU");
                 put("Euronext Brussels", "XBRU");
                 put("Euronext Brussels, Amsterdam", "XBRU");
-
+                put("Euronext Expert Market","VPXB"); 
                 put("Euronext Amsterdam, Paris", "XAMS");
                 put("Euronext Amsterdam, London", "XAMS");
                 put("Euronext Amsterdam, Brussels, Paris", "XAMS");
@@ -1061,7 +1062,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
-        
+        List<HttpCookie> ck=httpf.getCookies();
         //\/pd\/data\/stocks\/download
         //int k1 = s.indexOf("\\/en\\/popup\\/data\\/download?");
         int k1 = s.indexOf("\\/pd\\/data\\/stocks\\/download?");
@@ -1069,25 +1070,31 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         String u1 = s.substring(k1, k2 - 1);
         //LOG.debug(u1);
         u1 = u1.replace("\\u0026", "&");
-        u1 = "https://live.euronext.com/en" + u1.replace("/", "");
-        u1 = u1.replace("\\", "/");
+        
+        u1 = "https://live.euronext.com" + u1.replace("/", "");
+        u1 = u1.replace("\\", "/");//"+"&display_datapoints=dp_stocks&display_filters=df_stocks";
+        
         LOG.debug(u1);
-        s = new String(httpf.HttpGetUrl(u1, Optional.empty(), Optional.empty()));
-        Document doc = Jsoup.parse(s);
+        //byte[] bstream=httpf.HttpGetUrl(u1, Optional.empty(), Optional.of(ck));
+        //s = new String(httpf.HttpGetUrl(u1, Optional.empty(), Optional.of(ck)));
+        //Document doc = Jsoup.parse(s);
         java.util.HashMap<String, String> vmap = new java.util.HashMap<>();
-        vmap.put("format", "1");
-        vmap.put("layout", "2");
+        vmap.put("args[fe_date_format]", "d/m/y");
+        vmap.put("args[fe_decimal_separator]", ".");
         vmap.put("decimal_separator", "1");
-        vmap.put("date_format", "1");
-        vmap.put("op", "Go");
-        Elements links = doc.select("input[name=\"form_build_id\"]");
+        vmap.put("args[fe_layout]", "ver");
+        vmap.put("args[fe_type]", "excel");
+        vmap.put("args[initialLetter]", "");
+        vmap.put("iDisplayLength", "20");        
+        vmap.put("iDisplayStart", "0");
+        /*Elements links = doc.select("input[name=\"form_build_id\"]");
         links.forEach((x) -> {
             vmap.put("form_build_id", x.attr("value"));
         });
         links = doc.select("input[name=\"form_id\"]");
         links.forEach((x) -> {
             vmap.put("form_id", x.attr("value"));
-        });
+        });*/
         HttpURLConnection post = httpf.sendPostRequest(u1, vmap);
         StringBuffer response;
         try ( BufferedReader in = new BufferedReader(
@@ -1105,7 +1112,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             if (row.length != 13) {
                 continue;
             }
-            if (row[0].equalsIgnoreCase("\"Name\"")) {
+            if (row[0].equalsIgnoreCase("Name")) {
                 continue;//first row
             }
             if (row[0].isEmpty()) {
@@ -1116,7 +1123,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             //}
             String mkt = row[3].replace("\"", "");
             if (!marketMap.keySet().contains(mkt)) {
-                throw new Exception("market not found : " + row[3]);
+                throw new Exception("market not found : " + row[3]+"\t"+line);
             }
             String isin = row[1].replace("\"", "");
             //String urldet=det.replace("#", hashcode+"-"+marketMap.get(mkt));
