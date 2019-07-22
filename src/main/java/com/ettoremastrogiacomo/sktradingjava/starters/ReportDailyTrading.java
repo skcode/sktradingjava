@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,7 +40,9 @@ public class ReportDailyTrading {
         int minlen=2000;  
         boolean dup=duplicates.orElse(Boolean.FALSE);
         results.put("duplicate", String.valueOf(dup));   
-        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE","XETRA","EURONEXT")), Optional.empty(), Optional.empty());
+        ArrayList<String> markets=Database.getMarkets();
+        
+        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes= new ArrayList<>();
         map.forEach((x) -> {
             hashcodes.add(x.get("hashcode"));

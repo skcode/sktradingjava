@@ -1075,9 +1075,6 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         u1 = u1.replace("\\", "/");//"+"&display_datapoints=dp_stocks&display_filters=df_stocks";
         
         LOG.debug(u1);
-        //byte[] bstream=httpf.HttpGetUrl(u1, Optional.empty(), Optional.of(ck));
-        //s = new String(httpf.HttpGetUrl(u1, Optional.empty(), Optional.of(ck)));
-        //Document doc = Jsoup.parse(s);
         java.util.HashMap<String, String> vmap = new java.util.HashMap<>();
         vmap.put("args[fe_date_format]", "d/m/y");
         vmap.put("args[fe_decimal_separator]", ".");
@@ -1087,14 +1084,6 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         vmap.put("args[initialLetter]", "");
         vmap.put("iDisplayLength", "20");        
         vmap.put("iDisplayStart", "0");
-        /*Elements links = doc.select("input[name=\"form_build_id\"]");
-        links.forEach((x) -> {
-            vmap.put("form_build_id", x.attr("value"));
-        });
-        links = doc.select("input[name=\"form_id\"]");
-        links.forEach((x) -> {
-            vmap.put("form_id", x.attr("value"));
-        });*/
         HttpURLConnection post = httpf.sendPostRequest(u1, vmap);
         StringBuffer response;
         try ( BufferedReader in = new BufferedReader(
@@ -1126,14 +1115,6 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             }
             LOG.debug(line);
             String isin = row[1].replace("\"", "");
-            //String urldet=det.replace("#", hashcode+"-"+marketMap.get(mkt));
-            //String isindet = new String(httpf.HttpGetUrl(urldet, Optional.empty(), Optional.empty()));
-            //String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
-            //String sector = Jsoup.parse(isindet).select("div[class='ln_sector line']  span").text();
-            //String market = Jsoup.parse(isindet).select("div[class='ln_homemarket line']  span").text();
-            //k1=isindet.indexOf("Industry");
-            //k2=isindet.indexOf(",",k1);
-            //String sector=isindet.substring(k2+2,isindet.indexOf("</strong>",k2));
             String market = "EURONEXT-" + marketMap.get(mkt);//+"\t"+row[3].toUpperCase();
             String sector = "NA";
             if (sector.isEmpty() || market.isEmpty()) {
