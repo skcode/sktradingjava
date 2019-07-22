@@ -1113,18 +1113,18 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 continue;
             }
             if (row[0].equalsIgnoreCase("Name")) {
+                LOG.debug(line);
                 continue;//first row
             }
             if (row[0].isEmpty()) {
                 continue;
             }
-            //if (row.length == 13) {
-            //   LOG.debug(row[0] + "\t" + row[1] + "\t" + row[2] + "\t" + row[3] + "\t" + row[4]);
-            //}
             String mkt = row[3].replace("\"", "");
             if (!marketMap.keySet().contains(mkt)) {
-                throw new Exception("market not found : " + row[3]+"\t"+line);
+                LOG.warn("market not found : " + row[3]+"\t"+line);
+                continue;
             }
+            LOG.debug(line);
             String isin = row[1].replace("\"", "");
             //String urldet=det.replace("#", hashcode+"-"+marketMap.get(mkt));
             //String isindet = new String(httpf.HttpGetUrl(urldet, Optional.empty(), Optional.empty()));

@@ -1490,7 +1490,12 @@ public class Database {
                     } else if (market.toUpperCase().contains("EURONEXT-ALXP") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
                         map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
-                    } else if (market.toUpperCase().contains("EURONEXT-XAMS") && type.toUpperCase().contains("STOCK")) {
+                    } else if (market.toUpperCase().contains("EURONEXT-VPXB") && type.toUpperCase().contains("STOCK")) {
+                        // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
+                        map.put("yahooquotes", Database.getYahooQuotes(code + ".AS"));
+                    } 
+                    
+                    else if (market.toUpperCase().contains("EURONEXT-XAMS") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
                         map.put("yahooquotes", Database.getYahooQuotes(code + ".AS"));
                     } else if (market.toUpperCase().contains("EURONEXT-ENXL") && type.toUpperCase().contains("STOCK")) {
