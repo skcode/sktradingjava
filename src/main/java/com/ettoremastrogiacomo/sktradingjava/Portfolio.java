@@ -565,6 +565,7 @@ public class Portfolio {
             LOG.debug("samples "+eqtrain.getLength());
             LOG.debug("series "+closeER.getNoSeries());
             LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue());
+            LOG.debug("optimal set size : "+winner.getValue().size());
             List<String> fullnames=list2names(winner.getValue());
             fullnames.forEach((x)->{LOG.debug(x);});                
         
