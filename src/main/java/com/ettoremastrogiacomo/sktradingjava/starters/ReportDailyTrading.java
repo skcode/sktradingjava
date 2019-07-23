@@ -33,10 +33,10 @@ public class ReportDailyTrading {
         results.put("optmethod", opt.toString());    
         int minvol=5000;
         int maxold=10;
-        int popsize=20000;
-        int ngen=2000;
+        int popsize=10000;
+        int ngen=1000;
         int maxdaygap=10;
-        double maxgap=.2;
+        double maxgap=.15;
         int minlen=2000;  
         boolean dup=duplicates.orElse(Boolean.FALSE);
         results.put("duplicate", String.valueOf(dup));   
@@ -62,6 +62,7 @@ public class ReportDailyTrading {
         results.put("profitBH", String.valueOf(alleq.getLastValueInCol(1)));
         results.put("maxddBH", String.valueOf(alleq.getMaxDD(1)));        
         results.put("efficiency", String.valueOf(efficiency));
+        alleq.plot("equity", "val");
         return results;
     }
     
@@ -110,7 +111,7 @@ public class ReportDailyTrading {
     public static void main(String[] args) throws Exception {
         //checkETF();
     //checkETF(2000,100,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(25));
-    checkStock(2000,500,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(25));
+    checkStock(1000,250,optMethod.MINVAR,Optional.of(false),Optional.of(7),Optional.of(25));
     if (true) return;
         ArrayList<HashMap<String,String>> l= new ArrayList<>();
         

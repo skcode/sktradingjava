@@ -9,6 +9,7 @@ import com.joptimizer.functions.LinearMultivariateRealFunction;
 import com.joptimizer.functions.PDQuadraticMultivariateRealFunction;
 import com.joptimizer.optimizers.JOptimizer;
 import com.joptimizer.optimizers.OptimizationRequest;
+import com.sun.tools.javac.util.ArrayUtils;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -527,6 +528,7 @@ public class Portfolio {
         LOG.debug("START");
         //LOG.debug("pool " + exret);
         Fints alleq = new Fints();
+        ArrayList<Double> efficiencies= new ArrayList<>();
         while (true) {
 
             int offset = step * testWin;
@@ -563,21 +565,23 @@ public class Portfolio {
             LOG.debug("samples "+eqtrain.getLength());
             LOG.debug("series "+closeER.getNoSeries());
             LOG.debug("overall best : " + winner.getKey() + "\t"+winner.getValue());
+            List<String> fullnames=list2names(winner.getValue());
+            fullnames.forEach((x)->{LOG.debug(x);});                
         
             
             //
             //begin test
             LOG.debug("\nTEST");
             LOG.debug("date range  " + test_startdate + " -> " + test_enddate);
-            Fints eq = this.opttest(winner.getValue(), test_startdate, test_enddate, Optional.of(lastequity), Optional.of(lastequitybh));
+            Fints eq = this.opttest(winner.getValue(), test_startdate, test_enddate, Optional.of(1.0), Optional.of(1.0));
+            efficiencies.add(((eq.getLastValueInCol(0)-eq.getLastValueInCol(1))/eq.getLastValueInCol(1))*(eq.getMaxDD(1)/eq.getMaxDD(0))/Math.log(eq.getLength()));
             LOG.debug("test profit "+eq.getLastValueInCol(0));
             LOG.debug("test profit BH "+eq.getLastValueInCol(1));
             LOG.debug("maxdd "+eq.getMaxDD(0));            
             LOG.debug("maxdd BH "+eq.getMaxDD(1));            
             LOG.debug("samples "+eq.getLength());
             LOG.debug("series "+winner.getValue().size());
-            List<String> fullnames=list2names(winner.getValue());
-            fullnames.forEach((x)->{LOG.debug(x);});                
+            eq = this.opttest(winner.getValue(), test_startdate, test_enddate, Optional.of(lastequity), Optional.of(lastequitybh));
             if (alleq.isEmpty()) {
                 alleq = eq;
             } else {
@@ -604,8 +608,12 @@ public class Portfolio {
         LOG.debug("linreg intercept bh "+st2.get("intercept"));
         
         double efficiency=((alleq.getLastValueInCol(0)-alleq.getLastValueInCol(1))/alleq.getLastValueInCol(1))*(alleq.getMaxDD(1)/alleq.getMaxDD(0))/Math.log(alleq.getLength());
-        LOG.debug("efficiency "+efficiency);
-        //alleq.plot("equity", "val");
+        LOG.debug("alleq total efficiency "+efficiency);
+        double[] eff= efficiencies.stream().mapToDouble(Double::doubleValue).toArray();
+        LOG.debug("mean test efficiency "+DoubleArray.mean(eff));
+        LOG.debug("max test efficiency "+DoubleArray.max(eff));
+        LOG.debug("min test efficiency "+DoubleArray.min(eff));
+        LOG.debug("std test efficiency "+DoubleArray.std(eff));
         return alleq;
         //check BH eq
         /*
