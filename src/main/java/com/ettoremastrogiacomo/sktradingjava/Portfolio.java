@@ -101,6 +101,8 @@ class GeneticOpt {
         switch (met){
                 case MAXPROFIT:{fitness=eqt[eqt.length-1];}
                 break;
+                case MAXPROFITNSHARES:{fitness=eqt[eqt.length-1]*(1+set.size()*.005);}
+                break;
                 case MINDD:{
                     try {
                     fitness=DoubleArray.maxDrowDownPerc(eqt);}catch (Exception e ){System.err.print("errore "+e);}                
@@ -211,6 +213,7 @@ public class Portfolio {
          *
          */
         MAXPROFIT,
+        MAXPROFITNSHARES,
 
         /**
          *

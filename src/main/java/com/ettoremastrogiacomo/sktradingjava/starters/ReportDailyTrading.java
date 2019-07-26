@@ -9,12 +9,10 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio.optMethod;
-import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -66,13 +64,16 @@ public class ReportDailyTrading {
         int minoptset=7,maxoptset=25;
         int popsize=5000;
         int ngens=500;
+        int trainfrom=60,trainto=90,testfrom=60,testto=60;
+        optMethod opt=optMethod.MAXPROFITNSHARES;
+        
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
         Portfolio ptfSTOCK=Portfolio.createStockEURPortfolio(Optional.of(minlen),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvol) );
         Portfolio ptfETF=Portfolio.createETFEURPortfolio(Optional.of(minlenETF),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvolETF) );
         try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"),true))) {//append mode
-            for (int i = 60; i <= 90; i = i + 1) {//train win
-                for (int j = 60; j <= 60; j = j + 20) {//test win
-                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, optMethod.MAXSLOPE, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens) );
+            for (int i =trainfrom; i <= trainto; i = i + 1) {//train win
+                for (int j = testfrom; j <= testto; j = j + 1) {//test win
+                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens) );
                     bwr.write("\n");
                     if (l.isEmpty()) {
                         for (String x : m.keySet()) {
