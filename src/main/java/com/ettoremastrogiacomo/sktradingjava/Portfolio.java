@@ -342,6 +342,31 @@ public class Portfolio {
         return list;
     }
 
+    public static Portfolio createStockEURPortfolio(Optional<Integer> minlen,Optional<Double> maxgap,Optional<Integer>maxdaygap, Optional<Integer>maxold, Optional<Integer>minvol)throws Exception {
+        ArrayList<String> markets = Database.getMarkets();
+
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
+    }
+
+    public static Portfolio createETFEURPortfolio(Optional<Integer> minlen,Optional<Double> maxgap,Optional<Integer>maxdaygap, Optional<Integer>maxold, Optional<Integer>minvol)throws Exception {
+        ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
+    }
+    public static double equityEfficiency(Fints alleq,int idxeq,int idxbh)throws Exception {
+        return ((alleq.getLastValueInCol(idxeq) - alleq.getLastValueInCol(idxbh)) / alleq.getLastValueInCol(idxbh)) * (alleq.getMaxDD(idxbh) / alleq.getMaxDD(idxeq)) / Math.log(alleq.getLength());
+    }
     
     /**
      *
