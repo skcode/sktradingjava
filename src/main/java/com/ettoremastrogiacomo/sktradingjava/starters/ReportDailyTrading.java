@@ -64,22 +64,25 @@ public class ReportDailyTrading {
         int minoptset=7,maxoptset=25;
         int popsize=5000;
         int ngens=500;
-        int trainfrom=60,trainto=90,testfrom=60,testto=60;
-        optMethod opt=optMethod.MAXPROFITNSHARES;
-        
+        int trainfrom=65,trainto=65;
+        int testfrom=50 ,testto=70;
+        optMethod opt=optMethod.MAXSLOPE;
+        //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
+        //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
         Portfolio ptfSTOCK=Portfolio.createStockEURPortfolio(Optional.of(minlen),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvol) );
-        Portfolio ptfETF=Portfolio.createETFEURPortfolio(Optional.of(minlenETF),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvolETF) );
-        try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"),true))) {//append mode
+        Portfolio ptfETF=Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvolETF) );
+        try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"),true))) {//append mode            
             for (int i =trainfrom; i <= trainto; i = i + 1) {//train win
                 for (int j = testfrom; j <= testto; j = j + 1) {//test win
-                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens) );
-                    bwr.write("\n");
+                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens) );                    
                     if (l.isEmpty()) {
+                        bwr.write("\n");
                         for (String x : m.keySet()) {
                             bwr.write(x + ";");
                         }
                     }
+                    bwr.write("\n");
                     for (String x : m.keySet()) {
                         bwr.write(m.get(x) + ";");
                     }
