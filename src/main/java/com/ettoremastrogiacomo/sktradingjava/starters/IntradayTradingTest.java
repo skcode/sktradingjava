@@ -38,7 +38,9 @@ public class IntradayTradingTest {
         return map;
     }
     public static void main(String[] args) throws Exception {
-        int TRAINW=20,TESTW=10,MAXGAP=5;        
+        int MAXGAP=5,MINSAMPLE=50;        
+        int lookf=1,poolsize=1;
+        
         java.util.HashMap<String,TreeSet<UDate>> map=Database.intradayDates();        
         ArrayList<HashMap<String,String>> check=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         HashSet<String> isinok=new HashSet<>();
@@ -54,7 +56,6 @@ public class IntradayTradingTest {
             if (isinok.contains(x))
             list.add(x);
         });
-        LOG.debug(list.size());
         HashMap<String,TreeMap<UDate,Fints>> fmap= new HashMap<>();
         for (String x : list ){
             TreeMap<UDate,Fints> tm1= new TreeMap<>();
@@ -67,10 +68,10 @@ public class IntradayTradingTest {
             for (UDate d: tm1.keySet()){
                 samples+=tm1.get(d).getLength();
             }
-            if ((samples/tm1.size())<100) continue;
+            if ((samples/tm1.size())<MINSAMPLE) continue;
             fmap.put(x, tm1);
         }
-        LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());
+        
         HashMap<String,String> names=Database.getCodeMarketName(list);
         StringBuilder sb= new StringBuilder();
         sb.append("name;");
@@ -88,9 +89,12 @@ public class IntradayTradingTest {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(sb.toString());
         }                
-        int lookf=1,poolsize=10;
+        
         UDate []darr=dates.toArray(new UDate[dates.size()]);
         double mean_ret=0,tot_ret=0;
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+lookf+"\tpoolsize="+poolsize);
+        LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
+        double[] profit=new double[darr.length-lookf];
         for (int i=0;i<(darr.length-lookf);i++) {
             TreeMap<Double,String> comap=new TreeMap<>();
             for (String x: fmap.keySet()) {
@@ -99,9 +103,15 @@ public class IntradayTradingTest {
             }
             TreeMap<Double, String> headmap=comap.entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
             TreeMap<Double, String> tailmap=comap.descendingMap().entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+
+            LOG.debug("********* DAY "+darr[i].toYYYYMMDD()+" *********");
+            headmap.keySet().forEach((x)->{LOG.debug("head map: "+names.get(headmap.get(x))+"\t"+x);});
+            tailmap.keySet().forEach((x)->{LOG.debug("tail map: "+names.get(tailmap.get(x))+"\t"+x);});
             double mh=0,mt=0;
             for (Double x:headmap.keySet()) mh+=x;mh/=headmap.size();
             for (Double x:tailmap.keySet()) mt+=x;mt/=tailmap.size();
+            LOG.debug("mean train head: "+mh);
+            LOG.debug("mean train tail: "+mt);
             double mh_forw=0;            
             for (String x: headmap.values()) {                
                 for (int j=i+1;j<=(i+lookf);j++){
@@ -123,7 +133,14 @@ public class IntradayTradingTest {
             LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
             LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
             tot_ret+=mt_forw-mh_forw;
+            profit[i]=mt_forw-mh_forw;
         }
-        LOG.debug("tot_ret="+tot_ret+"\tmean_ret="+tot_ret/(darr.length-lookf));
+        LOG.debug("*******");
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+lookf+"\tpoolsize="+poolsize);
+        LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
+        LOG.debug("TOT PROFIT="+DoubleArray.sum(profit));
+        LOG.debug("MEAN PROFIT="+DoubleArray.mean(profit));
+        LOG.debug("STD PROFIT="+DoubleArray.std(profit));
+        LOG.debug("SHARPE PROFIT="+DoubleArray.mean(profit)/DoubleArray.std(profit));
     }
 }
