@@ -15,8 +15,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -44,7 +46,9 @@ public class IntradayTradingTest {
             isinok.add(x.get("hashcode"));
         });
         
-        TreeSet<UDate> dates=new TreeSet<>(Misc.longestSet(Misc.timesegments(Database.getIntradayDates(), MAXGAP*24*60*60*1000)));
+        //TreeSet<UDate> dates=new TreeSet<>(Misc.longestSet(Misc.timesegments(Database.getIntradayDates(), MAXGAP*24*60*60*1000)));
+        TreeSet<UDate> dates=new TreeSet<>(Misc.mostRecentTimeSegment(Database.getIntradayDates(), MAXGAP*24*60*60*1000));
+        dates.forEach((x)->{LOG.debug(x);});
         ArrayList<String> list= new java.util.ArrayList<>();
         map.keySet().stream().filter((x) -> (map.get(x).containsAll(dates))).forEachOrdered((x) -> {
             if (isinok.contains(x))
@@ -63,7 +67,7 @@ public class IntradayTradingTest {
             for (UDate d: tm1.keySet()){
                 samples+=tm1.get(d).getLength();
             }
-            if ((samples/tm1.size())<10) continue;
+            if ((samples/tm1.size())<100) continue;
             fmap.put(x, tm1);
         }
         LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());
@@ -84,5 +88,42 @@ public class IntradayTradingTest {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(sb.toString());
         }                
+        int lookf=1,poolsize=10;
+        UDate []darr=dates.toArray(new UDate[dates.size()]);
+        double mean_ret=0,tot_ret=0;
+        for (int i=0;i<(darr.length-lookf);i++) {
+            TreeMap<Double,String> comap=new TreeMap<>();
+            for (String x: fmap.keySet()) {
+                Fints f1=fmap.get(x).get(darr[i]);
+                comap.put(100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3), x);
+            }
+            TreeMap<Double, String> headmap=comap.entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+            TreeMap<Double, String> tailmap=comap.descendingMap().entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+            double mh=0,mt=0;
+            for (Double x:headmap.keySet()) mh+=x;mh/=headmap.size();
+            for (Double x:tailmap.keySet()) mt+=x;mt/=tailmap.size();
+            double mh_forw=0;            
+            for (String x: headmap.values()) {                
+                for (int j=i+1;j<=(i+lookf);j++){
+                    Fints f1=fmap.get(x).get(darr[j]);
+                    mh_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
+                }
+                mh_forw/=lookf;                
+            }
+            mh_forw/=headmap.size();
+            double mt_forw=0;
+            for (String x: tailmap.values()) {                
+                for (int j=i+1;j<=(i+lookf);j++){
+                    Fints f1=fmap.get(x).get(darr[j]);
+                    mt_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
+                }
+                mt_forw/=lookf;                
+            }
+            mt_forw/=tailmap.size();
+            LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
+            LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
+            tot_ret+=mt_forw-mh_forw;
+        }
+        LOG.debug("tot_ret="+tot_ret+"\tmean_ret="+tot_ret/(darr.length-lookf));
     }
 }
