@@ -284,12 +284,14 @@ public class Misc {
         java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
         java.util.TreeSet<UDate> t= new TreeSet<>();
         java.util.ArrayList<TreeSet<UDate>> list= new ArrayList<>();
+        java.util.TreeSet<UDate> last= new TreeSet<>();
         for (UDate d: dates) {
             if (t.isEmpty()) {
                 t.add(d);
             } else if (d.diffmills(t.last())>maxgapmsec){                             
                 rank.put(t.size(), t);
                 list.add(t);
+                last=t;
                 t= new TreeSet<>();
             } else {
                 t.add(d);
@@ -298,6 +300,25 @@ public class Misc {
         
         return list;
     }
+    public static TreeSet<UDate> mostRecentTimeSegment(java.util.TreeSet<UDate> dates,long maxgapmsec)
+    {
+        
+        
+  
+        java.util.TreeSet<UDate> t= new TreeSet<>();
+        for (UDate d: dates.descendingSet()) {
+            if (t.isEmpty()) {
+            t.add(d);}
+            else if (Math.abs(d.diffmills(t.first()))>maxgapmsec) {
+                break;
+            } else {t.add(d);}
+        }
+        
+        return t;
+    }
+
+
+    
     /**
      * prende da un array di set, quello più lungo, non garantisce se ci sono più bestset con stessa lunghezza
      * @param <T>
