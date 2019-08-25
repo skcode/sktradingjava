@@ -167,7 +167,9 @@ public class Portfolio {
      *
      */
     public final java.util.ArrayList<Security> securities;
-    private final java.util.ArrayList<String> hashcodes;
+    public final List<String> unmodifiable_hashcodes;
+    
+    private final java.util.ArrayList<String> hashcodes;    
     private final java.util.HashMap<String, String> names;
     private final int nosecurities;
     private final int length;
@@ -256,6 +258,7 @@ public class Portfolio {
             throw new Exception("day must be specified if intraday freq :" + freq);
         }
         this.securities = new java.util.ArrayList<>();
+        
         this.hashcodes = new java.util.ArrayList<>();
         for (String s : hashcodes) {
             if (this.hashcodes.contains(s)) {
@@ -265,6 +268,8 @@ public class Portfolio {
             this.hashcodes.add(s);
             this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
         }
+        this.unmodifiable_hashcodes = Collections.unmodifiableList(this.hashcodes);
+        //this.hashcodes=Collections.unmodifiableList(this.hashcodes);
         names = Database.getCodeMarketName(this.hashcodes);
         nosecurities = securities.size();
         allfints = new Fints();
@@ -326,6 +331,11 @@ public class Portfolio {
         closeER = Fints.ER(close, 1, false);
     }
 
+    
+    public String getName(String hashcode) {
+        //if (!this.hashcodes.contains(hashcode)) throw new RuntimeException(hashcode+"\t not found");
+        return this.names.getOrDefault(hashcode,"NOT FOUND");
+    }
     /**
      *
      * @param set
@@ -357,8 +367,20 @@ public class Portfolio {
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
     }
 
-    public static Portfolio createETFSTOCKEURPortfolio(Optional<Integer> minlen,Optional<Double> maxgap,Optional<Integer>maxdaygap, Optional<Integer>maxold, Optional<Integer>minvol)throws Exception {
+    public static Portfolio createMLSEStockEURPortfolio(Optional<Integer> minlen,Optional<Double> maxgap,Optional<Integer>maxdaygap, Optional<Integer>maxold, Optional<Integer>minvol)throws Exception {
         //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE")), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
+    }
+    
+    
+    public static Portfolio createETFSTOCKEURPortfolio(Optional<Integer> minlen,Optional<Double> maxgap,Optional<Integer>maxdaygap, Optional<Integer>maxold, Optional<Integer>minvol)throws Exception {
+
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and sector like '%CLASSE 2 IND AZIONARIO%' and not sector like '%Benchmark:=COMMODITIES%' and not sector like '%HEDGED%'"));
         //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes = new ArrayList<>();
@@ -806,9 +828,12 @@ public class Portfolio {
         s.append("num securities: ").append(this.getNoSecurities()).append("\n");
         s.append("date gap in days: ").append(this.allfints.getMaxDaysDateGap()).append("\n");
         s.append("days from now: ").append(this.allfints.getDaysFromNow()).append("\n");
-        names.keySet().forEach((x) -> {
-            s.append(names.get(x)).append("\n");
-        });
+        
+        securities.forEach((x)-> s.append(names.get(x.getHashcode())).append("\n"));
+        
+        //names.keySet().forEach((x) -> {
+         //   s.append(names.get(x)).append("\n");
+        //});
         /*this.securities.forEach((x) -> {
             
             s.append(x.getIsin()).append("\t").append(x.getCode()).append(".").append(x.getMarket()).append("\t").append(x.getName()).append("\t").append(x.getSector()).append("\n");

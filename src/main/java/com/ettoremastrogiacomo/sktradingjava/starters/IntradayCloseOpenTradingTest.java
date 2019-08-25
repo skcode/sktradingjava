@@ -31,16 +31,18 @@ import java.util.TreeSet;
  *
  * @author root
  */
-public class IntradayTradingTest {
-    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradayTradingTest.class);   
+public class IntradayCloseOpenTradingTest {
+    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradayCloseOpenTradingTest.class);   
     public static java.util.TreeMap<Integer,java.util.AbstractMap.Entry<UDate,UDate>> continuousDates(long maxgapmsec) {
         java.util.TreeMap<Integer,java.util.AbstractMap.Entry<UDate,UDate>> map=new TreeMap<>();        
         return map;
     }
     public static void main(String[] args) throws Exception {
-        int MAXGAP=5,MINSAMPLE=50;        
-        int lookf=1,poolsize=1;
+        int MAXGAP=5,MINSAMPLE=70;        
+        int LOOKFORWARD=1,POOLSIZE=7;
+        double LASTEQ=300000,FEE=7,spreadPEN=.001;
         
+        TreeMap<UDate,Double> equity= new TreeMap<>();
         java.util.HashMap<String,TreeSet<UDate>> map=Database.intradayDates();        
         ArrayList<HashMap<String,String>> check=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         HashSet<String> isinok=new HashSet<>();
@@ -91,18 +93,18 @@ public class IntradayTradingTest {
         }                
         
         UDate []darr=dates.toArray(new UDate[dates.size()]);
-        double mean_ret=0,tot_ret=0;
-        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+lookf+"\tpoolsize="+poolsize);
+
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+LOOKFORWARD+"\tpoolsize="+POOLSIZE);
         LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
-        double[] profit=new double[darr.length-lookf];
-        for (int i=0;i<(darr.length-lookf);i++) {
+        double[] profit=new double[darr.length-LOOKFORWARD];
+        for (int i=0;i<(darr.length-LOOKFORWARD);i++) {
             TreeMap<Double,String> comap=new TreeMap<>();
             for (String x: fmap.keySet()) {
                 Fints f1=fmap.get(x).get(darr[i]);
                 comap.put(100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3), x);
             }
-            TreeMap<Double, String> headmap=comap.entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
-            TreeMap<Double, String> tailmap=comap.descendingMap().entrySet().stream().limit(poolsize).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+            TreeMap<Double, String> headmap=comap.entrySet().stream().limit(POOLSIZE).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
+            TreeMap<Double, String> tailmap=comap.descendingMap().entrySet().stream().limit(POOLSIZE).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 
             LOG.debug("********* DAY "+darr[i].toYYYYMMDD()+" *********");
             headmap.keySet().forEach((x)->{LOG.debug("head map: "+names.get(headmap.get(x))+"\t"+x);});
@@ -114,33 +116,47 @@ public class IntradayTradingTest {
             LOG.debug("mean train tail: "+mt);
             double mh_forw=0;            
             for (String x: headmap.values()) {                
-                for (int j=i+1;j<=(i+lookf);j++){
+                for (int j=i+1;j<=(i+LOOKFORWARD);j++){
                     Fints f1=fmap.get(x).get(darr[j]);
                     mh_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
                 }
-                mh_forw/=lookf;                
+                mh_forw/=LOOKFORWARD;                
             }
             mh_forw/=headmap.size();
             double mt_forw=0;
             for (String x: tailmap.values()) {                
-                for (int j=i+1;j<=(i+lookf);j++){
+                for (int j=i+1;j<=(i+LOOKFORWARD);j++){
                     Fints f1=fmap.get(x).get(darr[j]);
                     mt_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
                 }
-                mt_forw/=lookf;                
+                mt_forw/=LOOKFORWARD;                
             }
             mt_forw/=tailmap.size();
             LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
             LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
-            tot_ret+=mt_forw-mh_forw;
-            profit[i]=mt_forw-mh_forw;
+
+            profit[i]=mt_forw-mh_forw;            
         }
+        
+        for (int i=0;i<profit.length;i++) {
+                LASTEQ=LASTEQ*(1+profit[i]/100)-FEE*POOLSIZE*4;
+                LASTEQ=LASTEQ*(1-spreadPEN);
+                equity.put(darr[i], LASTEQ);        
+        }
+        Fints eq= new Fints(equity,Arrays.asList("equity"),Fints.frequency.DAILY);
+        eq=eq.merge(eq.getLinReg(0));
+        HashMap<String,Double> stats=DoubleArray.LinearRegression(eq.getCol(0));
         LOG.debug("*******");
-        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+lookf+"\tpoolsize="+poolsize);
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+LOOKFORWARD+"\tpoolsize="+POOLSIZE);
         LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
-        LOG.debug("TOT PROFIT="+DoubleArray.sum(profit));
-        LOG.debug("MEAN PROFIT="+DoubleArray.mean(profit));
-        LOG.debug("STD PROFIT="+DoubleArray.std(profit));
-        LOG.debug("SHARPE PROFIT="+DoubleArray.mean(profit)/DoubleArray.std(profit));
+        LOG.debug("TOT TRADES PROFIT="+DoubleArray.sum(profit));
+        LOG.debug("MEAN TRADES PROFIT="+DoubleArray.mean(profit));
+        LOG.debug("STD TRADES PROFIT="+DoubleArray.std(profit));
+        LOG.debug("SHARPE TRADES PROFIT="+DoubleArray.mean(profit)/DoubleArray.std(profit));
+        LOG.debug("MINDD EQUITY="+eq.getMaxDD(0));
+        LOG.debug("SLOPE REG EQUITY="+stats.get("slope"));
+        LOG.debug("STDERR REG EQUITY="+stats.get("stderr"));
+        LOG.debug("NET PROFIT EQUITY="+eq.getLastValueInCol(0));        
+        eq.plot("equity", "profit");
     }
 }
