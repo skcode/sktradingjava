@@ -33,7 +33,7 @@ public class CloseOpenStrategy {
         closeOpen.toCSV("/tmp/t.csv");
         UDate []darr=closeOpen.getDate().toArray(new UDate[closeOpen.getLength()]);
         double[] profit=new double[darr.length-1];
-        int POOLSIZE=5;
+        int POOLSIZE=1;
         double LASTEQ=100000,FEE=7,spreadPEN=0.001;
         TreeMap<UDate,Double> equity= new TreeMap<>();
         for (int i=0;i<(darr.length-1);i++) {
@@ -49,23 +49,25 @@ public class CloseOpenStrategy {
             headmap.keySet().forEach((x)->{LOG.debug("head map: "+ptf.getName(ptf.unmodifiable_hashcodes.get(headmap.get(x))) +"\t"+x);});
             tailmap.keySet().forEach((x)->{LOG.debug("tail map: "+ptf.getName(ptf.unmodifiable_hashcodes.get(tailmap.get(x)))+"\t"+x);});
             double mh=0,mt=0;
-            for (Double x:headmap.keySet()) mh+=x;mh/=headmap.size();
-            for (Double x:tailmap.keySet()) mt+=x;mt/=tailmap.size();
-            LOG.debug("mean train head: "+mh);
-            LOG.debug("mean train tail: "+mt);
+            for (Double x:headmap.keySet()) mh+=x;//mh/=headmap.size();
+            for (Double x:tailmap.keySet()) mt+=x;//mt/=tailmap.size();
+            LOG.debug("tot train head: "+mh);
+            LOG.debug("tot train tail: "+mt);
+            LOG.debug("tot train DIFF= "+(mt-mh));
+            LOG.debug("mean train ="+(mt-mh)/(POOLSIZE*2));
             double mh_forw=0;            
             for (Integer x: headmap.values()) {  
                 mh_forw+=closeOpen.get(i+1, x);
             }
-            mh_forw/=headmap.size();
+            
             double mt_forw=0;
             for (Integer x: tailmap.values()) {                
                 mt_forw+=closeOpen.get(i+1, x);
             }
-            mt_forw/=tailmap.size();
             LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
             LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
-            profit[i]=mt_forw-mh_forw;            
+            LOG.debug("mean test DIFF "+(mt_forw-mh_forw)/(POOLSIZE*2));
+            profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2);            
         }
         
         for (int i=0;i<profit.length;i++) {
@@ -89,6 +91,5 @@ public class CloseOpenStrategy {
         LOG.debug("NET PROFIT EQUITY="+eq.getLastValueInCol(0));        
         eq.plot("equity", "profit");
 
-        //ptf.securities.forEach((x)-> LOG.debug(x.getName())); 
     }
 }
