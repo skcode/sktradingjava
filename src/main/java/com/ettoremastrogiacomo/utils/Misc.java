@@ -281,23 +281,24 @@ public class Misc {
      */
     public static java.util.ArrayList<TreeSet<UDate>> timesegments(java.util.TreeSet<UDate> dates,long maxgapmsec)
     {
-        java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
+        //java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
         java.util.TreeSet<UDate> t= new TreeSet<>();
         java.util.ArrayList<TreeSet<UDate>> list= new ArrayList<>();
-        java.util.TreeSet<UDate> last= new TreeSet<>();
+        //java.util.TreeSet<UDate> last= new TreeSet<>();
         for (UDate d: dates) {
             if (t.isEmpty()) {
                 t.add(d);
             } else if (d.diffmills(t.last())>maxgapmsec){                             
-                rank.put(t.size(), t);
+                //rank.put(t.size(), t);
                 list.add(t);
-                last=t;
+                //last=t;
                 t= new TreeSet<>();
+                t.add(d);
             } else {
                 t.add(d);
             }                        
         }
-        
+        list.add(t);
         return list;
     }
     public static TreeSet<UDate> mostRecentTimeSegment(java.util.TreeSet<UDate> dates,long maxgapmsec)

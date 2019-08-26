@@ -37,7 +37,7 @@ public class IntradayCloseOpenTradingTest {
         return map;
     }
     public static void main(String[] args) throws Exception {
-        int MAXGAP=5,MINSAMPLE=50;        
+        int MAXGAP=7,MINSAMPLE=100;        
         int POOLSIZE=1;
         double LASTEQ=20000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
@@ -49,11 +49,11 @@ public class IntradayCloseOpenTradingTest {
         check.forEach((x)->{
             isinok.add(x.get("hashcode"));
         });
-        
+        //Database.getIntradayDates().forEach((x)->{LOG.debug(x);});
         //TreeSet<UDate> dates=new TreeSet<>(Misc.longestSet(Misc.timesegments(Database.getIntradayDates(), MAXGAP*24*60*60*1000)));
         TreeSet<UDate> dates=new TreeSet<>(Misc.mostRecentTimeSegment(Database.getIntradayDates(), MAXGAP*24*60*60*1000));
-        
-        dates.forEach((x)->{LOG.debug(x);});
+        //datesl.forEach((x)->{LOG.debug(x);});
+        //dates.forEach((x)->{LOG.debug(x);});
         ArrayList<String> list= new java.util.ArrayList<>();
         map.keySet().stream().filter((x) -> (map.get(x).containsAll(dates))).forEachOrdered((x) -> {
             if (isinok.contains(x))
