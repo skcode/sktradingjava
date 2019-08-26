@@ -397,6 +397,9 @@ public final class Fints {
         return this.matrix[this.matrix.length-1][i];    
     }
 
+    public double getFirstValueInCol(int i) {        
+        return this.matrix[0][i];    
+    }
 
     public double getSecondsFromNow() {
         UDate d=new UDate();        

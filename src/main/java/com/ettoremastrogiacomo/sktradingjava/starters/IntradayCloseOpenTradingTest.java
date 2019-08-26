@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,9 +37,10 @@ public class IntradayCloseOpenTradingTest {
         return map;
     }
     public static void main(String[] args) throws Exception {
-        int MAXGAP=5,MINSAMPLE=70;        
-        int LOOKFORWARD=1,POOLSIZE=7;
-        double LASTEQ=300000,FEE=7,spreadPEN=.001;
+        int MAXGAP=5,MINSAMPLE=50;        
+        int POOLSIZE=1;
+        double LASTEQ=20000,FEE=7,spreadPEN=.001;
+        double INITEQ=LASTEQ;
         
         TreeMap<UDate,Double> equity= new TreeMap<>();
         java.util.HashMap<String,TreeSet<UDate>> map=Database.intradayDates();        
@@ -52,6 +52,7 @@ public class IntradayCloseOpenTradingTest {
         
         //TreeSet<UDate> dates=new TreeSet<>(Misc.longestSet(Misc.timesegments(Database.getIntradayDates(), MAXGAP*24*60*60*1000)));
         TreeSet<UDate> dates=new TreeSet<>(Misc.mostRecentTimeSegment(Database.getIntradayDates(), MAXGAP*24*60*60*1000));
+        
         dates.forEach((x)->{LOG.debug(x);});
         ArrayList<String> list= new java.util.ArrayList<>();
         map.keySet().stream().filter((x) -> (map.get(x).containsAll(dates))).forEachOrdered((x) -> {
@@ -90,64 +91,80 @@ public class IntradayCloseOpenTradingTest {
         File file = new File("./closeopenpct.csv");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(sb.toString());
-        }                
+        } 
         
         UDate []darr=dates.toArray(new UDate[dates.size()]);
 
-        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+LOOKFORWARD+"\tpoolsize="+POOLSIZE);
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tpoolsize="+POOLSIZE);
         LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
-        double[] profit=new double[darr.length-LOOKFORWARD];
-        for (int i=0;i<(darr.length-LOOKFORWARD);i++) {
-            TreeMap<Double,String> comap=new TreeMap<>();
+        double[] profit=new double[darr.length-1];
+        double[] profit_train=new double[darr.length-1];
+        for (int i=0;i<(darr.length-1);i++) {
+            TreeMap<Double,String> comap=new TreeMap<>();            
             for (String x: fmap.keySet()) {
                 Fints f1=fmap.get(x).get(darr[i]);
                 comap.put(100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3), x);
+                //open.put(x,new AbstractMap.SimpleEntry<>(f1.getFirstDate(),f1.get(0, 3)) );
+                //close.put(x,new AbstractMap.SimpleEntry<>(f1.getLastDate(),f1.getLastValueInCol(3)));
             }
             TreeMap<Double, String> headmap=comap.entrySet().stream().limit(POOLSIZE).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
             TreeMap<Double, String> tailmap=comap.descendingMap().entrySet().stream().limit(POOLSIZE).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 
             LOG.debug("********* DAY "+darr[i].toYYYYMMDD()+" *********");
-            headmap.keySet().forEach((x)->{LOG.debug("head map: "+names.get(headmap.get(x))+"\t"+x);});
-            tailmap.keySet().forEach((x)->{LOG.debug("tail map: "+names.get(tailmap.get(x))+"\t"+x);});
             double mh=0,mt=0;
-            for (Double x:headmap.keySet()) mh+=x;mh/=headmap.size();
-            for (Double x:tailmap.keySet()) mt+=x;mt/=tailmap.size();
-            LOG.debug("mean train head: "+mh);
-            LOG.debug("mean train tail: "+mt);
-            double mh_forw=0;            
-            for (String x: headmap.values()) {                
-                for (int j=i+1;j<=(i+LOOKFORWARD);j++){
-                    Fints f1=fmap.get(x).get(darr[j]);
-                    mh_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
-                }
-                mh_forw/=LOOKFORWARD;                
+            for (String x: headmap.values()){
+                Fints f1=fmap.get(x).get(darr[i]);
+                double pct=100.0*(f1.getLastValueInCol(3)-f1.getFirstValueInCol(3))/f1.getFirstValueInCol(3);
+                mh+=pct;
+                LOG.debug("head map: "+names.get(x)+"\topen="+f1.getFirstDate()+";"+ f1.getFirstValueInCol(3)+"\tclose="+f1.getLastDate()+";"+f1.getLastValueInCol(3)+"\tchange%="+pct+"\tvolume="+f1.getSums()[4]);
             }
-            mh_forw/=headmap.size();
-            double mt_forw=0;
-            for (String x: tailmap.values()) {                
-                for (int j=i+1;j<=(i+LOOKFORWARD);j++){
-                    Fints f1=fmap.get(x).get(darr[j]);
-                    mt_forw+=100.0*(f1.getLastValueInCol(3)-f1.get(0, 3))/f1.get(0, 3);
-                }
-                mt_forw/=LOOKFORWARD;                
-            }
-            mt_forw/=tailmap.size();
-            LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
-            LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
 
-            profit[i]=mt_forw-mh_forw;            
+            for (String x: tailmap.values()){
+                Fints f1=fmap.get(x).get(darr[i]);
+                double pct=100.0*(f1.getLastValueInCol(3)-f1.getFirstValueInCol(3))/f1.getFirstValueInCol(3);
+                mt+=pct;
+                LOG.debug("tail map: "+names.get(x)+"\topen="+f1.getFirstDate()+";"+ f1.getFirstValueInCol(3)+"\tclose="+f1.getLastDate()+";"+f1.getLastValueInCol(3)+"\tchange%="+pct+"\tvolume="+f1.getSums()[4]);
+            }                        
+            LOG.debug("tot train head: "+mh+"\t"+mh/(POOLSIZE));
+            LOG.debug("tot train tail: "+mt+"\t"+mt/(POOLSIZE));
+            LOG.debug("mean train : "+(mt-mh)/(POOLSIZE*2));
+            LOG.debug("TEST at date "+darr[i+1]);
+            double mh_forw=0;                        
+            double mt_forw=0;
+            for (String x: headmap.values()) {                
+                Fints f1=fmap.get(x).get(darr[i+1]);                
+                double pct=100.0*(f1.getLastValueInCol(3)-f1.getFirstValueInCol(3))/f1.getFirstValueInCol(3);
+                mh_forw+=pct;
+                LOG.debug("head map FWD: "+names.get(x)+"\topen="+f1.getFirstDate()+";"+ f1.getFirstValueInCol(3)+"\tclose="+f1.getLastDate()+";"+f1.getLastValueInCol(3)+"\tchange%="+pct+"\tvolume="+f1.getSums()[4]);                
+            }
+            for (String x: tailmap.values()) {                
+                Fints f1=fmap.get(x).get(darr[i+1]);                
+                double pct=100.0*(f1.getLastValueInCol(3)-f1.getFirstValueInCol(3))/f1.getFirstValueInCol(3);
+                mt_forw+=pct;
+                LOG.debug("tail map FWD: "+names.get(x)+"\topen="+f1.getFirstDate()+";"+ f1.getFirstValueInCol(3)+"\tclose="+f1.getLastDate()+";"+f1.getLastValueInCol(3)+"\tchange%="+pct+"\tvolume="+f1.getSums()[4]);                
+            }
+            
+
+            
+            profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2); 
+            profit_train[i]=(mt-mh)/(POOLSIZE*2); 
+            LOG.debug("tot test head: "+mh_forw+"\t"+mh_forw/(POOLSIZE));
+            LOG.debug("tot tes tail: "+mt_forw+"\t"+mt_forw/(POOLSIZE));
+            LOG.debug("mean test : "+profit[i]);
+
+            
         }
-        
+        equity.put(darr[0], LASTEQ);        
         for (int i=0;i<profit.length;i++) {
                 LASTEQ=LASTEQ*(1+profit[i]/100)-FEE*POOLSIZE*4;
                 LASTEQ=LASTEQ*(1-spreadPEN);
-                equity.put(darr[i], LASTEQ);        
+                equity.put(darr[i+1], LASTEQ);        
         }
         Fints eq= new Fints(equity,Arrays.asList("equity"),Fints.frequency.DAILY);
         eq=eq.merge(eq.getLinReg(0));
         HashMap<String,Double> stats=DoubleArray.LinearRegression(eq.getCol(0));
         LOG.debug("*******");
-        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tlookforward="+LOOKFORWARD+"\tpoolsize="+POOLSIZE);
+        LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tPOOLSIZE="+POOLSIZE);
         LOG.debug("stocks size="+fmap.size()+"\tdatearraysize="+dates.size());   
         LOG.debug("TOT TRADES PROFIT="+DoubleArray.sum(profit));
         LOG.debug("MEAN TRADES PROFIT="+DoubleArray.mean(profit));
@@ -157,6 +174,9 @@ public class IntradayCloseOpenTradingTest {
         LOG.debug("SLOPE REG EQUITY="+stats.get("slope"));
         LOG.debug("STDERR REG EQUITY="+stats.get("stderr"));
         LOG.debug("NET PROFIT EQUITY="+eq.getLastValueInCol(0));        
+        LOG.debug("CORR TRAIN TEST="+DoubleArray.corr(profit, profit_train));
+        LOG.debug("NET PROFIT%="+(eq.getLastValueInCol(0)/INITEQ-1)*100+"%");
+        LOG.debug("NET PROFIT% x day="+(eq.getLastValueInCol(0)/INITEQ-1)*100/dates.size()+"%");
         eq.plot("equity", "profit");
     }
 }
