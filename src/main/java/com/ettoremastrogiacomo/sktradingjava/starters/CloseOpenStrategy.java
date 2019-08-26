@@ -21,8 +21,10 @@ import java.util.TreeMap;
  */
 public class CloseOpenStrategy {
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CloseOpenStrategy.class);   
-    static final int MINLEN=500,MAXOLD=5,MINVOL=10000,MAXDAYGAP=6;
-    static final double MAXGAP=.1;
+    static final int MINLEN=500,MAXOLD=45,MINVOL=5000,MAXDAYGAP=6;
+    static final double MAXGAP=.15;
+            static final int POOLSIZE=1;
+        static  double LASTEQ=100000,FEE=7,spreadPEN=0.001;
     public static void main(String[] args) throws Exception {
         Portfolio ptf=Portfolio.createMLSEStockEURPortfolio(Optional.of(MINLEN), Optional.of(MAXGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL));
         LOG.debug(ptf);
@@ -33,9 +35,10 @@ public class CloseOpenStrategy {
         closeOpen.toCSV("/tmp/t.csv");
         UDate []darr=closeOpen.getDate().toArray(new UDate[closeOpen.getLength()]);
         double[] profit=new double[darr.length-1];
-        int POOLSIZE=1;
-        double LASTEQ=100000,FEE=7,spreadPEN=0.001;
+
         TreeMap<UDate,Double> equity= new TreeMap<>();
+        
+        equity.put(darr[0], LASTEQ);
         for (int i=0;i<(darr.length-1);i++) {
             TreeMap<Double,Integer> comap=new TreeMap<>();
             for (int j=0;j<closeOpen.getNoSeries();j++) {
@@ -66,15 +69,15 @@ public class CloseOpenStrategy {
             }
             LOG.debug(darr[i]+"\tmh="+mh+"\tmt="+mt);
             LOG.debug("mh_forw="+mh_forw+"\tmt_forw="+mt_forw+"\tDIFF="+(mt_forw-mh_forw));           
-            LOG.debug("mean test DIFF "+(mt_forw-mh_forw)/(POOLSIZE*2));
-            profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2);            
+            profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2);
+            LOG.debug("mean test DIFF "+profit[i]);
+            LASTEQ=LASTEQ*(1+profit[i]);
+            LASTEQ=LASTEQ-FEE*POOLSIZE*4;
+            LASTEQ=LASTEQ*(1-spreadPEN);
+            equity.put(darr[i+1], LASTEQ);        
+                        
         }
         
-        for (int i=0;i<profit.length;i++) {
-                LASTEQ=LASTEQ*(1+profit[i])-FEE*POOLSIZE*4;
-                LASTEQ=LASTEQ*(1-spreadPEN);
-                equity.put(darr[i], LASTEQ);        
-        }
         Fints eq= new Fints(equity,Arrays.asList("equity"),Fints.frequency.DAILY);
         eq=eq.merge(eq.getLinReg(0));
         HashMap<String,Double> stats=DoubleArray.LinearRegression(eq.getCol(0));
