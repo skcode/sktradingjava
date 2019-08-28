@@ -30,6 +30,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -229,6 +233,50 @@ public class Temp {
     }
  
     public static void main(String[] args) throws Exception {
+        TreeSet<UDate> dates=Database.getIntradayDates();
+        for (UDate d: dates){
+            int sz=Database.getIntradayHashCodes(Optional.of(d)).size();
+            LOG.debug(d+"\t"+sz);
+            if (sz<800) {
+                Connection conn = null;
+                Statement stmt = null;
+                java.sql.ResultSet res = null;
+                String dt=d.toDDbMMbYY();
+                String sql="delete from intradayquotes where date='"+dt+"'";
+                try {
+                    conn = DriverManager.getConnection(Init.db_url);
+                    conn.setAutoCommit(true);
+                    stmt = conn.createStatement();
+                    LOG.debug(sql);
+                    int ncol = stmt.executeUpdate(sql);                    
+                } catch (SQLException e) {
+                    LOG.error("cannot execute", e);
+                } finally {
+                    try {
+                        if (res != null) {
+                            res.close();
+                        }
+                    } catch (SQLException e) {
+                    }
+                    try {
+                        if (stmt != null) {
+                            stmt.close();
+                        }
+                    } catch (SQLException e) {
+                    }
+                    try {
+                        if (conn != null) {
+                            conn.close();
+                        }
+                    } catch (SQLException e) {
+                    }
+                }
+
+            }
+            
+        }
+        if (true) return;
+
         HashMap<String,HashMap<String,String>> m= NYSE();
         m.keySet().forEach((x)->{
             LOG.debug(x+"\t"+m.get(x));

@@ -152,6 +152,12 @@ public final class UDate
         sdf.applyPattern("yyyyMMdd");             
         return sdf.format(this.getDate());        
     }
+
+    public String toDDbMMbYY() {
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.applyPattern("dd/MM/yy");             
+        return sdf.format(this.getDate());        
+    }
     
     public int getYear() {
         Calendar c=Calendar.getInstance();

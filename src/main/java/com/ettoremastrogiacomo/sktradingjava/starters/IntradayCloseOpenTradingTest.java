@@ -37,28 +37,45 @@ public class IntradayCloseOpenTradingTest {
         return map;
     }
     public static void main(String[] args) throws Exception {
-        int MAXGAP=7,MINSAMPLE=100;        
+        int MAXGAP=7,MINSAMPLE=500;        
         int POOLSIZE=1;
         double LASTEQ=20000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
         
         TreeMap<UDate,Double> equity= new TreeMap<>();
-        java.util.HashMap<String,TreeSet<UDate>> map=Database.intradayDates();        
+        TreeSet<UDate> allIntradayDates=Database.getIntradayDates();
+        java.util.TreeMap<UDate,ArrayList<String>> revmap=Database.getIntradayDatesReverseMap();
+        java.util.HashMap<String,TreeSet<UDate>> map=Database.getIntradayDatesMap();        
         ArrayList<HashMap<String,String>> check=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         HashSet<String> isinok=new HashSet<>();
+        UDate lastdate=allIntradayDates.last();
+        
         check.forEach((x)->{
-            isinok.add(x.get("hashcode"));
-        });
+            try {
+            Fints f1=Database.getIntradayFintsQuotes(x.get("hashcode"), lastdate);
+            if (f1.getLength()<MINSAMPLE) return;
+            if (revmap.get(lastdate).contains(x.get("hashcode")))
+                isinok.add(x.get("hashcode"));
+            } catch (Exception e){}     });
+        
+        LOG.debug(isinok.size());
+        ArrayList<String> list= new java.util.ArrayList<>(isinok);
+        TreeSet<UDate> dates = new TreeSet<>();
+        for (UDate d: allIntradayDates) {
+            if (revmap.get(d).containsAll(list)) dates.add(d);
+        }
+        
+        
         //Database.getIntradayDates().forEach((x)->{LOG.debug(x);});
         //TreeSet<UDate> dates=new TreeSet<>(Misc.longestSet(Misc.timesegments(Database.getIntradayDates(), MAXGAP*24*60*60*1000)));
-        TreeSet<UDate> dates=new TreeSet<>(Misc.mostRecentTimeSegment(Database.getIntradayDates(), MAXGAP*24*60*60*1000));
+         dates=new TreeSet<>(Misc.mostRecentTimeSegment(Database.getIntradayDates(), MAXGAP*24*60*60*1000));
         //datesl.forEach((x)->{LOG.debug(x);});
-        //dates.forEach((x)->{LOG.debug(x);});
-        ArrayList<String> list= new java.util.ArrayList<>();
-        map.keySet().stream().filter((x) -> (map.get(x).containsAll(dates))).forEachOrdered((x) -> {
-            if (isinok.contains(x))
-            list.add(x);
-        });
+        dates.forEach((x)->{LOG.debug(x);});
+        
+        //map.keySet().stream().filter((x) -> (map.get(x).containsAll(dates))).forEachOrdered((x) -> {
+          //  if (isinok.contains(x))
+           // list.add(x);
+        //});
         HashMap<String,TreeMap<UDate,Fints>> fmap= new HashMap<>();
         for (String x : list ){
             TreeMap<UDate,Fints> tm1= new TreeMap<>();

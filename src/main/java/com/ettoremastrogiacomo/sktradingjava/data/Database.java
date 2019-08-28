@@ -27,6 +27,7 @@ import java.util.Locale;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -302,7 +303,7 @@ public class Database {
         return mkts;
     }
 
-    public static java.util.HashMap<String, TreeSet<UDate>> intradayDates() throws Exception {
+    public static java.util.HashMap<String, TreeSet<UDate>> getIntradayDatesMap() throws Exception {
         String sql = "select hashcode,date from intradayquotes";
         Connection conn = null;
         Statement stmt = null;
@@ -357,6 +358,64 @@ public class Database {
         return map;
     }
 
+    
+    public static java.util.TreeMap<UDate,ArrayList<String>> getIntradayDatesReverseMap() throws Exception {
+        String sql = "select hashcode,date from intradayquotes";
+        Connection conn = null;
+        Statement stmt = null;
+        java.sql.ResultSet res = null;
+        //java.util.HashMap<String, TreeSet<UDate>> map = new java.util.HashMap<>();
+        java.util.TreeMap<UDate,ArrayList<String>> map= new TreeMap<>();
+        try {
+            conn = DriverManager.getConnection(Init.db_url);
+            stmt = conn.createStatement();
+            LOG.debug(sql);
+            res = stmt.executeQuery(sql);
+
+            while (res.next()) {
+                String hash = res.getString(1);
+                String date = res.getString(2);
+
+                LocalDateTime datetime = LocalDateTime.parse(date + " 0.00.00", DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
+                Calendar c = Calendar.getInstance();
+                c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
+                c.set(Calendar.MILLISECOND, 0);
+                UDate d = new UDate(c.getTimeInMillis());
+                
+                if (map.containsKey(d)) {
+                    map.get(d).add(hash);
+                } else {
+                    ArrayList<String> ts = new ArrayList<>();
+                    ts.add(hash);
+                    map.put(d, ts);
+                }
+            }
+        } catch (SQLException e) {
+            LOG.error("cannot fetch list", e);
+        } finally {
+            try {
+                if (res != null) {
+                    res.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }
+        return map;
+    }
+    
+    
     /**
      *
      * @param wheresql filter sql with where , e.g. "where market='MLSE' and
@@ -483,12 +542,12 @@ public class Database {
     
     
     public static TreeSet<UDate> getIntradayDates(String hashcode) throws Exception {
-        HashMap<String,TreeSet<UDate>> m=intradayDates();
+        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
         return m.get(hashcode);
     }
 
     public static TreeSet<UDate> getIntradayDates() throws Exception {
-        HashMap<String,TreeSet<UDate>> m=intradayDates();
+        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
         TreeSet<UDate> s=new TreeSet<>();
         m.keySet().forEach((x) -> {
             s.addAll(m.get(x));
@@ -498,7 +557,7 @@ public class Database {
     
     
     public static Set<String> getIntradayHashCodes(Optional<UDate> d) throws Exception {
-        HashMap<String,TreeSet<UDate>> m=intradayDates();
+        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
         if (d.isEmpty()) {
             return m.keySet();
         }
