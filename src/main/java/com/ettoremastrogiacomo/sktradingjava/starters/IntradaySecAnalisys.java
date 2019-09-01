@@ -12,6 +12,7 @@ import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
@@ -28,8 +29,11 @@ public class IntradaySecAnalisys {
 
     public static void main(String[] args) throws Exception {
         StringBuilder sb=new StringBuilder();
-        UDate lastdate=Database.getIntradayDates().last();
+        TreeSet<UDate> intradayDates= Database.getIntradayDates();
+        UDate lastdate=intradayDates.last();
+        
         Set<String> list=Database.getIntradayHashCodes(Optional.of(lastdate));
+        HashMap<String,String> names=Database.getCodeMarketName(new ArrayList<>(list));
         String delimiter=";";
         
         sb.append("name").append(delimiter).append("daysamples").append(delimiter).append("lastday").append(delimiter);
@@ -55,7 +59,7 @@ public class IntradaySecAnalisys {
             java.util.TreeMap<UDate,Double> volatmap=new java.util.TreeMap<>();        
             java.util.TreeMap<UDate,Double> maxddmap=new java.util.TreeMap<>();        
             java.util.TreeMap<UDate,Double> closeopen=new java.util.TreeMap<>(); 
-            String name=Database.getCodeMarketName(Arrays.asList(hashcode)).get(hashcode);
+            String name=names.get(hashcode);
             if (!name.contains("STOCK")) continue;
             for (UDate d : dates) {
                 Fints f = Database.getIntradayFintsQuotes(hashcode, d);
@@ -76,7 +80,7 @@ public class IntradaySecAnalisys {
                 closeopen.put(d, 100*(fprice.getLastRow()[0]-fprice.get(0, 0))/fprice.getLastRow()[0]);
                 //fprice.merge(fprice.getLinReg(0)).plot(symbol, "price");
             }
-            
+            if (rangemap.isEmpty()) continue;
             sb.append(name).append(delimiter).append(dates.size()).append(delimiter).append(lastdate.toYYYYMMDD()).append(delimiter);
             Fints f1=new Fints(rangemap, Arrays.asList("rangemap"), Fints.frequency.DAILY);
             sb.append(f1.getMeans()[0]).append(delimiter).append(f1.getMin()[0]).append(delimiter).append(f1.getMax()[0]).append(delimiter).append(f1.getLastRow()[0]).append(delimiter);
