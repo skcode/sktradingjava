@@ -9,7 +9,6 @@ import com.joptimizer.functions.LinearMultivariateRealFunction;
 import com.joptimizer.functions.PDQuadraticMultivariateRealFunction;
 import com.joptimizer.optimizers.JOptimizer;
 import com.joptimizer.optimizers.OptimizationRequest;
-import com.sun.tools.javac.util.ArrayUtils;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +73,7 @@ class GeneticOpt {
          ArrayList<Integer> set= toArray(gt);         
         double fitness=Double.NEGATIVE_INFINITY;
         if (set.size()<setmin) return fitness;
+        if (set.size()>setmax) return fitness;
         double[] eqt=new double[samplelen];
         double w=1.0/set.size();        
         //build var
@@ -120,7 +120,10 @@ class GeneticOpt {
                     catch (Exception e){System.err.print("errore "+e);}
                 }                
                 break;
-                case MINVAR:{fitness=1.0/var;}
+                case MINVAR:{
+                    fitness=1.0/var;
+               
+                }
                 break;           
                 case SMASHARPE:{fitness=meanret/var;}
                 break;
@@ -547,7 +550,12 @@ public class Portfolio {
 
         return sol;
     }
-
+    
+    public Entry<Double, ArrayList<Integer>> opttrain(UDate train_startdate,UDate train_enddate,int setmin,int setmax,optMethod optype,boolean dups,int popsize, int ngen) throws Exception {        
+        GeneticOpt go = new GeneticOpt(closeER.Sub(train_startdate, train_enddate).getMatrixCopy(),setmin,setmax,optype,Optional.of(dups),Optional.of(popsize),Optional.of(ngen));
+        Entry<Double, ArrayList<Integer>> winner = go.run();
+        return winner;
+    }
     /**
      * 
      * @param train_window default 250

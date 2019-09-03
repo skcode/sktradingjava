@@ -252,7 +252,7 @@ public final class FetchData {
         STOCK, ETF, ETCETN, FUTURE, BOND, CURRENCY, INDEX
     };
 
-    static final java.util.HashMap<String, secType> secMap = new java.util.HashMap<String, secType>() {
+    public static final java.util.HashMap<String, secType> secMap = new java.util.HashMap<String, secType>() {
         {
             put("STOCK", secType.STOCK);
             put("ETF", secType.ETF);

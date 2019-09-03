@@ -2,6 +2,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 
 
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.Arrays;
 import java.util.List;
@@ -119,4 +120,5 @@ public final class Security {
         public String getCurrency() {return infomap.get("currency");}
         public String getSector() {return infomap.get("sector");}
         public String getType() {return infomap.get("type");}
+        public FetchData.secType getTypeEnum() {return FetchData.secMap.get(infomap.get("type")) ;}
 }

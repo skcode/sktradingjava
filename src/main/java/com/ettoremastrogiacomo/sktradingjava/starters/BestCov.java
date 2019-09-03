@@ -109,32 +109,19 @@ public class BestCov {
     public static void main(String[] args) throws Exception {
         
         int setsize = 15;
-        int win = 90;
-        int minvol=150000;
+        int win = 250;
+        int minvol=100000;
         double maxpcgap=0.2;
         int maxdaygap=6;
-        int maxold=100;
-        double sharpe_treshold=0.;
+        int maxold=10;
+        double sharpe_treshold=Double.NEGATIVE_INFINITY;
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("MLSE","XETRA","EURONEXT")), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes= new ArrayList<>();
         for (HashMap<String,String> x : map) {hashcodes.add(x.get("hashcode"));}
         hashcodes=Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(win*2), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.of(sharpe_treshold));
-        
-        
-        
         List<String> markets=Database.getMarkets();
         markets.forEach((x)->{logger.debug(x);});
         Fints f=new Fints();
-        /*for (String m : markets){
-          if (m.contains("MLSE")||m.contains("XETRA")||m.contains("EURONEXT")){
-          //  if (m.contains("EURONEXT")){
-                Fints t1=Database.getFilteredPortfolioOfClose(Optional.of(win*2), Optional.of("STOCK"), Optional.of(m), Optional.empty(),Optional.of(10), Optional.of(1000), Optional.of(minvol), Optional.of(0.0));
-                if (t1==null) continue;                
-                f= f.isEmpty()? t1 : f.merge(t1);
-                
-            }
-        
-        }*/
         HashMap<Integer,String> hashcodes_ok= new HashMap<>();
         HashMap<String,String> codemarketname_ok= new HashMap<>();
         for ( String h: hashcodes) {
@@ -147,7 +134,7 @@ public class BestCov {
         for (Integer i: hashcodes_ok.keySet()) {
             hashcodes_ok.replace(i, codemarketname_ok.get(hashcodes_ok.get(i)));
         }
-        if (f==null || f.isEmpty()) throw new Exception("empty series");
+        if ( f.isEmpty()) throw new Exception("empty series");
         logger.debug("noseries="+f.getNoSeries() + "\tlength=" + f.getLength() + "\tmaxdategap=" + f.getMaxDateGap() / (1000 * 60 * 60 * 24) +"\tlastdate=" + f.getLastDate());
         f = Fints.ER(f, 100, true).head(win);
         // Random.seed(System.currentTimeMillis());
