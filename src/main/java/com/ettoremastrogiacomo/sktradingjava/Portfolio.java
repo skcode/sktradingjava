@@ -170,9 +170,9 @@ public class Portfolio {
      *
      */
     public final java.util.ArrayList<Security> securities;
-    public final List<String> unmodifiable_hashcodes;
-    
-    private final java.util.ArrayList<String> hashcodes;    
+    public final List<String> hashcodes;
+    public final List<String> realnames;
+    private final java.util.ArrayList<String> tmp_hashcodes;    
     private final java.util.HashMap<String, String> names;
     private final int nosecurities;
     private final int length;
@@ -198,51 +198,15 @@ public class Portfolio {
      *
      */
     public enum optMethod {
-
-        /**
-         *
-         */
         MINVAR,
-
-        /**
-         *
-         */
         MINVARBARRIER,
-
-        /**
-         *
-         */
         MAXSHARPE,
-
-        /**
-         *
-         */
         MAXPROFIT,
         MAXPROFITNSHARES,
-
-        /**
-         *
-         */
         MINDD,
-
-        /**
-         *
-         */
         MAXSLOPE,
-
-        /**
-         *
-         */
         MINSTDERR,
-
-        /**
-         *
-         */
         PROFITMINDDRATIO,
-
-        /**
-         *
-         */
         SMASHARPE
     };
 
@@ -261,19 +225,24 @@ public class Portfolio {
             throw new Exception("day must be specified if intraday freq :" + freq);
         }
         this.securities = new java.util.ArrayList<>();
+
         
-        this.hashcodes = new java.util.ArrayList<>();
+        this.tmp_hashcodes = new java.util.ArrayList<>();
         for (String s : hashcodes) {
-            if (this.hashcodes.contains(s)) {
+            if (this.tmp_hashcodes.contains(s)) {
                 LOG.warn("symbol " + s + " already inserted, skipping");
                 continue;
             }
-            this.hashcodes.add(s);
+            this.tmp_hashcodes.add(s);
             this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
         }
-        this.unmodifiable_hashcodes = Collections.unmodifiableList(this.hashcodes);
-        //this.hashcodes=Collections.unmodifiableList(this.hashcodes);
-        names = Database.getCodeMarketName(this.hashcodes);
+        this.hashcodes = Collections.unmodifiableList(this.tmp_hashcodes);
+        //this.tmp_hashcodes=Collections.unmodifiableList(this.tmp_hashcodes);
+        names = Database.getCodeMarketName(this.tmp_hashcodes);
+        ArrayList<String> tmp_realNames=new java.util.ArrayList<>();
+        //TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
+        this.hashcodes.forEach((x) -> {tmp_realNames.add(this.names.get(x));});        
+        this.realnames=Collections.unmodifiableList(tmp_realNames);
         nosecurities = securities.size();
         allfints = new Fints();
         for (Security s : securities) {
@@ -336,7 +305,7 @@ public class Portfolio {
 
     
     public String getName(String hashcode) {
-        //if (!this.hashcodes.contains(hashcode)) throw new RuntimeException(hashcode+"\t not found");
+        //if (!this.tmp_hashcodes.contains(hashcode)) throw new RuntimeException(hashcode+"\t not found");
         return this.names.getOrDefault(hashcode,"NOT FOUND");
     }
     /**
@@ -347,14 +316,14 @@ public class Portfolio {
     public ArrayList<String> set2names(Set<Integer> set) {
         ArrayList<String> list=new java.util.ArrayList<>();
         TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
-        hashSetToTreeSet.forEach((x) -> {list.add(this.names.get(this.hashcodes.get(x)));});
+        hashSetToTreeSet.forEach((x) -> {list.add(this.names.get(this.tmp_hashcodes.get(x)));});
         return list;
     }
 
     public ArrayList<String> list2names(ArrayList<Integer> set) {
         ArrayList<String> list=new java.util.ArrayList<>();
         //TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
-        set.forEach((x) -> {list.add(this.names.get(this.hashcodes.get(x)));});
+        set.forEach((x) -> {list.add(this.names.get(this.tmp_hashcodes.get(x)));});
         return list;
     }
 
@@ -405,7 +374,26 @@ public class Portfolio {
         ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
     }
-    
+    /**
+     * crea un fints che è la media dei valori di close di tutte le security nel portafoglio
+     * @param ptf
+     * @param name
+     * @return fints
+     * @throws Exception 
+     */
+    public static Fints createFintsFromPortfolio(Portfolio ptf,String name) throws Exception {
+        double[][] mat=new double[ptf.getLength()][1];
+        for (int i=0;i<mat.length;i++) {
+            double d=0;
+            for (int j=0;j<ptf.getNoSecurities();j++){
+                d+=ptf.close.get(i, j);
+            }
+            d=d/ptf.getNoSecurities();
+            mat [i][0]=d;
+        }
+        Fints res= new Fints(ptf.dates, Arrays.asList(name), ptf.getFrequency(), mat);   
+        return res;
+    }
     public static double equityEfficiency(Fints alleq,int idxeq,int idxbh)throws Exception {
         return ((alleq.getLastValueInCol(idxeq) - alleq.getLastValueInCol(idxbh)) / alleq.getLastValueInCol(idxbh)) * (alleq.getMaxDD(idxbh) / alleq.getMaxDD(idxeq)) / Math.log(alleq.getLength());
     }
@@ -739,7 +727,7 @@ public class Portfolio {
      * @throws Exception
      */
     public int getOffset(String symbol) throws Exception {
-        int ret = this.hashcodes.indexOf(symbol);
+        int ret = this.tmp_hashcodes.indexOf(symbol);
         if (ret < 0) {
             throw new Exception("symbol " + symbol + " not found");
         }

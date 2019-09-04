@@ -49,8 +49,8 @@ public class CloseOpenStrategy {
             TreeMap<Double, Integer> tailmap=comap.descendingMap().entrySet().stream().limit(POOLSIZE).collect(TreeMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), Map::putAll);
 
             LOG.debug("********* DAY "+darr[i].toYYYYMMDD()+" *********");
-            headmap.keySet().forEach((x)->{LOG.debug("head map: "+ptf.getName(ptf.unmodifiable_hashcodes.get(headmap.get(x))) +"\t"+x);});
-            tailmap.keySet().forEach((x)->{LOG.debug("tail map: "+ptf.getName(ptf.unmodifiable_hashcodes.get(tailmap.get(x)))+"\t"+x);});
+            headmap.keySet().forEach((x)->{LOG.debug("head map: "+ptf.getName(ptf.hashcodes.get(headmap.get(x))) +"\t"+x);});
+            tailmap.keySet().forEach((x)->{LOG.debug("tail map: "+ptf.getName(ptf.hashcodes.get(tailmap.get(x)))+"\t"+x);});
             double mh=0,mt=0;
             for (Double x:headmap.keySet()) mh+=x;//mh/=headmap.size();
             for (Double x:tailmap.keySet()) mt+=x;//mt/=tailmap.size();
