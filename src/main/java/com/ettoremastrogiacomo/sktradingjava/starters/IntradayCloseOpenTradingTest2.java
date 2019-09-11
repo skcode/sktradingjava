@@ -8,17 +8,11 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
-import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 

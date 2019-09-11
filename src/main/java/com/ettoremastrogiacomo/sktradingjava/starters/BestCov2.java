@@ -25,11 +25,11 @@ public class BestCov2 {
     static Logger logger = Logger.getLogger(BestCov2.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=600,maxdaygap=6,maxold=30,minvol=100000,setmin=7,setmax=25,popsize=5000,ngen=500;
+        int minsamples=600,maxdaygap=6,maxold=30,minvol=10,setmin=7,setmax=35,popsize=5000,ngen=500;
         double maxpcgap=.15;        
         boolean plot=false;
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         logger.debug("no sec "+ptf.getNoSecurities());
         logger.debug("len "+ptf.getLength());
         UDate train_enddate=ptf.dates.get(ptf.dates.size()-1);
