@@ -56,17 +56,17 @@ public class ReportDailyTrading {
     public static void main(String[] args) throws Exception {
 
         int minvol = 10000,minvolETF=100;
-        int maxold = 10;
+        int maxold = 30;
         int maxdaygap = 10;
         double maxgap = .15;
-        int minlen = 2500,minlenETF=2000; 
+        int minlen = 2000,minlenETF=2000; 
         boolean duplicates=false;
-        int minoptset=7,maxoptset=25;
+        int minoptset=15,maxoptset=25;
         int popsize=5000;
         int ngens=500;
         int trainfrom=500,trainto=1000,trainstep=100;
-        int testfrom=100 ,testto=500,teststep=50;
-        optMethod opt=optMethod.MINVAR;
+        int testfrom=250 ,testto=250,teststep=50;
+        optMethod opt=optMethod.MINCORR;
         //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
         //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();

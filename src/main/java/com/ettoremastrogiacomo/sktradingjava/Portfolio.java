@@ -38,19 +38,33 @@ class GeneticOpt {
      static  int setmin,setmax,poolsize,samplelen;
      static  Portfolio.optMethod met;
      static  double[][]cov;
+     static  double[][] extcorr;
      static  double[] meanbycols;
      static  boolean duplicates;
      static  int popsize,generations;
     GeneticOpt(double[][]m,int setmin,int setmax,Portfolio.optMethod met,Optional<Boolean> duplicates,Optional<Integer> popsize,Optional<Integer> generations)throws Exception {
         GeneticOpt.m=m;
+        
         GeneticOpt.setmax=setmax;GeneticOpt.setmin=setmin;GeneticOpt.met=met;
         GeneticOpt.cov=DoubleDoubleArray.cov(m);
         GeneticOpt.poolsize=cov.length;
-        GeneticOpt.samplelen=m.length;
+        GeneticOpt.samplelen=m.length;        
         GeneticOpt.meanbycols=DoubleDoubleArray.mean(m);
         GeneticOpt.duplicates=duplicates.orElse(false);
         GeneticOpt.popsize=popsize.orElse(10000);
         GeneticOpt.generations=generations.orElse(1000);
+        double [][] extm= new double[m.length][poolsize+1];        
+        for (int i=0;i<extm.length;i++){
+            for (int j=0;j<=poolsize;j++){
+                if (j<poolsize) extm[i][j]=m[i][j];
+                else {
+                    double d=DoubleArray.sum(m[i]);
+                    d/=poolsize;
+                    extm[i][j]=d;
+                }
+            }
+        }
+        extcorr=DoubleDoubleArray.corr(extm);//l'ultima colonna rappresenta la correlazione con il campione medio
         if (setmax > poolsize) {
             throw new Exception("optimal set greather than available set " + setmax + ">" + poolsize);
         }
@@ -85,6 +99,11 @@ class GeneticOpt {
             meanret+=meanbycols[sa1];
         }                    
         meanret/=set.size();
+        double vcorr=0;
+        for (Integer sa1 : set) {
+            vcorr+=extcorr[sa1][poolsize];
+        }
+        
         //build equity
         for (int i = 0; i < samplelen; i++) {
             double mean = 0;
@@ -127,6 +146,11 @@ class GeneticOpt {
                 break;           
                 case SMASHARPE:{fitness=meanret/var;}
                 break;
+                case MINCORR: {fitness=1.0/vcorr;}
+                break;
+                case MINVARBARRIER: {
+                    if (meanret>0) fitness=1.0/var;
+                }
                 default:
 //                                throw new Exception("not yet implemented");
         }
@@ -207,7 +231,8 @@ public class Portfolio {
         MAXSLOPE,
         MINSTDERR,
         PROFITMINDDRATIO,
-        SMASHARPE
+        SMASHARPE,
+        MINCORR
     };
 
     /**
