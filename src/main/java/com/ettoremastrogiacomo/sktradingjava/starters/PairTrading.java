@@ -29,9 +29,9 @@ public class PairTrading {
          TreeMap<UDate,Double> v=new TreeMap<>();
          if (f.getFrequency()!=Fints.frequency.SECOND) throw new Exception("must be sec freq");
          if (f.getFrequency()==Fints.frequency.MINUTE) return f;
-         
+         int span=10;
          for (UDate d: dates){
-            if (!v.containsKey(UDate.roundMinute(d))) v.put(UDate.roundMinute(d), f.get(f.getIndex(d), i));            
+            if (!v.containsKey(UDate.roundXMinutes(d,span))) v.put(UDate.roundXMinutes(d,span), f.get(f.getIndex(d), i));            
          }
          Fints ret=new Fints(v, Arrays.asList(f.getName(0)), Fints.frequency.MINUTE);
          logger.debug(ret);
@@ -39,22 +39,32 @@ public class PairTrading {
      }
      
      public static void main(String [] args) throws Exception {                  
-         int limitsamples=500;
+         int limitsamples=400;
          TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();
+         map.remove(map.lastEntry().getKey(), map.lastEntry().getValue());
          UDate last=map.lastEntry().getKey();
-         Fints all= new Fints();
+         ArrayList<Fints> all= new ArrayList<>();
+         Fints ftsemibfut=new Fints();
+         double tcorr=0.3;
          for ( String x: map.lastEntry().getValue()){             
              try{
-             Fints f=sec2min(Database.getIntradayFintsQuotes(x, last), 0);             
-             if (f.getLength()>=limitsamples) all= all.isEmpty()? all=f:Fints.merge(all, f);
-             } catch (Exception e){}
+                 Fints t1=Database.getIntradayFintsQuotes(x, last);
+                 if (t1.getLength()<limitsamples) continue;
+                Fints f=sec2min(t1, 0);             
+             
+             if (f.getName(0).contains("MINIFTSEMIB")) ftsemibfut=f;
+             else all.add(f);             
+             } catch (Exception e){}             
          }
-         logger.debug(all);
-         Fints er=Fints.ER(all, 100, true);
-         Fints erlag=Fints.Lag(er, 1);
+         Fints ftsemibfuter=Fints.ER(ftsemibfut, 100, true);
+         for ( Fints f : all){             
+             Fints er=Fints.merge(Fints.ER(f, 100, true), ftsemibfuter);         
+             er=er.merge(Fints.Lag(er, 1));             
+             double[][] corr=er.getCorrelation();
+             if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
+             logger.info(er);
+             DoubleDoubleArray.show(er.getCorrelation()) ;
+         }
          
-         logger.debug("\n"+DoubleDoubleArray.toString(er.getCovariance()) );
-         logger.debug("\n"+DoubleDoubleArray.toString(er.getCorrelation()) );
-         logger.debug("\n"+DoubleDoubleArray.toString(er.merge(erlag).getCorrelation()) );
      }
 }

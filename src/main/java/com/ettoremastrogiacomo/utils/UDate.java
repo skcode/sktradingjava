@@ -58,12 +58,13 @@ public final class UDate
    public static UDate roundXMinutes(UDate date,int mins){
        if (mins<0 || mins>59) throw new RuntimeException("bad minutes value "+mins);
        Calendar c=Calendar.getInstance();
-       int min=c.get(Calendar.MINUTE);
-       int diff=min % mins;
        c.setTimeInMillis(date.time);
+       int min=c.get(Calendar.MINUTE);
+       int diff=min / mins;       
        c.set(Calendar.MILLISECOND, 0);
        c.set(Calendar.SECOND, 0);              
-       return new UDate(c.getTimeInMillis()-(diff*1000*60));
+       c.set(Calendar.MINUTE, diff*mins);
+       return new UDate(c.getTimeInMillis());
    }
 
 
