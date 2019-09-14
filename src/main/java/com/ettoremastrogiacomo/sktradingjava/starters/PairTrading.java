@@ -37,34 +37,85 @@ public class PairTrading {
          logger.debug(ret);
          return  ret;
      }
+
+     static Fints tick2minutes(Fints f,int span) throws Exception{         
+         List<UDate> dates=f.getDate();
+         TreeMap<UDate,ArrayList<Double>> v=new TreeMap<>();
+         if (f.getFrequency()!=Fints.frequency.SECOND) throw new Exception("must be sec freq");         
+         for (UDate d: dates){
+            if (!v.containsKey(UDate.roundXMinutes(d,span))) {
+                ArrayList<Double> t1=new ArrayList<>();
+                for (int i=0;i<f.getNoSeries();i++) t1.add(f.get(f.getIndex(d), i));
+                v.put(UDate.roundXMinutes(d,span), t1);            
+            }
+         }
+         double[][]m= new double[v.size()][f.getNoSeries()];
+         int i=0;
+         for (UDate d: v.keySet()){
+             m[i]=v.get(d).stream().mapToDouble(Double::doubleValue).toArray();
+             i++;
+         }
+         Fints ret=new Fints(new ArrayList(v.keySet()),  f.getName(), Fints.frequency.MINUTE,m);         
+         return  ret;
+     }
+
+
      
      public static void main(String [] args) throws Exception {                  
-         int limitsamples=400;
+         int limitsamples=400,span=1;
          TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();
-         map.remove(map.lastEntry().getKey(), map.lastEntry().getValue());
+         
          UDate last=map.lastEntry().getKey();
          ArrayList<Fints> all= new ArrayList<>();
-         Fints ftsemibfut=new Fints();
-         double tcorr=0.3;
+         ArrayList<String> names= new ArrayList<>();
+         ArrayList<String> hash= new ArrayList<>();
+         HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
+         
+         
+         double tcorr=0.4;
          for ( String x: map.lastEntry().getValue()){             
              try{
                  Fints t1=Database.getIntradayFintsQuotes(x, last);
                  if (t1.getLength()<limitsamples) continue;
-                Fints f=sec2min(t1, 0);             
-             
-             if (f.getName(0).contains("MINIFTSEMIB")) ftsemibfut=f;
-             else all.add(f);             
+                Fints f=tick2minutes(t1, span);                          
+                all.add(f.getSerieCopy(3));
+                names.add(nmap.get(x));
+                hash.add(x);
+             //if (f.getName(0).contains("MINIFTSEMIB")) ftsemibfut=f;
+             //else all.add(f);             
              } catch (Exception e){}             
          }
-         Fints ftsemibfuter=Fints.ER(ftsemibfut, 100, true);
-         for ( Fints f : all){             
-             Fints er=Fints.merge(Fints.ER(f, 100, true), ftsemibfuter);         
-             er=er.merge(Fints.Lag(er, 1));             
-             double[][] corr=er.getCorrelation();
-             if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
-             logger.info(er);
-             DoubleDoubleArray.show(er.getCorrelation()) ;
+         for (Fints f1: all) {
+             for (Fints f2: all) {
+                 int i1=all.indexOf(f1),i2=all.indexOf(f2);
+                 Fints er=Fints.merge(Fints.ER(f1, 100, true), Fints.ER(f2, 100, true));
+                 Fints erlag=Fints.Lag(er, 1);//1 sample lag
+                 er=er.merge(erlag);
+                 double [][] corr=er.getCorrelation();
+                 if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
+                 logger.info(er);
+                 DoubleDoubleArray.show(er.getCorrelation()) ;
+                 logger.info(names.get(i1)+"."+hash.get(i1)+"\t"+names.get(i2)+"."+hash.get(i2));
+             }
          }
          
+         String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";
+         for (UDate d: map.keySet()) {
+             if (map.get(d).contains(h1) && map.get(d).contains(h2)){
+                 Fints f1=tick2minutes(Database.getIntradayFintsQuotes(h1, d).getSerieCopy(3),span);
+                 Fints f2=tick2minutes(Database.getIntradayFintsQuotes(h2, d).getSerieCopy(3),span);
+                 Fints er=Fints.merge(Fints.ER(f1, 100, true), Fints.ER(f2, 100, true));
+                 Fints erlag=Fints.Lag(er, 1);//1 sample lag
+                 er=er.merge(erlag);
+                 double [][] corr=er.getCorrelation();
+                 //if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
+                 logger.info(er);
+                 DoubleDoubleArray.show(er.getCorrelation()) ;
+                 
+             }
+         }
+         //IG.MLSE.STOCK.EUR.IT0005211237.ITALGAS	ENEL.MLSE.STOCK.EUR.IT0003128367.ENEL
+         
+         //Fints ftsemibfuter=Fints.ER(ftsemibfut, 100, true);
      }
 }
