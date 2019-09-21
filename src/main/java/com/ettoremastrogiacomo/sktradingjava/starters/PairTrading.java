@@ -8,6 +8,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
@@ -72,12 +73,13 @@ public class PairTrading {
          HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
          
          
-         double tcorr=0.4;
+         double tcorr=0.3;
          for ( String x: map.lastEntry().getValue()){             
              try{
                  Fints t1=Database.getIntradayFintsQuotes(x, last);
                  if (t1.getLength()<limitsamples) continue;
                 Fints f=tick2minutes(t1, span);                          
+                //Fints f=t1;                          
                 all.add(f.getSerieCopy(3));
                 names.add(nmap.get(x));
                 hash.add(x);
@@ -88,18 +90,29 @@ public class PairTrading {
          for (Fints f1: all) {
              for (Fints f2: all) {
                  int i1=all.indexOf(f1),i2=all.indexOf(f2);
-                 Fints er=Fints.merge(Fints.ER(f1, 100, true), Fints.ER(f2, 100, true));
+                 Fints f1er=Fints.ER(f1, 100, true);
+                 Fints f2er=Fints.ER(f2, 100, true);
+                 Fints er=Fints.merge(f1er, f2er);
                  Fints erlag=Fints.Lag(er, 1);//1 sample lag
                  er=er.merge(erlag);
                  double [][] corr=er.getCorrelation();
-                 if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
+                 //if (!(corr[0][2]>tcorr || corr[0][3]>tcorr || corr[1][2]>tcorr|| corr[0][3]>tcorr)) continue;
+                 
+                 //Fints.Diff(f1er, f2er).plot(names.get(i1)+"."+names.get(i2), "price");
+                 Fints diff=f1.merge(f2).getEquity().getDiffCols(0,1 );
+                 
+                 HashMap<String,Double> lreg=DoubleArray.LinearRegression(diff.getCol(0));
+                 //if (Math.abs(diff.getMeans()[0])<0.04) continue;
+                 if (Math.abs(lreg.get("slope"))<.0001) continue;
                  logger.info(er);
-                 DoubleDoubleArray.show(er.getCorrelation()) ;
-                 logger.info(names.get(i1)+"."+hash.get(i1)+"\t"+names.get(i2)+"."+hash.get(i2));
+                 diff.merge(diff.getLinReg(0)) .plot("eqdiff", "val");
+                 //DoubleDoubleArray.show(er.getCorrelation()) ;
+                 logger.info(diff.getMeans()[0]+";"+lreg.get("slope")+"\t"+names.get(i1)+"."+hash.get(i1)+"\t"+names.get(i2)+"."+hash.get(i2));
+                 
              }
          }
          
-         String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";
+       /*  String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";
          for (UDate d: map.keySet()) {
              if (map.get(d).contains(h1) && map.get(d).contains(h2)){
                  Fints f1=tick2minutes(Database.getIntradayFintsQuotes(h1, d).getSerieCopy(3),span);
@@ -113,7 +126,7 @@ public class PairTrading {
                  DoubleDoubleArray.show(er.getCorrelation()) ;
                  
              }
-         }
+         }*/
          //IG.MLSE.STOCK.EUR.IT0005211237.ITALGAS	ENEL.MLSE.STOCK.EUR.IT0003128367.ENEL
          
          //Fints ftsemibfuter=Fints.ER(ftsemibfut, 100, true);

@@ -1001,6 +1001,41 @@ public final class Fints {
     }
     /**
      * 
+     * @return Fints che rappresenta l'equity dei rendimenti della serie temporale
+     *          i rendimenti vengono calcolati ad ogni step
+     * @throws Exception 
+     */
+    public Fints getEquity() throws Exception {
+        double[][] newm=new double[this.matrix.length][this.getNoSeries()];
+        DoubleArray.fill(newm[0], 1.0);
+        for (int i=1;i<matrix.length;i++){
+            for (int j=0;j<this.matrix[i].length;j++){
+                newm[i][j]=newm[i-1][j]*(1+ (matrix[i][j]-matrix[i-1][j])/matrix[i-1][j]);
+            }        
+        }
+        ArrayList<String> newnames= new ArrayList<>();
+        for (int i=0;i<this.names.size();i++) newnames.add("EQUITY("+names.get(i)+")");
+        return new Fints(dates, newnames, freq, newm);
+    }
+    
+    /**
+     * 
+     * @param col1
+     * @param col2
+     * @return crea un nuovo fints che è la differenza delle colonne col1 - col2
+     * @throws Exception 
+     */
+    public Fints getDiffCols(int col1,int col2) throws Exception {
+        double[][] newm=new double[this.matrix.length][1];
+        for (int i=1;i<matrix.length;i++){
+                newm[i][0]=matrix[i][col1]-matrix[i][col2];
+        }
+        return new Fints(dates, Arrays.asList("DIFFCOLS("+names.get(col1)+","+names.get(col2)+")"), freq, newm);        
+    }
+    
+    
+    /**
+     * 
      * @param k column
      * @return new Fints linear regression of k colummn
      * @throws Exception 
@@ -1043,6 +1078,15 @@ public final class Fints {
     public double[] getMeans() throws Exception {
         return DoubleDoubleArray.mean(matrix);
     }
+
+    public double[] getStd() throws Exception {
+        double[][]c= DoubleDoubleArray.cov(matrix);
+        double[] std=new double[c.length];
+        for (int i=0;i<std.length;i++)std[i]=Math.sqrt(c[i][i]);
+        return std;
+    }
+
+    
     public double[] getSums() throws Exception {
         return DoubleDoubleArray.sum(matrix);
     }
