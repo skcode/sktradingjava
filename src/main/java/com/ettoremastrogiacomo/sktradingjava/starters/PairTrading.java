@@ -11,6 +11,7 @@ import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import io.jenetics.Genotype;
 import io.jenetics.IntegerChromosome;
@@ -106,43 +107,32 @@ public class PairTrading {
      
      
      public static void main(String [] args) throws Exception {                  
-         int limitsamples=800;
-         TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();
-         
+         int limitsamples=600;
+         Fints.frequency fq=Fints.frequency.MINUTE;
+         TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();         
          UDate last=map.lastEntry().getKey();
          ArrayList<Fints> all= new ArrayList<>();
          ArrayList<String> names= new ArrayList<>();
          ArrayList<String> hash= new ArrayList<>();
          HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
-         
-         
-        
          for ( String x: map.lastEntry().getValue()){             
              try{
                  Fints t1=Database.getIntradayFintsQuotes(x, last);
                  if (t1.getLength()<limitsamples) continue;
                 names.add(nmap.get(x));
                 hash.add(x);
-             //if (f.getName(0).contains("MINIFTSEMIB")) ftsemibfut=f;
-             //else all.add(f);             
+             t1=Fints.createContinuity(Security.changeFreq(t1,fq));                  
+             all.add(t1.getSerieCopy(3));
+             logger.debug(t1);
              } catch (Exception e){}             
          }
+         
+         for (int k=0;k<100000;k++){
+             Misc.getDistinctRandom(4, all.size());
+         }
+         
          logger.debug("size "+hash.size());
-         Security s= new Security("OxxI3YPeCq0IbTkh+zgksZM/wc8=");
 
-
-         /*Fints f1=s.getDaily();
-         f1.getSerieCopy(3).plot("d", "price");
-         Fints f2=s.getWeekly();
-         f2.getSerieCopy(3).plot("w", "price");
-         Fints f3=s.getMonthly();
-         f3.getSerieCopy(3).plot("m", "price");
-*/
-
-
-         Portfolio ptf = new Portfolio(hash, Optional.of(Fints.frequency.MINUTE), Optional.of(last), Optional.empty(), Optional.empty());
-         Entry<Double,ArrayList<Integer>> entry=ptf.opttrain(ptf.getDate(0), ptf.getDate(ptf.getLength()-1), 2, 4, Portfolio.optMethod.MAXSLOPE, false, 5000, 500);
-         logger.debug(ptf.toString());
          if (true) return;
          
        /*  String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";

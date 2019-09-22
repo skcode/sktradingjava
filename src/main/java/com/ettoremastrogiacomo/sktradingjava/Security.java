@@ -21,7 +21,7 @@ public final class Security {
         private final Fints monthly;
         private final java.util.Map<String, String> infomap;
         
-        static private Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
+        static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
             if (newf.ordinal()<f.getFrequency().ordinal()) throw new Exception("bad input :"+f.getFrequency()+" to "+newf);
             if (newf.ordinal()==f.getFrequency().ordinal()) return f;
             java.util.TreeMap<UDate,java.util.ArrayList<Double>> map=new java.util.TreeMap<>();

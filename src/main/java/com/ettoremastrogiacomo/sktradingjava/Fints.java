@@ -8,10 +8,13 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
 //import java.util.Locale;
 import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
@@ -931,7 +934,47 @@ public final class Fints {
         Fints dest = new Fints(newdate, newn, source.freq, newm);
         return dest;
     }
-
+    /**
+     * 
+     * @param f
+     * @return un fints senza buchi temporali in base alla frequenza
+     * @throws Exception 
+     */
+    static public Fints createContinuity(Fints f) throws Exception {
+        TreeMap<UDate,ArrayList<Double>> map = new TreeMap<>();
+        ArrayList<UDate> newdates=new ArrayList<>();
+        Calendar c = Calendar.getInstance();        
+        UDate fd=f.getFirstDate(),ld=f.getLastDate();
+        c.setTimeInMillis(fd.time);        
+        while (c.getTimeInMillis()<= ld.time) {
+            newdates.add(new UDate(c.getTimeInMillis()));
+            switch (f.freq) {
+                case SECOND:c.add(Calendar.SECOND, 1);break;
+                case MINUTE:c.add(Calendar.MINUTE, 1);break;
+                case MINUTES3:c.add(Calendar.MINUTE, 3);break;
+                case MINUTES5:c.add(Calendar.MINUTE, 5);break;
+                case MINUTES10:c.add(Calendar.MINUTE, 10);break;
+                case MINUTES15:c.add(Calendar.MINUTE, 15);break;
+                case MINUTES30:c.add(Calendar.MINUTE, 30);break;
+                case HOUR : c.add(Calendar.HOUR, 1);break;
+                case DAILY : c.add(Calendar.DATE, 1);break;
+                case WEEKLY : c.add(Calendar.DATE, 7);break;
+                case MONTHLY : c.add(Calendar.MONTH, 1);break;
+                case YEARLY : c.add(Calendar.MONTH, 12);break;
+                default: throw new Exception ("not yet implemented "+f.freq);
+            }
+        }
+        double[][] newm=new double[newdates.size()][f.getNoSeries()];
+        int k=1;
+        for (int i=0;i<newdates.size();i++){
+            for (int j=0;j<f.getNoSeries();j++){
+                newm[i][j]=f.get(k, j);
+            }
+            if (newdates.get(i).time==f.getDate(k).time) k++;
+        }
+        return new Fints(newdates, f.getName(), f.freq, newm);
+    }
+    
     static public Fints Volatility(Fints source, int period) throws Exception {
         if ((period < 1) || period > source.getLength()) {
             throw new Exception("bad length :" + period + "\n" + source.toString());
