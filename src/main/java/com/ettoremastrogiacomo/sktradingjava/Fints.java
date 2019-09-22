@@ -763,7 +763,12 @@ public final class Fints {
                 newm[i][0]+=f1.matrix[i][j];
         return new Fints(f1.dates, Arrays.asList(sb.toString()), f1.freq, newm);
     }
-
+/**
+ * 
+ * @param f1
+ * @return fints con 1 colonna, media di tutte
+ * @throws Exception 
+ */
     static public Fints MEANCOLS(Fints f1) throws Exception {
         if (f1.isEmpty()) return new Fints();
         double[][] newm=new double[f1.length][1];
@@ -771,10 +776,10 @@ public final class Fints {
         sb.append("MEANCOLS(").append(f1.names.get(0));
         for (int i=1;i<f1.names.size();i++) sb.append(",").append(f1.names.get(i));
         sb.append(")");
-        for (int i=0;i<newm.length;i++){
-            for (int j=0;j<newm[i].length;j++)
+        for (int i=0;i<f1.matrix.length;i++){
+            for (int j=0;j<f1.matrix[i].length;j++)
                 newm[i][0]+=f1.matrix[i][j];
-            newm[i][0]/=(double)newm[i].length;
+            newm[i][0]/=(double)f1.matrix[i].length;
         }
         return new Fints(f1.dates, Arrays.asList(sb.toString()), f1.freq, newm);
     }

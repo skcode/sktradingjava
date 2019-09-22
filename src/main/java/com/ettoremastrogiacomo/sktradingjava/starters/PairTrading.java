@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.log4j.Logger;
@@ -107,11 +108,13 @@ public class PairTrading {
      
      
      public static void main(String [] args) throws Exception {                  
-         int limitsamples=600;
+         int limitsamples=300;
          Fints.frequency fq=Fints.frequency.MINUTE;
          TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();         
          UDate last=map.lastEntry().getKey();
          ArrayList<Fints> all= new ArrayList<>();
+         ArrayList<Fints> poseq= new ArrayList<>();
+         ArrayList<Fints> negeq= new ArrayList<>();         
          ArrayList<String> names= new ArrayList<>();
          ArrayList<String> hash= new ArrayList<>();
          HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
@@ -122,13 +125,39 @@ public class PairTrading {
                 names.add(nmap.get(x));
                 hash.add(x);
              t1=Fints.createContinuity(Security.changeFreq(t1,fq));                  
-             all.add(t1.getSerieCopy(3));
+             all.add(t1.getSerieCopy(3));          
+             poseq.add(t1.getSerieCopy(3).getEquity());
+             negeq.add(t1.getSerieCopy(3).getShortEquity());
              logger.debug(t1);
              } catch (Exception e){}             
          }
          
-         for (int k=0;k<100000;k++){
-             Misc.getDistinctRandom(4, all.size());
+         int epochs=1000000,pool=2;
+         double best=Double.NEGATIVE_INFINITY;
+         for (int k=0;k<epochs;k++){
+             if ((k % 10000)==0) logger.info("epoch "+k);
+             List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
+             Fints f=new Fints();
+             for (int i=0;i<set.size();i++) {
+                 if (i<pool ) {
+                     if (f.isEmpty()) f=poseq.get(set.get(i));
+                     else f=f.merge(poseq.get(set.get(i)));
+                 }else{
+                     f=f.merge(negeq.get(set.get(i)));
+                 }
+             }
+             Fints mc=Fints.MEANCOLS(f);
+             HashMap<String,Double> m=DoubleArray.LinearRegression(mc.getCol(0));
+             double slope=Math.abs(m.get("slope"));
+             double sharpe=Math.abs(m.get("sharpe"));             
+             if (sharpe>best) {
+                 String bt="";
+                 for (int i=0;i<set.size();i++)bt+=names.get(set.get(i))+";";
+                 best=sharpe;
+                 logger.info("new best "+best+"\t"+bt);
+                mc.plot("eq "+best, "gain");
+             }
+             
          }
          
          logger.debug("size "+hash.size());

@@ -86,7 +86,8 @@ public class DoubleArray {
         double stdeverr=0;
         for (int i=0;i<equityval.length;i++) stdeverr+=Math.pow(equityval[i]- (reg_a+reg_b*i),2);        
         stdeverr=Math.sqrt((1.0/(equityval.length-1))*stdeverr);
-        map.put("stderr", stdeverr);        
+        map.put("stderr", stdeverr);  
+        map.put("sharpe", reg_b/stdeverr);
         return map;
     }
     
