@@ -34,6 +34,21 @@ public final class Security {
                     case MINUTE:
                         actual=UDate.roundMinute(actual);
                         break;
+                    case MINUTES3:
+                        actual=UDate.roundXMinutes(actual,3);
+                        break;
+                    case MINUTES5:
+                        actual=UDate.roundXMinutes(actual,5);
+                        break;
+                    case MINUTES10:
+                        actual=UDate.roundXMinutes(actual,10);
+                        break;
+                    case MINUTES15:
+                        actual=UDate.roundXMinutes(actual,15);
+                        break;
+                    case MINUTES30:
+                        actual=UDate.roundXMinutes(actual,30);
+                        break;                        
                     case HOUR:
                         actual=UDate.roundHour(actual);
                         break;
@@ -53,6 +68,7 @@ public final class Security {
                     open=f.get(i, 0);low=f.get(i, 2);
                     high=f.get(i, 1);close=f.get(i, 3);
                     volume=f.get(i, 4);oi=f.get(i, 5);
+                    previous=actual;
                 } else {
                     if (actual.after(previous)) {
                         row=new java.util.ArrayList<>();
@@ -61,7 +77,7 @@ public final class Security {
                         row.set(3, close);row.set(4, volume);
                         row.set(5, oi);*/
                         row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);
-                       map.put(actual, row);
+                       map.put(previous, row);
                     } else {
                         if (f.get(i, 1)>high) high=f.get(i, 1);
                         if (f.get(i, 2)<low) low=f.get(i, 2);
@@ -69,10 +85,6 @@ public final class Security {
                         volume+=f.get(i, 4);oi+=f.get(i, 5);
                         if (i==(f.getLength()-1)) {
                             row=new java.util.ArrayList<>();
-                            //row.ensureCapacity(6);
-                            /*row.set(0, open);row.set(1, high);row.set(2, low);
-                            row.set(3, close);row.set(4, volume);
-                            row.set(5, oi);*/
                             row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);
                             map.put(actual, row);                            
                         }
@@ -109,6 +121,24 @@ public final class Security {
         public Fints getIntradayMinute(UDate date) throws Exception{
             return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTE);
         }
+        public Fints getIntradayMinutes3(UDate date) throws Exception{
+            return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTES3);
+        }
+        public Fints getIntradayMinutes5(UDate date) throws Exception{
+            return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTES5);
+        }
+        public Fints getIntradayMinutes10(UDate date) throws Exception{
+            return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTES10);
+        }
+        public Fints getIntradayMinutes15(UDate date) throws Exception{
+            return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTES15);
+        }
+        public Fints getIntradayMinutes30(UDate date) throws Exception{
+            return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.MINUTES30);
+        }
+        
+
+
         public Fints getIntradayHour(UDate date) throws Exception{
             return Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, date), Fints.frequency.HOUR);
         }

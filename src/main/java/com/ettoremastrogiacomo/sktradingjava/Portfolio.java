@@ -259,7 +259,9 @@ public class Portfolio {
                 continue;
             }
             this.tmp_hashcodes.add(s);
+            try {
             this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
+            }catch (Exception e) {LOG.warn("cannot add security : "+e.getMessage());}
         }
         this.hashcodes = Collections.unmodifiableList(this.tmp_hashcodes);
         //this.tmp_hashcodes=Collections.unmodifiableList(this.tmp_hashcodes);
@@ -288,6 +290,22 @@ public class Portfolio {
                 case MINUTE:
                     f = s.getIntradayMinute(iday.get());
                     break;
+                case MINUTES3:
+                    f = s.getIntradayMinutes3(iday.get());
+                    break;
+                case MINUTES5:
+                    f = s.getIntradayMinutes5(iday.get());
+                    break;
+                case MINUTES10:
+                    f = s.getIntradayMinutes10(iday.get());
+                    break;
+                    
+                case MINUTES15:
+                    f = s.getIntradayMinutes15(iday.get());
+                    break;
+                case MINUTES30:
+                    f = s.getIntradayMinutes30(iday.get());
+                    break;                    
                 case HOUR:
                     f = s.getIntradayHour(iday.get());
                     break;

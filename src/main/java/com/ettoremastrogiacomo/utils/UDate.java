@@ -48,11 +48,7 @@ public final class UDate
        return new UDate(c.getTimeInMillis());
    }
    public static UDate roundMinute(UDate date){
-       Calendar c=Calendar.getInstance();
-       c.setTimeInMillis(date.time);
-       c.set(Calendar.MILLISECOND, 0);
-       c.set(Calendar.SECOND, 0);                     
-       return new UDate(c.getTimeInMillis());
+       return roundXMinutes(date,1);
    }
 
    public static UDate roundXMinutes(UDate date,int mins){

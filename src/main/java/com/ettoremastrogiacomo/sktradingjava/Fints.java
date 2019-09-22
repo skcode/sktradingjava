@@ -19,7 +19,7 @@ import org.jfree.chart.plot.XYPlot;
 public final class Fints {
 
     public static enum frequency {
-        SECOND(10), MINUTE(100), HOUR(1000), DAILY(10000), WEEKLY(100000), MONTHLY(1000000), YEARLY(10000000);
+        SECOND(10), MINUTE(100), MINUTES3(110), MINUTES5(120), MINUTES10(130), MINUTES15(140), MINUTES30(150),HOUR(1000), DAILY(10000), WEEKLY(100000), MONTHLY(1000000), YEARLY(10000000);
         private final int value;
         private frequency(int value) {this.value=value;}
     };
@@ -75,7 +75,17 @@ public final class Fints {
                 case SECOND:
                     newdate.add(UDate.roundSecond(dates.get(k)));break;
                 case MINUTE:
-                    newdate.add(UDate.roundMinute(dates.get(k)));break;
+                    newdate.add(UDate.roundXMinutes(dates.get(k),1));break;
+                case MINUTES3:
+                    newdate.add(UDate.roundXMinutes(dates.get(k),3));break;
+                case MINUTES5:
+                    newdate.add(UDate.roundXMinutes(dates.get(k),5));break;
+                case MINUTES10:
+                    newdate.add(UDate.roundXMinutes(dates.get(k),10));break;
+                case MINUTES15:
+                    newdate.add(UDate.roundXMinutes(dates.get(k),15));break;
+                case MINUTES30:
+                    newdate.add(UDate.roundXMinutes(dates.get(k),30));break;
                 case HOUR:
                     newdate.add(UDate.roundHour(dates.get(k)));break;
                 case DAILY:
@@ -85,7 +95,7 @@ public final class Fints {
                 case WEEKLY:
                     newdate.add(UDate.roundWeek(dates.get(k)));break;
                 case YEARLY:
-                    newdate.add(UDate.roundYear(dates.get(k)));break;
+                    newdate.add(UDate.roundYear(dates.get(k)));break;                 
                 default:
                     throw new Exception("frequency "+freq+" not yet implemented");
             }
