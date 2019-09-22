@@ -127,9 +127,28 @@ public class PairTrading {
              } catch (Exception e){}             
          }
          logger.debug("size "+hash.size());
-         Portfolio ptf = new Portfolio(hash, Optional.of(Fints.frequency.MINUTES3), Optional.of(last), Optional.empty(), Optional.empty());
-         ptf.opttrain(ptf.getDate(0), ptf.getDate(ptf.getLength()-1), 2, 4, Portfolio.optMethod.MINVAR, false, 5000, 500);
-         if (true) System.exit(0);
+         Security s= new Security("OxxI3YPeCq0IbTkh+zgksZM/wc8=");
+
+
+         /*Fints f1=s.getDaily();
+         f1.getSerieCopy(3).plot("d", "price");
+         Fints f2=s.getWeekly();
+         f2.getSerieCopy(3).plot("w", "price");
+         Fints f3=s.getMonthly();
+         f3.getSerieCopy(3).plot("m", "price");
+*/
+         Fints f01=s.getIntradaySecond(last);
+         f01.getSerieCopy(3).plot("s", "price");
+         Fints f02=s.getIntradayMinutes10(last);
+         f02.getSerieCopy(3).plot("10m", "price");
+         Fints f03=s.getIntradayMinutes30(last);
+         f03.getSerieCopy(3).plot("30", "price");
+         Fints f04=s.getIntradayHour(last);
+         f04.getSerieCopy(3).plot("h", "price");
+
+         //Portfolio ptf = new Portfolio(hash, Optional.of(Fints.frequency.MINUTES3), Optional.of(last), Optional.empty(), Optional.empty());
+         //ptf.opttrain(ptf.getDate(0), ptf.getDate(ptf.getLength()-1), 2, 4, Portfolio.optMethod.MINVAR, false, 5000, 500);
+         if (true) return;
          
        /*  String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";
          for (UDate d: map.keySet()) {

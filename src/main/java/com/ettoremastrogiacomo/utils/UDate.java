@@ -88,14 +88,13 @@ public final class UDate
 
    public static UDate roundWeek(UDate date){
        Calendar c=Calendar.getInstance();
-       int dow=c.get(Calendar.DAY_OF_WEEK);
-       int diff=dow-Calendar.SUNDAY;//settimana inizia con domenica
-       c.setTimeInMillis(date.time);
+       c.setTimeInMillis(date.time);       
+       c.set(Calendar.DAY_OF_WEEK,Calendar.SUNDAY);     
        c.set(Calendar.MILLISECOND, 0);
        c.set(Calendar.SECOND, 0);              
        c.set(Calendar.MINUTE, 0);          
        c.set(Calendar.HOUR_OF_DAY, 0); 
-       return new UDate(c.getTimeInMillis()-diff*(1000*60*60*24));
+       return new UDate(c.getTimeInMillis());
    }   
    public static UDate roundMonth(UDate date){
        Calendar c=Calendar.getInstance();

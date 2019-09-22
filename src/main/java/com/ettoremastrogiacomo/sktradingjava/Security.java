@@ -72,12 +72,9 @@ public final class Security {
                 } else {
                     if (actual.after(previous)) {
                         row=new java.util.ArrayList<>();
-                        /*row.ensureCapacity(6);
-                        row.set(0, open);row.set(1, high);row.set(2, low);
-                        row.set(3, close);row.set(4, volume);
-                        row.set(5, oi);*/
                         row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);
-                       map.put(previous, row);
+                            map.put(previous, row);
+                       previous=actual;
                     } else {
                         if (f.get(i, 1)>high) high=f.get(i, 1);
                         if (f.get(i, 2)<low) low=f.get(i, 2);
@@ -85,7 +82,7 @@ public final class Security {
                         volume+=f.get(i, 4);oi+=f.get(i, 5);
                         if (i==(f.getLength()-1)) {
                             row=new java.util.ArrayList<>();
-                            row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);
+                            row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);                            
                             map.put(actual, row);                            
                         }
                     }
@@ -98,7 +95,7 @@ public final class Security {
             for (UDate d : map.keySet()){
                 List<Double> l=map.get(d);
                 newdates.add(d);
-                for (int j=0;j<l.size();j++) newmat[i][j]=l.get(j);
+                for (int j=0;j<l.size();j++) {newmat[i][j]=l.get(j);}                
                 i++;
             }
             return new Fints(newdates, f.getName(), newf, newmat);
