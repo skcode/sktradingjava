@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -105,7 +106,7 @@ public class PairTrading {
      
      
      public static void main(String [] args) throws Exception {                  
-         int limitsamples=2000;
+         int limitsamples=800;
          TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();
          
          UDate last=map.lastEntry().getKey();
@@ -115,7 +116,7 @@ public class PairTrading {
          HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
          
          
-         double tcorr=0.3;
+        
          for ( String x: map.lastEntry().getValue()){             
              try{
                  Fints t1=Database.getIntradayFintsQuotes(x, last);
@@ -137,17 +138,11 @@ public class PairTrading {
          Fints f3=s.getMonthly();
          f3.getSerieCopy(3).plot("m", "price");
 */
-         Fints f01=s.getIntradaySecond(last);
-         f01.getSerieCopy(3).plot("s", "price");
-         Fints f02=s.getIntradayMinutes10(last);
-         f02.getSerieCopy(3).plot("10m", "price");
-         Fints f03=s.getIntradayMinutes30(last);
-         f03.getSerieCopy(3).plot("30", "price");
-         Fints f04=s.getIntradayHour(last);
-         f04.getSerieCopy(3).plot("h", "price");
 
-         //Portfolio ptf = new Portfolio(hash, Optional.of(Fints.frequency.MINUTES3), Optional.of(last), Optional.empty(), Optional.empty());
-         //ptf.opttrain(ptf.getDate(0), ptf.getDate(ptf.getLength()-1), 2, 4, Portfolio.optMethod.MINVAR, false, 5000, 500);
+
+         Portfolio ptf = new Portfolio(hash, Optional.of(Fints.frequency.MINUTE), Optional.of(last), Optional.empty(), Optional.empty());
+         Entry<Double,ArrayList<Integer>> entry=ptf.opttrain(ptf.getDate(0), ptf.getDate(ptf.getLength()-1), 2, 4, Portfolio.optMethod.MAXSLOPE, false, 5000, 500);
+         logger.debug(ptf.toString());
          if (true) return;
          
        /*  String h1="OxxI3YPeCq0IbTkh+zgksZM/wc8=",h2="Q0dhtaXCK8QgycFLNlPUsjexxhA=";

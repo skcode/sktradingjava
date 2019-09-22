@@ -856,8 +856,7 @@ public class Portfolio {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append("\nPortfolio info\n");
-        s.append("size: ").append(this.getLength()).append("\n");
+        s.append("\nPortfolio info\n");        
         try {
             s.append("first date: ").append(this.getDate(0)).append("\n");
             s.append("last date: ").append(this.getDate(this.getLength() - 1)).append("\n");

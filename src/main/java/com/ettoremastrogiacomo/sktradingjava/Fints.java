@@ -1027,6 +1027,25 @@ public final class Fints {
         for (int i=0;i<this.names.size();i++) newnames.add("EQUITY("+names.get(i)+")");
         return new Fints(dates, newnames, freq, newm);
     }
+
+    /**
+     * 
+     * @return Fints che rappresenta l'equity short dei rendimenti della serie temporale
+     *          i rendimenti vengono calcolati ad ogni step
+     * @throws Exception 
+     */
+    public Fints getShortEquity() throws Exception {
+        double[][] newm=new double[this.matrix.length][this.getNoSeries()];
+        DoubleArray.fill(newm[0], 1.0);
+        for (int i=1;i<matrix.length;i++){
+            for (int j=0;j<this.matrix[i].length;j++){
+                newm[i][j]=newm[i-1][j]*(1- (matrix[i][j]-matrix[i-1][j])/matrix[i-1][j]);
+            }        
+        }
+        ArrayList<String> newnames= new ArrayList<>();
+        for (int i=0;i<this.names.size();i++) newnames.add("EQUITYSH("+names.get(i)+")");
+        return new Fints(dates, newnames, freq, newm);
+    }
     
     /**
      * 
