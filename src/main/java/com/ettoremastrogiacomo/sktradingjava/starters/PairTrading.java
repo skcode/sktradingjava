@@ -23,6 +23,7 @@ import io.jenetics.util.IntRange;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -111,7 +112,9 @@ public class PairTrading {
          int limitsamples=300;
          Fints.frequency fq=Fints.frequency.MINUTE;
          TreeMap<UDate,ArrayList<String>> map=Database.getIntradayDatesReverseMap();         
-         UDate last=map.lastEntry().getKey();
+         
+         UDate[] datearray= (UDate[])map.keySet().stream().toArray(UDate[]::new);
+         UDate last=datearray[datearray.length-6];
          ArrayList<Fints> all= new ArrayList<>();
          ArrayList<Fints> poseq= new ArrayList<>();
          ArrayList<Fints> negeq= new ArrayList<>();         
@@ -120,6 +123,7 @@ public class PairTrading {
          HashMap<String,String> nmap= Database.getCodeMarketName(map.lastEntry().getValue());
          for ( String x: map.lastEntry().getValue()){             
              try{
+                 if (!nmap.get(x).contains("STOCK")) continue;
                  Fints t1=Database.getIntradayFintsQuotes(x, last);
                  if (t1.getLength()<limitsamples) continue;
                 names.add(nmap.get(x));
@@ -132,11 +136,13 @@ public class PairTrading {
              } catch (Exception e){}             
          }
          
-         int epochs=1000000,pool=2;
+         int epochs=1000000,pool=3;
          double best=Double.NEGATIVE_INFINITY;
          for (int k=0;k<epochs;k++){
              if ((k % 10000)==0) logger.info("epoch "+k);
-             List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
+             //List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
+             //[49, 19, 38, 23, 25, 12]	
+             List<Integer> set= Arrays.asList(49, 19, 38, 23, 25, 12);
              Fints f=new Fints();
              for (int i=0;i<set.size();i++) {
                  if (i<pool ) {
@@ -154,7 +160,7 @@ public class PairTrading {
                  String bt="";
                  for (int i=0;i<set.size();i++)bt+=names.get(set.get(i))+";";
                  best=sharpe;
-                 logger.info("new best "+best+"\t"+bt);
+                 logger.info("new best "+set+"\t"+best+"\t"+bt);
                 mc.plot("eq "+best, "gain");
              }
              
