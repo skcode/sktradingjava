@@ -1175,6 +1175,14 @@ public final class Fints {
     public double[] getMin() throws Exception {
         return DoubleDoubleArray.min(matrix);
     }
+    
+    public double[] getMaxAbs() throws Exception {
+        double[] M=DoubleDoubleArray.max(matrix);
+        double[] m=DoubleDoubleArray.min(matrix);
+        double[] res=new double[m.length];
+        for (int i=0;i<res.length;i++) res[i]=Math.abs(M[i])>=Math.abs(m[i])? Math.abs(M[i]):Math.abs(m[i]);
+        return res;
+    }
     /**
      * 
      * @param serieidx

@@ -41,6 +41,7 @@ import org.apache.log4j.Logger;
  */
 public class PairTrading {
      static Logger logger = Logger.getLogger(PairTrading.class);
+     /*
      static Fints sec2min(Fints f,int i) throws Exception{         
          List<UDate> dates=f.getDate();
          TreeMap<UDate,Double> v=new TreeMap<>();
@@ -107,7 +108,7 @@ public class PairTrading {
      }
 
      
-     
+     */
      public static void main(String [] args) throws Exception {                  
          int limitsamples=300;
          Fints.frequency fq=Fints.frequency.MINUTE;
@@ -140,9 +141,9 @@ public class PairTrading {
          double best=Double.NEGATIVE_INFINITY;
          for (int k=0;k<epochs;k++){
              if ((k % 10000)==0) logger.info("epoch "+k);
-             //List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
+             List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
              //[49, 19, 38, 23, 25, 12]	
-             List<Integer> set= Arrays.asList(49, 19, 38, 23, 25, 12);
+             //List<Integer> set= Arrays.asList(49, 19, 38, 23, 25, 12);
              Fints f=new Fints();
              for (int i=0;i<set.size();i++) {
                  if (i<pool ) {
@@ -156,10 +157,15 @@ public class PairTrading {
              HashMap<String,Double> m=DoubleArray.LinearRegression(mc.getCol(0));
              double slope=Math.abs(m.get("slope"));
              double sharpe=Math.abs(m.get("sharpe"));             
-             if (sharpe>best) {
+             double max=mc.getMaxAbs()[0];
+             double mean=mc.getMeans()[0];
+             double std=mc.getStd()[0];
+             double lastval=mc.getLastRow()[0];
+             double fitness=Math.pow(10, max)/Math.abs(1-lastval);
+             if (fitness>best) {
                  String bt="";
                  for (int i=0;i<set.size();i++)bt+=names.get(set.get(i))+";";
-                 best=sharpe;
+                 best=fitness;
                  logger.info("new best "+set+"\t"+best+"\t"+bt);
                 mc.plot("eq "+best, "gain");
              }
