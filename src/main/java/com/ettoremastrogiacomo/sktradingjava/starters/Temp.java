@@ -13,7 +13,9 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.NYSE;
+import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.HttpFetch;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 
 import java.io.BufferedReader;
@@ -43,6 +45,7 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -231,8 +234,67 @@ public class Temp {
         }
         return best;
     }
- 
+    public static List<Object[]> combination(Object[]  e, int k){
+           List<Object[]> list=new ArrayList<>();
+           int[] ignore = new int[e.length-k]; // --> [0][0]
+           int[] combination = new int[k]; // --> [][][]
+
+           // set initial ignored elements 
+           //(last k elements will be ignored)
+           for(int w = 0; w < ignore.length; w++)
+                   ignore[w] = e.length - k +(w+1);
+
+           int i = 0, r = 0, g = 0;
+
+           boolean terminate = false;
+           while(!terminate){   
+
+                   // selecting N-k non-ignored elements
+                   while(i < e.length && r < k){
+
+                   if(i != ignore[g]){
+                           combination[r] = i;
+                           r++; i++;
+                   }
+                   else{	    			
+                           if(g != ignore.length-1)
+                                   g++;	    			
+                           i++;
+                   }
+           }
+                   
+                   
+           Object[] o=new Object[k];           
+           for (int ii=0;ii<k;ii++) o[ii]=e[combination[ii]];
+           if (!list.contains(o)) list.add(o);
+           //print(combination, e);
+           i = 0; r = 0; g = 0;
+
+           terminate = true;
+
+           // shifting ignored indices
+           for(int w = 0 ; w < ignore.length; w++){
+                   if(ignore[w] > w){	    			
+                           ignore[w]--;
+
+                           if(w > 0)
+                                   ignore[w-1] = ignore[w]-1;
+                           terminate = false;
+                           break;	    			
+                   }
+           }
+           }    	
+           return list;
+   }
+
+
+    
+    
     public static void main(String[] args) throws Exception {
+ 
+        ArrayList<ArrayList<Integer>> list=Misc.combine(4, 5);
+        LOG.debug(list);
+        if (true) return;
         TreeSet<UDate> dates=Database.getIntradayDates();
         for (UDate d: dates){
             int sz=Database.getIntradayHashCodes(Optional.of(d)).size();

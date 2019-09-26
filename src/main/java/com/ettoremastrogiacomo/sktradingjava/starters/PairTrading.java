@@ -139,11 +139,13 @@ public class PairTrading {
          
          int epochs=1000000,pool=3;
          double best=Double.NEGATIVE_INFINITY;
+         //ArrayList<ArrayList<Integer>> list=Misc.combine(all.size(), pool*2);
+         
          for (int k=0;k<epochs;k++){
              if ((k % 10000)==0) logger.info("epoch "+k);
              List<Integer> set=Misc.set2list(Misc.getDistinctRandom(pool*2, all.size())) ;
              //[49, 19, 38, 23, 25, 12]	
-             //List<Integer> set= Arrays.asList(49, 19, 38, 23, 25, 12);
+              
              Fints f=new Fints();
              for (int i=0;i<set.size();i++) {
                  if (i<pool ) {
@@ -161,7 +163,7 @@ public class PairTrading {
              double mean=mc.getMeans()[0];
              double std=mc.getStd()[0];
              double lastval=mc.getLastRow()[0];
-             double fitness=Math.pow(10, max)/Math.abs(1-lastval);
+             double fitness=Math.abs(lastval-1)>0.001?-100000 : max;//Math.pow(10, max)/Math.abs(1-lastval);
              if (fitness>best) {
                  String bt="";
                  for (int i=0;i<set.size();i++)bt+=names.get(set.get(i))+";";
