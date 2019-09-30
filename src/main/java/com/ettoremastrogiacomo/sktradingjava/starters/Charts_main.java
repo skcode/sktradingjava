@@ -13,6 +13,10 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.utils.DoubleArray;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import org.apache.log4j.*;
 
@@ -36,27 +40,21 @@ public class Charts_main {
                 String [] markets_by_type={"X25E","IBTM","XEMB","IUSA","EQQQ","EUE","XSFR","IJPN","XMEM","EXXY","IPRP"};
                
         
-
-        Fints f=Database.getFilteredPortfolioOfClose(Optional.of(300), Optional.of("STOCK"), Optional.of("MLSE"), Optional.empty(), Optional.empty(), Optional.of(50),Optional.empty(), Optional.empty());
+        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(java.util.Arrays.asList("STOCK")), Optional.of(java.util.Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
+        ArrayList<String> hc=new ArrayList<>();
+        map.forEach((x)->{hc.add(x.get( "hashcode"));});
+        List<String> list=Database.getFilteredPortfolio(Optional.of(hc), Optional.of(600), Optional.of(.2), Optional.of(6), Optional.of(10), Optional.of(1000000), Optional.empty());
+        Fints f= new Fints();
+        for (String x: list) {f=f.isEmpty()?Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(500)):f.merge(Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(500)));}
+        f=Fints.SMA(Fints.ER(Fints.createContinuity(f), 100, true), 200);
+        Fints fm=Fints.MEANCOLS(f);
+        //Fints f=Database.getFilteredPortfolioOfClose(Optional.of(300), Optional.of("STOCK"), Optional.of("MLSE"), Optional.empty(), Optional.empty(), Optional.of(50),Optional.empty(), Optional.empty());
         Charts c1=new Charts("MOVING_SHARPE");
-        Fints f2=Fints.Diff(f);
+        System.out.println("MEDIA AL "+f.getLastDate()+"\t:"+ DoubleArray.mean(f.getLastRow()));
         XYPlot p1=c1.createXYPlot("er",f);
         c1.plot(p1,640,480);
-        java.util.TreeMap<Double,String> tmap=new java.util.TreeMap<Double,String>();
-        for (int i=0;i<f.getNoSeries();i++) {
-            double r1=f.get(f.getLength()-1, i);
-            double r2=f2.get(f2.getLength()-1, i);
-            double val=Math.exp(r1+10*r2)-1;
-            tmap.put(val,  f.getName(i));
-            System.out.println(f.getName(i)+" : "+r1+"\t"+r2+"\t"+(val));
-        }
-        java.util.Iterator<Double> itd=tmap.keySet().iterator();
         
-        
-        while (itd.hasNext()) {
-            Double d=itd.next();
-            System.out.println(tmap.get(d)+"\t"+d);
-        }
+
         //XYPlot[] arr=new XYPlot[3];
         //arr[0]=p1;arr[1]=p2;arr[2]=p3;
         //c1.plot(p1,640,480);
