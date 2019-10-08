@@ -6,9 +6,14 @@
 package com.ettoremastrogiacomo.utils;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.NumberFormat;
@@ -184,7 +189,7 @@ public class Misc {
                 = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
         try (
                 //InputStream in = getResourceAsStream( path );
-                BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             String resource;
 
             while ((resource = br.readLine()) != null) {
@@ -262,105 +267,143 @@ public class Misc {
     public static <T> ArrayList<T> set2list(Set<T> set) {
         return new ArrayList<>(set);
     }
+
     /**
      * get fullstacktrace from an exception
+     *
      * @param e
      * @return stacktrace in string form
      */
-    public static String stackTrace2String(Exception e ){
+    public static String stackTrace2String(Exception e) {
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();    
+        return sw.toString();
     }
 
     /**
-     * divide un set in tanti sottoset il cui gap temporale non supera il maxgapmsec millisecondi
+     * divide un set in tanti sottoset il cui gap temporale non supera il
+     * maxgapmsec millisecondi
+     *
      * @param dates
      * @param maxgapmsec
      * @return array di subset
      */
-    public static java.util.ArrayList<TreeSet<UDate>> timesegments(java.util.TreeSet<UDate> dates,long maxgapmsec)
-    {
+    public static java.util.ArrayList<TreeSet<UDate>> timesegments(java.util.TreeSet<UDate> dates, long maxgapmsec) {
         //java.util.TreeMap<Integer,TreeSet<UDate> > rank= new java.util.TreeMap< >();
-        java.util.TreeSet<UDate> t= new TreeSet<>();
-        java.util.ArrayList<TreeSet<UDate>> list= new ArrayList<>();
+        java.util.TreeSet<UDate> t = new TreeSet<>();
+        java.util.ArrayList<TreeSet<UDate>> list = new ArrayList<>();
         //java.util.TreeSet<UDate> last= new TreeSet<>();
-        for (UDate d: dates) {
+        for (UDate d : dates) {
             if (t.isEmpty()) {
                 t.add(d);
-            } else if (d.diffmills(t.last())>maxgapmsec){                             
+            } else if (d.diffmills(t.last()) > maxgapmsec) {
                 //rank.put(t.size(), t);
                 list.add(t);
                 //last=t;
-                t= new TreeSet<>();
+                t = new TreeSet<>();
                 t.add(d);
             } else {
                 t.add(d);
-            }                        
+            }
         }
         list.add(t);
         return list;
     }
-    public static TreeSet<UDate> mostRecentTimeSegment(java.util.TreeSet<UDate> dates,long maxgapmsec)
-    {
-        
-        
-  
-        java.util.TreeSet<UDate> t= new TreeSet<>();
-        for (UDate d: dates.descendingSet()) {
+
+    public static TreeSet<UDate> mostRecentTimeSegment(java.util.TreeSet<UDate> dates, long maxgapmsec) {
+
+        java.util.TreeSet<UDate> t = new TreeSet<>();
+        for (UDate d : dates.descendingSet()) {
             if (t.isEmpty()) {
-            t.add(d);}
-            else if (Math.abs(d.diffmills(t.first()))>maxgapmsec) {
+                t.add(d);
+            } else if (Math.abs(d.diffmills(t.first())) > maxgapmsec) {
                 break;
-            } else {t.add(d);}
+            } else {
+                t.add(d);
+            }
         }
-        
+
         return t;
     }
 
-
-    
     /**
-     * prende da un array di set, quello più lungo, non garantisce se ci sono più bestset con stessa lunghezza
+     * prende da un array di set, quello più lungo, non garantisce se ci sono
+     * più bestset con stessa lunghezza
+     *
      * @param <T>
      * @param list
-     * @return 
+     * @return
      */
-    public static <T>  java.util.Set<T> longestSet(ArrayList<TreeSet<T>> list) {
-        if (list.isEmpty()) return new java.util.TreeSet<>();
-        java.util.TreeSet<T> best=list.get(0);
+    public static <T> java.util.Set<T> longestSet(ArrayList<TreeSet<T>> list) {
+        if (list.isEmpty()) {
+            return new java.util.TreeSet<>();
+        }
+        java.util.TreeSet<T> best = list.get(0);
         for (TreeSet<T> s : list) {
-            if (best.size()<s.size()) best=s;
+            if (best.size() < s.size()) {
+                best = s;
+            }
         }
         return best;
-    }    
-/**
- * 
- * @param n
- * @param k
- * @return combinazioni di interi da 0 ad n-1 , presi k a k
- * se k>n ritorna lista vuota
- */
-public static ArrayList<ArrayList<Integer>> combine(int n, int k) {
-	ArrayList<ArrayList<Integer>> result = new ArrayList<>();
-	if (n < 0 || n < k)
-		return result;
-	ArrayList<Integer> item = new ArrayList<>();
-	helper_combine(n-1, k, 0, item, result); 
-	return result;
-}
- 
-private static void helper_combine(int n, int k, int start, ArrayList<Integer> item,
-	ArrayList<ArrayList<Integer>> res) {
-	if (item.size() == k) {
-		res.add(new ArrayList<>(item));
-		return;
-	} 
-	for (int i = start; i <= n; i++) {
-		item.add(i);
-		helper_combine(n, k, i + 1, item, res);
-		item.remove(item.size() - 1);
-	}
-}    
-    
+    }
+
+    /**
+     *
+     * @param n
+     * @param k
+     * @return combinazioni di interi da 0 ad n-1 , presi k a k se k>n ritorna
+     * lista vuota
+     */
+    public static ArrayList<ArrayList<Integer>> combine(int n, int k) {
+        ArrayList<ArrayList<Integer>> result = new ArrayList<>();
+        if (n < 0 || n < k) {
+            return result;
+        }
+        ArrayList<Integer> item = new ArrayList<>();
+        helper_combine(n - 1, k, 0, item, result);
+        return result;
+    }
+
+    private static void helper_combine(int n, int k, int start, ArrayList<Integer> item,
+            ArrayList<ArrayList<Integer>> res) {
+        if (item.size() == k) {
+            res.add(new ArrayList<>(item));
+            return;
+        }
+        for (int i = start; i <= n; i++) {
+            item.add(i);
+            helper_combine(n, k, i + 1, item, res);
+            item.remove(item.size() - 1);
+        }
+    }
+
+    public static void writeObjToFile(Object obj, String filename) {
+        try {
+            File fileOne = new File(filename);
+            FileOutputStream fos = new FileOutputStream(fileOne);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(obj);
+            oos.flush();
+            oos.close();
+            fos.close();
+        } catch (Exception e) {
+            logger.warn(e);
+        }
+    }
+
+    public static Object readObjFromFile(String filename) {
+        try {
+            File toRead = new File(filename);
+            FileInputStream fis = new FileInputStream(toRead);
+            ObjectInputStream ois = new ObjectInputStream(fis);
+
+            Object retobj = ois.readObject();
+            ois.close();
+            fis.close();
+            return retobj;
+        } catch (Exception e) {
+            logger.warn(e);
+        }
+        return null;
+    }
 }

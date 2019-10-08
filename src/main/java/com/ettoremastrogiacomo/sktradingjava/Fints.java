@@ -6,6 +6,7 @@ import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import java.io.File;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -14,12 +15,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
-import java.util.TreeSet;
-//import java.util.Locale;
 import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
 
-public final class Fints {
+public final class Fints implements Serializable{
 
     public static enum frequency {
         SECOND(10), MINUTE(100), MINUTES3(110), MINUTES5(120), MINUTES10(130), MINUTES15(140), MINUTES30(150),HOUR(1000), DAILY(10000), WEEKLY(100000), MONTHLY(1000000), YEARLY(10000000);
