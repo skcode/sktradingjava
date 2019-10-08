@@ -386,7 +386,7 @@ public class Misc {
             oos.flush();
             oos.close();
             fos.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.warn(e);
         }
     }
