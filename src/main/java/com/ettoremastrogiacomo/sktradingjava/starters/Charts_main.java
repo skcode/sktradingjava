@@ -43,9 +43,9 @@ public class Charts_main {
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(java.util.Arrays.asList("STOCK")), Optional.of(java.util.Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         ArrayList<String> hc=new ArrayList<>();
         map.forEach((x)->{hc.add(x.get( "hashcode"));});
-        List<String> list=Database.getFilteredPortfolio(Optional.of(hc), Optional.of(600), Optional.of(.2), Optional.of(6), Optional.of(10), Optional.of(1000000), Optional.empty());
+        List<String> list=Database.getFilteredPortfolio(Optional.of(hc), Optional.of(5000), Optional.of(.2), Optional.of(6), Optional.of(10), Optional.of(1000000), Optional.empty());
         Fints f= new Fints();
-        for (String x: list) {f=f.isEmpty()?Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(500)):f.merge(Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(500)));}
+        for (String x: list) {f=f.isEmpty()?Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(3500)):f.merge(Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(3500)));}
         f=Fints.SMA(Fints.ER(Fints.createContinuity(f), 100, true), 200);
         Fints fm=Fints.MEANCOLS(f);
         //Fints f=Database.getFilteredPortfolioOfClose(Optional.of(300), Optional.of("STOCK"), Optional.of("MLSE"), Optional.empty(), Optional.empty(), Optional.of(50),Optional.empty(), Optional.empty());

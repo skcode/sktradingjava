@@ -402,7 +402,7 @@ public class Misc {
             fis.close();
             return retobj;
         } catch (Exception e) {
-            logger.warn(e);
+            logger.warn(e.toString());
         }
         return null;
     }

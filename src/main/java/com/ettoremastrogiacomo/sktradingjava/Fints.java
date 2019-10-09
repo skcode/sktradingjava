@@ -19,7 +19,7 @@ import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
 
 public final class Fints implements Serializable{
-
+    private static final long serialVersionUID = 1113799434508676095L;
     public static enum frequency {
         SECOND(10), MINUTE(100), MINUTES3(110), MINUTES5(120), MINUTES10(130), MINUTES15(140), MINUTES30(150),HOUR(1000), DAILY(10000), WEEKLY(100000), MONTHLY(1000000), YEARLY(10000000);
         private final int value;
@@ -1081,7 +1081,7 @@ public final class Fints implements Serializable{
      *          i rendimenti vengono calcolati ad ogni step
      * @throws Exception 
      */
-    public Fints getShortEquity() throws Exception {
+    public Fints getEquityShort() throws Exception {
         double[][] newm=new double[this.matrix.length][this.getNoSeries()];
         DoubleArray.fill(newm[0], 1.0);
         for (int i=1;i<matrix.length;i++){

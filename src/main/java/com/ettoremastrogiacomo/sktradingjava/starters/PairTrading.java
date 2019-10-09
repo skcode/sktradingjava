@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.log4j.Logger;
@@ -35,16 +36,17 @@ public class PairTrading {
         double limitpct = .90;
 
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
-        String datafileName = "pairtrading.dat";
+        String datafileName = "./pairtrading.dat";
         TreeSet<UDate> dates = Database.getIntradayDates();
+        TreeMap<UDate, ArrayList<String>> rmap = Database.getIntradayDatesReverseMap();
+        HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
+        HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<String>(map.keySet()));
+
         if (new File(datafileName).exists()) {
             logger.debug("caricamento file " + datafileName);
             fintsmap = (HashMap<String, TreeMap<UDate, Fints>>) Misc.readObjFromFile(datafileName);
         } else {
 
-            TreeMap<UDate, ArrayList<String>> rmap = Database.getIntradayDatesReverseMap();
-            HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
-            HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<String>(map.keySet()));
 
             HashMap<String, Integer> timesmap = new HashMap<>();
             int maxt = 0;
@@ -105,7 +107,32 @@ public class PairTrading {
 
         logger.debug("dates " + dates.size());
         logger.debug("stocks " + fintsmap.size());
-
+        
+        UDate[] datesarr=dates.stream().toArray(UDate[]::new);
+        String[] hasharr=fintsmap.keySet().stream().toArray(String[]::new);
+        int PAIR=2,EPOCHS=10000;
+        for (int i=0;i<EPOCHS;i++){
+            Set<String> posdicestring= new HashSet<>();
+            Set<String> negdicestring= new HashSet<>();
+            Integer[] dice=Misc.getDistinctRandom(PAIR*2, fintsmap.size()).toArray(Integer[]::new);
+            for (int j=0;j<PAIR;j++) posdicestring.add(hasharr[dice[j]]);
+            for (int j=PAIR;j<(PAIR*2);j++) negdicestring.add(hasharr[dice[j]]);            
+            Fints meanF=new Fints();
+            for (int j=0;j<datesarr.length;j++){
+                Fints eqall=new Fints();
+                for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
+                for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
+                eqall=Fints.MEANCOLS(eqall);
+                HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
+                posdicestring.forEach((x)->{logger.debug("pos :"+nmap.get(x));});
+                negdicestring.forEach((x)->{logger.debug("neg :"+nmap.get(x));});
+                stats.keySet().forEach((x)-> {logger.debug(x+"\t"+stats.get(x));});
+                //eqall.merge(eqall.getLinReg(0)).plot("m", "d");
+               // meanF=meanF.isEmpty()?eqall:Fints.merge(meanF, eqall);
+            }        
+            //meanF=Fints.MEANCOLS(meanF);
+            //meanF.merge(meanF.getLinReg(0)).plot("merg", "eq");
+        }
         if (true) {
             return;
         }
