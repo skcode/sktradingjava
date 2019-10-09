@@ -110,28 +110,37 @@ public class PairTrading {
         
         UDate[] datesarr=dates.stream().toArray(UDate[]::new);
         String[] hasharr=fintsmap.keySet().stream().toArray(String[]::new);
-        int PAIR=2,EPOCHS=10000;
+        int PAIR=3,EPOCHS=10000;
+        double bestfitness=Double.NEGATIVE_INFINITY;
         for (int i=0;i<EPOCHS;i++){
             Set<String> posdicestring= new HashSet<>();
             Set<String> negdicestring= new HashSet<>();
             Integer[] dice=Misc.getDistinctRandom(PAIR*2, fintsmap.size()).toArray(Integer[]::new);
             for (int j=0;j<PAIR;j++) posdicestring.add(hasharr[dice[j]]);
             for (int j=PAIR;j<(PAIR*2);j++) negdicestring.add(hasharr[dice[j]]);            
-            Fints meanF=new Fints();
+            Fints meanF=new Fints();            
+            double stepfitness=0;
             for (int j=0;j<datesarr.length;j++){
                 Fints eqall=new Fints();
                 for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
                 for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
                 eqall=Fints.MEANCOLS(eqall);
                 HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
+                stepfitness+=eqall.getLastRow()[0];//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+                /*logger.debug("step "+(j+1)+" of "+datesarr.length);
                 posdicestring.forEach((x)->{logger.debug("pos :"+nmap.get(x));});
                 negdicestring.forEach((x)->{logger.debug("neg :"+nmap.get(x));});
-                stats.keySet().forEach((x)-> {logger.debug(x+"\t"+stats.get(x));});
+                stats.keySet().forEach((x)-> {logger.debug(x+"\t"+stats.get(x));});*/
                 //eqall.merge(eqall.getLinReg(0)).plot("m", "d");
-               // meanF=meanF.isEmpty()?eqall:Fints.merge(meanF, eqall);
+
             }        
-            //meanF=Fints.MEANCOLS(meanF);
-            //meanF.merge(meanF.getLinReg(0)).plot("merg", "eq");
+            stepfitness/=datesarr.length;
+            if (stepfitness>bestfitness){
+                bestfitness=stepfitness;
+                posdicestring.forEach((x)->{logger.debug("pos :"+x+"."+nmap.get(x));});
+                negdicestring.forEach((x)->{logger.debug("neg :"+x+"."+nmap.get(x));});
+                logger.debug("best fitness "+bestfitness);
+            }
         }
         if (true) {
             return;
