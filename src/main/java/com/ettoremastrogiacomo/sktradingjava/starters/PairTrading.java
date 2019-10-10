@@ -82,8 +82,10 @@ public class PairTrading {
 
     public static void main(String[] args) throws Exception {
         int limitsamples = 300;
-        double limitpct = .70;
-
+        double limitpct = .50;
+        int PAIR=3,EPOCHS=10000;
+        
+        
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         String datafileName = "./pairtrading.dat";
         TreeSet<UDate> dates = Database.getIntradayDates();
@@ -117,6 +119,7 @@ public class PairTrading {
                 } else {
                     toremove.add(i);
                 }
+                if (!map.get(i).contains(dates.last())) toremove.add(i);
             }
             toremove.forEach((x) -> {
                 timesmap.remove(x);
@@ -154,12 +157,16 @@ public class PairTrading {
             dates.retainAll(x.keySet());
         }
 
-        logger.debug("dates " + dates.size());
-        logger.debug("stocks " + fintsmap.size());
         
-        UDate[] datesarr=dates.stream().toArray(UDate[]::new);
-        String[] hasharr=fintsmap.keySet().stream().toArray(String[]::new);
-        int PAIR=1,EPOCHS=10000;
+        
+        UDate[] datesarr=dates.stream().limit(dates.size()-20).toArray(UDate[]::new);
+        UDate[] testdates=dates.stream().skip(dates.size()-20).toArray(UDate[]::new);;
+        //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];
+        
+        logger.debug("dates " + datesarr.length+"\t"+datesarr[0]+"\t"+datesarr[datesarr.length-1]);
+        logger.debug("testdates " + testdates.length+"\t"+testdates[0]+"\t"+testdates[testdates.length-1]);
+        logger.debug("stocks " + fintsmap.size());
+        String[] hasharr=fintsmap.keySet().stream().toArray(String[]::new);        
         Results bestresult=new Results();
         bestresult.fitness=Double.NEGATIVE_INFINITY;        
         int POOL=Runtime.getRuntime().availableProcessors();
@@ -187,7 +194,7 @@ public class PairTrading {
         }
         executor.shutdown();
         executor.awaitTermination(10, TimeUnit.MINUTES);
-        Results fres=ThreadClass.test(fintsmap, datesarr, bestresult.posdicestring, bestresult.negdicestring);
+        Results fres=ThreadClass.test(fintsmap, testdates, bestresult.posdicestring, bestresult.negdicestring);
         logger.debug("check best fit : "+fres.fitness);
         fres.posdicestring.forEach((y)->{logger.debug("pos :"+y+"."+nmap.get(y));});
         fres.negdicestring.forEach((y)->{logger.debug("neg :"+y+"."+nmap.get(y));});        
