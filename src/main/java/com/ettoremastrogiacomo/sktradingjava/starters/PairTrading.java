@@ -1,5 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
+
+
+
+/* To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -21,19 +23,66 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
  *
  * @author a241448
  */
+
+class Results {
+    public double fitness;
+    public Set<String> posdicestring,negdicestring;
+    
+}
+class ThreadClass implements Callable<Results> {
+    HashMap<String, TreeMap<UDate, Fints>> fintsmap;
+    UDate[] datesarr;
+    Set<String> posdicestring,negdicestring;
+    public ThreadClass(HashMap<String, TreeMap<UDate, Fints>> fintsmap,UDate[] datesarr,Set<String> posdicestring,Set<String> negdicestring) {
+        this.fintsmap=fintsmap;
+        this.datesarr=datesarr;
+        this.posdicestring=posdicestring;
+        this.negdicestring=negdicestring;
+    }
+    
+    static Results test(HashMap<String, TreeMap<UDate, Fints>> fintsmap,UDate[] datesarr,Set<String> posdicestring,Set<String> negdicestring)throws Exception {
+        ThreadClass tc= new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring);
+        return tc.call();
+    }
+    @Override
+    public Results call() throws Exception {
+        double stepfitness=0;
+        for (int j=0;j<datesarr.length;j++){
+            Fints eqall=new Fints();
+            for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
+            for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
+            eqall=Fints.MEANCOLS(eqall);
+            //HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
+            stepfitness+=eqall.getLastRow()[0];//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+        }     
+        Results res= new Results();
+        res.fitness=stepfitness/datesarr.length;
+        res.negdicestring=negdicestring;
+        res.posdicestring=posdicestring;
+        return res;
+    }
+
+}
 public class PairTrading {
 
     static Logger logger = Logger.getLogger(PairTrading.class);
+    
+    
 
     public static void main(String[] args) throws Exception {
         int limitsamples = 300;
-        double limitpct = .90;
+        double limitpct = .70;
 
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         String datafileName = "./pairtrading.dat";
@@ -110,40 +159,37 @@ public class PairTrading {
         
         UDate[] datesarr=dates.stream().toArray(UDate[]::new);
         String[] hasharr=fintsmap.keySet().stream().toArray(String[]::new);
-        int PAIR=3,EPOCHS=10000;
-        double bestfitness=Double.NEGATIVE_INFINITY;
+        int PAIR=1,EPOCHS=10000;
+        Results bestresult=new Results();
+        bestresult.fitness=Double.NEGATIVE_INFINITY;        
+        int POOL=Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(POOL);
+        List<Future<Results>> list = new ArrayList<>();  
         for (int i=0;i<EPOCHS;i++){
             Set<String> posdicestring= new HashSet<>();
             Set<String> negdicestring= new HashSet<>();
             Integer[] dice=Misc.getDistinctRandom(PAIR*2, fintsmap.size()).toArray(Integer[]::new);
             for (int j=0;j<PAIR;j++) posdicestring.add(hasharr[dice[j]]);
-            for (int j=PAIR;j<(PAIR*2);j++) negdicestring.add(hasharr[dice[j]]);            
-            Fints meanF=new Fints();            
-            double stepfitness=0;
-            for (int j=0;j<datesarr.length;j++){
-                Fints eqall=new Fints();
-                for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
-                for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
-                eqall=Fints.MEANCOLS(eqall);
-                HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
-                stepfitness+=eqall.getLastRow()[0];//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
-                /*logger.debug("step "+(j+1)+" of "+datesarr.length);
-                posdicestring.forEach((x)->{logger.debug("pos :"+nmap.get(x));});
-                negdicestring.forEach((x)->{logger.debug("neg :"+nmap.get(x));});
-                stats.keySet().forEach((x)-> {logger.debug(x+"\t"+stats.get(x));});*/
-                //eqall.merge(eqall.getLinReg(0)).plot("m", "d");
-
-            }        
-            stepfitness/=datesarr.length;
-            if (stepfitness>bestfitness){
-                bestfitness=stepfitness;
-                posdicestring.forEach((x)->{logger.debug("pos :"+x+"."+nmap.get(x));});
-                negdicestring.forEach((x)->{logger.debug("neg :"+x+"."+nmap.get(x));});
-                logger.debug("best fitness "+bestfitness);
+            for (int j=PAIR;j<(PAIR*2);j++) negdicestring.add(hasharr[dice[j]]);                        
+            list.add(executor.submit(new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring)));
+            if (list.size()>=POOL){
+                for (Future<Results> x: list){
+                    Results resfuture=x.get();
+                    if (bestresult.fitness<resfuture.fitness) {
+                        bestresult=resfuture;
+                        logger.debug("best fit : "+bestresult.fitness);
+                        bestresult.posdicestring.forEach((y)->{logger.debug("pos :"+y+"."+nmap.get(y));});
+                        bestresult.negdicestring.forEach((y)->{logger.debug("neg :"+y+"."+nmap.get(y));});
+                    }
+                }                
+                list.clear();
             }
         }
-        if (true) {
-            return;
-        }
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.MINUTES);
+        Results fres=ThreadClass.test(fintsmap, datesarr, bestresult.posdicestring, bestresult.negdicestring);
+        logger.debug("check best fit : "+fres.fitness);
+        fres.posdicestring.forEach((y)->{logger.debug("pos :"+y+"."+nmap.get(y));});
+        fres.negdicestring.forEach((y)->{logger.debug("neg :"+y+"."+nmap.get(y));});        
     }
 }
