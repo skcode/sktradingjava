@@ -14,8 +14,6 @@ import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,8 +35,7 @@ import org.apache.log4j.Logger;
 
 class Results {
     public double fitness;
-    public Set<String> posdicestring,negdicestring;
-    
+    public Set<String> posdicestring,negdicestring;   
 }
 class ThreadClass implements Callable<Results> {
     HashMap<String, TreeMap<UDate, Fints>> fintsmap;
@@ -53,6 +50,13 @@ class ThreadClass implements Callable<Results> {
     
     static Results test(HashMap<String, TreeMap<UDate, Fints>> fintsmap,UDate[] datesarr,Set<String> posdicestring,Set<String> negdicestring)throws Exception {
         ThreadClass tc= new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring);
+        for (int j=0;j<datesarr.length;j++){
+            Fints eqall=new Fints();
+            for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
+            for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
+            eqall=Fints.MEANCOLS(eqall);
+            eqall.merge(eqall.getLinReg(0)).plot("eq", "y");
+        }             
         return tc.call();
     }
     @Override
@@ -63,13 +67,13 @@ class ThreadClass implements Callable<Results> {
             for (String x: posdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquity():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity()); }
             for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
             eqall=Fints.MEANCOLS(eqall);
-            //HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
-            stepfitness+=eqall.getLastRow()[0];//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+            HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
+            stepfitness+=Math.abs(eqall.getMax()[0]-eqall.getMin()[0]);// 1/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
         }     
         Results res= new Results();
         res.fitness=stepfitness/datesarr.length;
         res.negdicestring=negdicestring;
-        res.posdicestring=posdicestring;
+        res.posdicestring=posdicestring;        
         return res;
     }
 
@@ -83,7 +87,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         int limitsamples = 300;
         double limitpct = .50;
-        int PAIR=3,EPOCHS=10000;
+        int PAIR=1,EPOCHS=10000,TESTSET=10;
         
         
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
@@ -159,8 +163,8 @@ public class PairTrading {
 
         
         
-        UDate[] datesarr=dates.stream().limit(dates.size()-20).toArray(UDate[]::new);
-        UDate[] testdates=dates.stream().skip(dates.size()-20).toArray(UDate[]::new);;
+        UDate[] datesarr=dates.stream().limit(dates.size()-TESTSET).toArray(UDate[]::new);
+        UDate[] testdates=dates.stream().skip(dates.size()-TESTSET).toArray(UDate[]::new);;
         //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];
         
         logger.debug("dates " + datesarr.length+"\t"+datesarr[0]+"\t"+datesarr[datesarr.length-1]);
