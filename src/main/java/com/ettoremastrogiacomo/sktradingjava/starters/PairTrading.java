@@ -68,7 +68,7 @@ class ThreadClass implements Callable<Results> {
             for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
             eqall=Fints.MEANCOLS(eqall);
             HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
-            stepfitness+=Math.abs(eqall.getMax()[0]-eqall.getMin()[0]);// 1/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+            stepfitness+=stats.get("slope");//1/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
         }     
         Results res= new Results();
         res.fitness=stepfitness/datesarr.length;
@@ -87,7 +87,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         int limitsamples = 300;
         double limitpct = .50;
-        int PAIR=1,EPOCHS=10000,TESTSET=10;
+        int PAIR=1,EPOCHS=10000,TESTSET=5,TRAINSET=5;
         
         
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
@@ -163,7 +163,7 @@ public class PairTrading {
 
         
         
-        UDate[] datesarr=dates.stream().limit(dates.size()-TESTSET).toArray(UDate[]::new);
+        UDate[] datesarr=dates.stream().limit(dates.size()-TESTSET).skip(dates.size()-TRAINSET-TESTSET) .toArray(UDate[]::new);
         UDate[] testdates=dates.stream().skip(dates.size()-TESTSET).toArray(UDate[]::new);;
         //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];
         
