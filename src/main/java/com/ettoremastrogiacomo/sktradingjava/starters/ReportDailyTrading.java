@@ -64,8 +64,8 @@ public class ReportDailyTrading {
         int minoptset=15,maxoptset=25;
         int popsize=5000;
         int ngens=500;
-        int trainfrom=60,trainto=140,trainstep=10;
-        int testfrom=80 ,testto=120,teststep=10;
+        int trainfrom=209,trainto=300,trainstep=1;
+        int testfrom=80 ,testto=250,teststep=1;
         optMethod opt=optMethod.MAXSLOPE;
         //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
         //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
@@ -75,7 +75,7 @@ public class ReportDailyTrading {
         try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"),true))) {//append mode            
             for (int i =trainfrom; i <= trainto; i = i + trainstep) {//train win
                 for (int j = testfrom; j <= testto && j<=i; j = j + teststep) {//test win
-                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens),Optional.of(true) );                    
+                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens),Optional.of(false) );                    
                     if (l.isEmpty()) {
                         bwr.write("\n");
                         for (String x : m.keySet()) {
