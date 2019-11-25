@@ -291,61 +291,17 @@ public class Temp {
     
     
     public static void main(String[] args) throws Exception {
- 
-        ArrayList<ArrayList<Integer>> list=Misc.combine(4, 5);
-        LOG.debug(list);
-        if (true) return;
-        TreeSet<UDate> dates=Database.getIntradayDates();
-        for (UDate d: dates){
-            int sz=Database.getIntradayHashCodes(Optional.of(d)).size();
-            LOG.debug(d+"\t"+sz);
-            if (sz<800) {
-                Connection conn = null;
-                Statement stmt = null;
-                java.sql.ResultSet res = null;
-                String dt=d.toDDbMMbYY();
-                String sql="delete from intradayquotes where date='"+dt+"'";
-                try {
-                    conn = DriverManager.getConnection(Init.db_url);
-                    conn.setAutoCommit(true);
-                    stmt = conn.createStatement();
-                    LOG.debug(sql);
-                    int ncol = stmt.executeUpdate(sql);                    
-                } catch (SQLException e) {
-                    LOG.error("cannot execute", e);
-                } finally {
-                    try {
-                        if (res != null) {
-                            res.close();
-                        }
-                    } catch (SQLException e) {
-                    }
-                    try {
-                        if (stmt != null) {
-                            stmt.close();
-                        }
-                    } catch (SQLException e) {
-                    }
-                    try {
-                        if (conn != null) {
-                            conn.close();
-                        }
-                    } catch (SQLException e) {
-                    }
-                }
-
+        ArrayList<ArrayList<String>> list=Misc.CSVreader("test.txt", ';', 13);
+        HashMap<ArrayList<Double>,Double> map= new HashMap<>();
+        for (ArrayList<String> l: list) {
+            if (l.get(8).equals("MAXSLOPE")){
+                ArrayList<Double> t1= new  ArrayList<>();
+                t1.add(Double.valueOf(l.get(2)));
+                t1.add(Double.valueOf(l.get(9)));
+                map.put(t1, Double.valueOf(l.get(1)));            
             }
-            
         }
-        if (true) return;
-
-        HashMap<String,HashMap<String,String>> m= NYSE();
-        m.keySet().forEach((x)->{
-            LOG.debug(x+"\t"+m.get(x));
-        });
-        
-        LOG.debug(m.size());
-        if (true) return;
-
+        com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map);
+        return;
     }
 }

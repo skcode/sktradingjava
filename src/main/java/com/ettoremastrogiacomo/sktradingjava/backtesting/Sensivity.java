@@ -9,6 +9,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeMap;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -16,22 +17,30 @@ import java.util.TreeMap;
  */
 public class Sensivity {
     final HashMap < ArrayList<Double>,Double> params;
-    HashMap < AbstractMap.SimpleEntry< ArrayList<Double>,ArrayList<Double>> ,Double> distance;
+    HashMap < AbstractMap.SimpleEntry< Integer,Integer> ,Double> distance= new HashMap<>();
     double stddist=0,meandist=0,maxdist=Double.MIN_VALUE,mindist=Double.MAX_VALUE;    
-        static Double distance(ArrayList<Double> v1,ArrayList<Double> v2) {
-            double d=0;
-            for (Double d1: v1)
-                for (Double d2: v2)
-                    d+=(d1-d2)*(d1-d2);
-            return Math.sqrt(d);
+    double[][] mat;
+    static Logger LOG = Logger.getLogger(Sensivity.class);
+    public Sensivity(HashMap <ArrayList<Double>,Double> params){
+        this.params=params;
+        mat=new double[params.size()][params.keySet().stream().findFirst().get().size()+1];
+        int rcnt=0;
+        for (ArrayList<Double> v1: this.params.keySet()) {
+            int ccnt=0;
+            for (Double v2: v1) {
+                mat[rcnt][ccnt]=v2;ccnt++;
+            }
+            mat[rcnt][ccnt]=params.get(v1);
         }
         
-    public Sensivity(HashMap < ArrayList<Double>,Double> params){
-        this.params=params;
-        for (ArrayList<Double> v1: this.params.keySet()) {
-            for (ArrayList<Double> v2: this.params.keySet()) {
-                distance.put(new AbstractMap.SimpleEntry<>(v1,v2), distance(v1,v2));
+        for (int i=0;i<mat.length;i++) {
+            for (int j=0;j<mat.length;j++) {
+                double d=0;
+                for (int k=0;k<(mat[i].length-1);k++)                    
+                        d+=Math.pow(mat[i][k]-mat[j][k], 2) ;
+                distance.put(new AbstractMap.SimpleEntry<>(i,j), Math.sqrt(d));
             }            
+            LOG.debug("step "+i+" of "+mat.length);
         }        
         for (Double v: distance.values()){
             meandist+=v;

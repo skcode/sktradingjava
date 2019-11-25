@@ -410,13 +410,13 @@ public class Misc {
     public static ArrayList<ArrayList<String>>  CSVreader(String filename,char delimiter,int ntokens) {
         ArrayList<ArrayList<String>> parsed=new ArrayList<>();
         String csvFile = filename;
-        String line = "";
+        String line ;
         String cvsSplitBy = String.valueOf(delimiter);
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             while ((line = br.readLine()) != null) {
                 String[] tokens = line.split(cvsSplitBy);
                 if (tokens.length!=ntokens) continue;
-                parsed.add(new ArrayList<String>(java.util.Arrays.asList(tokens)));
+                parsed.add(new ArrayList<>(java.util.Arrays.asList(tokens)));
             }
             return parsed;
         } catch (IOException e) {
