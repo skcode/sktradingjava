@@ -1,3 +1,5 @@
+
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -9,6 +11,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.log4j.Logger;
 
 /**
@@ -17,59 +20,63 @@ import org.apache.log4j.Logger;
  */
 public class Sensivity {
     final HashMap < ArrayList<Double>,Double> params;
-    HashMap < AbstractMap.SimpleEntry< Integer,Integer> ,Double> distance= new HashMap<>();
-    double stddist=0,meandist=0,maxdist=Double.MIN_VALUE,mindist=Double.MAX_VALUE;    
-    double[][] mat;
+    TreeSet < Double> distance= new TreeSet<>();
+  
+    static Double computedist(ArrayList<Double> v1, ArrayList<Double> v2){
+        double d=0;                
+        Double [] d1=v1.toArray(new Double[0]);
+        Double [] d2=v2.toArray(new Double[0]);
+        for (int i=0;i<d1.length;i++)                                
+                d+=Math.pow(d1[i]-d2[i], 2) ;
+        return Math.sqrt(d);                        
+    }
     static Logger LOG = Logger.getLogger(Sensivity.class);
     public Sensivity(HashMap <ArrayList<Double>,Double> params){
         this.params=params;
-        mat=new double[params.size()][params.keySet().stream().findFirst().get().size()+1];
-        int rcnt=0;
-        for (ArrayList<Double> v1: this.params.keySet()) {
-            int ccnt=0;
-            for (Double v2: v1) {
-                mat[rcnt][ccnt]=v2;ccnt++;
-            }
-            mat[rcnt][ccnt]=params.get(v1);
-        }
+
+        //float[][] dst= new float[mat.length*mat.length][3];
         
-        for (int i=0;i<mat.length;i++) {
-            for (int j=0;j<mat.length;j++) {
-                double d=0;
-                for (int k=0;k<(mat[i].length-1);k++)                    
-                        d+=Math.pow(mat[i][k]-mat[j][k], 2) ;
-                distance.put(new AbstractMap.SimpleEntry<>(i,j), Math.sqrt(d));
+        for (ArrayList<Double> v1: params.keySet()) {
+            for (ArrayList<Double> v2: params.keySet()) {
+                distance.add(computedist(v1, v2)); 
+                if (distance.size()>(v1.size()*7)) distance.remove(distance.last());
             }            
-            LOG.debug("step "+i+" of "+mat.length);
+          //  LOG.debug("step "+i+" of "+mat.length);
         }        
-        for (Double v: distance.values()){
-            meandist+=v;
-            if (v>maxdist) maxdist=v;
-            if (v<mindist && v!=0) mindist=v;
+        for (Double v: distance){
+            LOG.debug(v);
+
         }
-        meandist=meandist/distance.size();
-        for (Double v: distance.values()){
-            stddist+=(v-meandist)*(v-meandist);
-        }
-        stddist=Math.sqrt(stddist);
+
     }
     
-    public double getMeanDist() {return this.meandist;}
-    public double getMaxDist() {return this.maxdist;}
-    public double getMinDist() {return this.mindist;}
-    public double getStdDist() {return this.stddist;}
+
     
-    public TreeMap<Double,ArrayList<Double>> getRanking(Double limit){
-        TreeMap<Double,ArrayList<Double>> ranking=new TreeMap<>();
-        for (ArrayList<Double> x:this.params.keySet()){
-            double mean=0;int cnt=0;
-            for ( AbstractMap.SimpleEntry e: distance.keySet()){
-                if (e.getKey().equals(x) && distance.get(e)<=limit){
-                    mean+=params.get(x);cnt++;
-                }
-            }
-            ranking.put(mean/cnt, x);
-        }
+    public void show(ArrayList<Double> v,double limit) {
+            for (ArrayList<Double> v2:this.params.keySet()) {
+                if (computedist(v, v2)<limit) {
+                    LOG.debug(v2+"\t"+params.get(v2));
+                }                
+            }   
+    }
+    public TreeMap<Double,ArrayList<Double>> getRanking(){
+        double LIM=distance.last();
+        TreeMap<Double,ArrayList<Double>> ranking=new TreeMap<>();        
+        for (ArrayList<Double> v1:this.params.keySet()){
+            double d=0;int cnt=0;
+            for (ArrayList<Double> v2:this.params.keySet()) {
+                if (computedist(v1, v2)<LIM) {
+                    d+=params.get(v2);cnt++;
+                }                
+            }   
+            d=d/cnt;
+            if (Double.isFinite(d)) ranking.put(d, v1);
+        }        
+         for (Double d: ranking.keySet()){
+             LOG.debug(d+"\t"+ranking.get(d));
+         }
+         LOG.debug("last dist = "+distance.last());
+         show(ranking.lastEntry().getValue(),LIM);
         return ranking;
     }    
 }

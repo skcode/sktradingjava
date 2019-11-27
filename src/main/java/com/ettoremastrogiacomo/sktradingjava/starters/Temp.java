@@ -1,3 +1,5 @@
+
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -290,18 +292,25 @@ public class Temp {
 
     
     
+    static boolean checkval(Double d){
+        if (d.isInfinite() || d.isNaN()) return false;
+        return true;
+    }
     public static void main(String[] args) throws Exception {
         ArrayList<ArrayList<String>> list=Misc.CSVreader("test.txt", ';', 13);
         HashMap<ArrayList<Double>,Double> map= new HashMap<>();
         for (ArrayList<String> l: list) {
             if (l.get(8).equals("MAXSLOPE")){
                 ArrayList<Double> t1= new  ArrayList<>();
-                t1.add(Double.valueOf(l.get(2)));
-                t1.add(Double.valueOf(l.get(9)));
-                map.put(t1, Double.valueOf(l.get(1)));            
+                Double v1=Double.valueOf(l.get(2)),v2=Double.valueOf(l.get(9)),v3=Double.valueOf(l.get(1));
+                if (!checkval(v1) || !checkval(v2) || !checkval(v3)) continue;
+                t1.add(v1);
+                t1.add(v2);                
+                map.put(t1, v3);            
             }
         }
         com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map);
+        s.getRanking();
         return;
     }
 }
