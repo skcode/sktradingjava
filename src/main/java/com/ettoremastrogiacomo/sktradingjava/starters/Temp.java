@@ -309,7 +309,7 @@ public class Temp {
                 map.put(t1, v3);            
             }
         }
-        com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map);
+        com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map,Optional.of(10));
         s.getRanking();
         return;
     }

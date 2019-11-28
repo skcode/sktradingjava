@@ -10,6 +10,7 @@ package com.ettoremastrogiacomo.sktradingjava.backtesting;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.log4j.Logger;
@@ -31,7 +32,7 @@ public class Sensivity {
         return Math.sqrt(d);                        
     }
     static Logger LOG = Logger.getLogger(Sensivity.class);
-    public Sensivity(HashMap <ArrayList<Double>,Double> params){
+    public Sensivity(HashMap <ArrayList<Double>,Double> params,Optional<Integer> multiplier){
         this.params=params;
 
         //float[][] dst= new float[mat.length*mat.length][3];
@@ -39,7 +40,7 @@ public class Sensivity {
         for (ArrayList<Double> v1: params.keySet()) {
             for (ArrayList<Double> v2: params.keySet()) {
                 distance.add(computedist(v1, v2)); 
-                if (distance.size()>(v1.size()*7)) distance.remove(distance.last());
+                if (distance.size()>(v1.size()*multiplier.orElse(7))) distance.remove(distance.last());
             }            
           //  LOG.debug("step "+i+" of "+mat.length);
         }        
