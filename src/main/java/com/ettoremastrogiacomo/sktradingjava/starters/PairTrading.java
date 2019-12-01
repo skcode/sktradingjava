@@ -68,7 +68,7 @@ class ThreadClass implements Callable<Results> {
             for (String x: negdicestring) {eqall=eqall.isEmpty()? fintsmap.get(x).get(datesarr[j]).getEquityShort():Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort()); }                
             eqall=Fints.MEANCOLS(eqall);
             HashMap<String,Double> stats=DoubleArray.LinearRegression(eqall.getCol(0));
-            stepfitness+=stats.get("slope");//1/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+            stepfitness+=stats.get("slope")/stats.get("stderr");//1/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);//1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
         }     
         Results res= new Results();
         res.fitness=stepfitness/datesarr.length;
@@ -87,7 +87,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         int limitsamples = 300;
         double limitpct = .50;
-        int PAIR=1,EPOCHS=10000,TESTSET=5,TRAINSET=5;
+        int PAIR=2,EPOCHS=10000,TESTSET=5,TRAINSET=30;
         
         
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();

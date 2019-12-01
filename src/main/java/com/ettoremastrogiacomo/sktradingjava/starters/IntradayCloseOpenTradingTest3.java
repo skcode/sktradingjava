@@ -29,9 +29,9 @@ public class IntradayCloseOpenTradingTest3 {
     
     public static void main(String[] args) throws Exception {
         final int MAXGAP=5,MINSAMPLE=70;        
-        int POOLSIZE=2;
-        int WINDOW=5;
-        double LASTEQ=60000,FEE=7,spreadPEN=.001;
+        int POOLSIZE=3;
+        int WINDOW=30;
+        double LASTEQ=120000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
         
         TreeMap<UDate,Double> equity= new TreeMap<>();

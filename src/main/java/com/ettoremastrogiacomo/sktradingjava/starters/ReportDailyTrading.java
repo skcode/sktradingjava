@@ -24,9 +24,7 @@ public class ReportDailyTrading {
 
     static Logger logger = Logger.getLogger(ReportDailyTrading.class);
 
-
-    
-    static HashMap<String, String> runWF(Portfolio ptf,int trainwin, int testwin, optMethod opt, Optional<Boolean> duplicates, Optional<Integer> optSetMin, Optional<Integer> optSetMax,Optional<Integer> populationSize,Optional<Integer> generations,Optional<Boolean> plot) throws Exception {
+    static HashMap<String, String> runWF(Portfolio ptf, int trainwin, int testwin, optMethod opt, Optional<Boolean> duplicates, Optional<Integer> optSetMin, Optional<Integer> optSetMax, Optional<Integer> populationSize, Optional<Integer> generations, Optional<Boolean> plot) throws Exception {
         HashMap<String, String> results = new HashMap<>();
         results.put("trainwin", String.valueOf(trainwin));
         results.put("testwin", String.valueOf(testwin));
@@ -48,46 +46,52 @@ public class ReportDailyTrading {
         results.put("profitBH", String.valueOf(alleq.getLastValueInCol(1)));
         results.put("maxddBH", String.valueOf(alleq.getMaxDD(1)));
         results.put("efficiency", String.valueOf(efficiency));
-        if (plot.orElse(false)) alleq.plot("equity train="+trainwin+"  test="+testwin+"  fitness="+opt.toString()+"  efficiency="+String.valueOf(efficiency), "profit");
+        if (plot.orElse(false)) {
+            alleq.plot("equity train=" + trainwin + "  test=" + testwin + "  fitness=" + opt.toString() + "  efficiency=" + String.valueOf(efficiency), "profit");
+        }
         return results;
     }
 
-
     public static void main(String[] args) throws Exception {
 
-        int minvol = 10000,minvolETF=100;
+        int minvol = 10000, minvolETF = 100;
         int maxold = 30;
         int maxdaygap = 10;
         double maxgap = .15;
-        int minlen = 2000,minlenETF=2000; 
-        boolean duplicates=false;
-        int minoptset=15,maxoptset=25;
-        int popsize=5000;
-        int ngens=500;
-        int trainfrom=209,trainto=300,trainstep=1;
-        int testfrom=80 ,testto=250,teststep=1;
-        optMethod opt=optMethod.MAXSLOPE;
+        int minlen = 2000, minlenETF = 2000;
+        boolean duplicates = false;
+        int minoptset = 15, maxoptset = 25;
+        int popsize = 5000;
+        int ngens = 500;
+        int trainfrom = 266, trainto = 300, trainstep = 1;
+        int testfrom = 80, testto = 250, teststep = 1;
+        optMethod opt = optMethod.MAXSLOPE;
+        boolean plot = false;
+        boolean appendtofile = true;
         //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
         //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
-        Portfolio ptfSTOCK=Portfolio.createStockEURPortfolio(Optional.of(minlen),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvol) );
-        Portfolio ptfETF=Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF),Optional.of(maxgap) , Optional.of(maxdaygap),Optional.of(maxold) ,Optional.of(minvolETF) );
-        try (BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"),true))) {//append mode            
-            for (int i =trainfrom; i <= trainto; i = i + trainstep) {//train win
-                for (int j = testfrom; j <= testto && j<=i; j = j + teststep) {//test win
-                    HashMap<String, String> m = runWF(ptfSTOCK,i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset),Optional.of(popsize),Optional.of(ngens),Optional.of(false) );                    
-                    if (l.isEmpty()) {
+        Portfolio ptfSTOCK = Portfolio.createStockEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptfETF = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvolETF));
+        try ( BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"), true))) {//append mode            
+            for (int i = trainfrom; i <= trainto; i = i + trainstep) {//train win
+                for (int j = testfrom; j <= testto && j <= i; j = j + teststep) {//test win
+                    HashMap<String, String> m = runWF(ptfSTOCK, i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset), Optional.of(popsize), Optional.of(ngens), Optional.of(plot));
+                    if (appendtofile) {
+                        if (l.isEmpty()) {
+                            bwr.write("\n");
+                            for (String x : m.keySet()) {
+                                bwr.write(x + ";");
+                            }
+                        }
                         bwr.write("\n");
                         for (String x : m.keySet()) {
-                            bwr.write(x + ";");
+                            bwr.write(m.get(x) + ";");
                         }
-                    }
-                    bwr.write("\n");
-                    for (String x : m.keySet()) {
-                        bwr.write(m.get(x) + ";");
+                        bwr.flush();
                     }
                     l.add(m);
-                    bwr.flush();
+
                 }
             }
         }

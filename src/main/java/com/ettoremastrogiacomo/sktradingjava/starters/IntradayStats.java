@@ -35,7 +35,7 @@ public class IntradayStats {
             sb.append(d.toYYYYMMDD()).append(del);
         }
         sb.append("\n");
-        HashMap<String,String> m=Database.getCodeMarketName(new ArrayList<String> (map.keySet()));
+        HashMap<String,String> m=Database.getCodeMarketName(new ArrayList<> (map.keySet()));
         for (String x: map.keySet()) {
             if  (!m.get(x).contains("STOCK") || !m.get(x).contains("MLSE") ) continue;            
             sb.append(m.get(x)).append(del);
