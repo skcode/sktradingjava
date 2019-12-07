@@ -41,6 +41,7 @@ class ThreadClass implements Callable<Results> {
 
     HashMap<String, TreeMap<UDate, Fints>> fintsmap;
     UDate[] datesarr;
+    
     Set<String> posdicestring, negdicestring;
 
     public ThreadClass(HashMap<String, TreeMap<UDate, Fints>> fintsmap, UDate[] datesarr, Set<String> posdicestring, Set<String> negdicestring) {
@@ -67,10 +68,10 @@ class ThreadClass implements Callable<Results> {
     }
 
     @Override
-    public Results call() throws Exception {
-        double stepfitness = 0;
-        double grossprofit = 0;
-        
+    public Results call() throws Exception {        
+        double stepfitness=0;
+        double grossprofit = 0;        
+        /*
         for (int j=0;j<datesarr.length;j++){
             for (String x : posdicestring) {
                 Fints f1=fintsmap.get(x).get(datesarr[j]);
@@ -82,25 +83,36 @@ class ThreadClass implements Callable<Results> {
             }        
             grossprofit/=(posdicestring.size()+negdicestring.size());
         }
-        grossprofit/=datesarr.length;
-        /*
+        grossprofit/=datesarr.length;*/
+        
         for (int j = 0; j < datesarr.length; j++) {
-            Fints eqall = new Fints();
-            for (String x : posdicestring) {
-                eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquity() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity());
+            Fints eqall = new Fints();            
+            for (String x : posdicestring) {                
+                //eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquity() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity());
+                eqall=eqall.isEmpty()?fintsmap.get(x).get(datesarr[j]):Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]));
             }
             for (String x : negdicestring) {
-                eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquityShort() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort());
+                eqall=eqall.isEmpty()?fintsmap.get(x).get(datesarr[j]):Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]));
+//                eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquityShort() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort());
             }
-            eqall = Fints.MEANCOLS(eqall);
-            HashMap<String, Double> stats = DoubleArray.LinearRegression(eqall.getCol(0));
-            grossprofit += eqall.getLastRow()[0] - eqall.getFirstValueInCol(0);//gross profit
-            stepfitness+=stats.get("slope")/stats.get("stderr");//sharpe
+            eqall=Fints.ER(eqall, 1, false);
+            double[] m=new double[eqall.getLength()+1];m[0]=1;
+            for (int i1=0;i1<eqall.getLength();i1++){
+                double mean=0;                
+                for (int i2=0;i2<posdicestring.size();i2++) mean+=eqall.get(i1, i2);
+                for (int i2=posdicestring.size();i2<eqall.getNoSeries();i2++) mean-=eqall.get(i1, i2);
+                mean/=eqall.getNoSeries();
+                m[i1+1]=m[i1]*(1.0+mean);            
+            }
+            HashMap<String, Double> stats = DoubleArray.LinearRegression(m);
+            grossprofit += m[m.length-1]-1;//gross profit
+            stepfitness+=m[m.length-1]-1;
+            //stepfitness+=stats.get("slope")/stats.get("stderr");//sharpe
             //stepfitness += eqall.getLastRow()[0] - eqall.getFirstValueInCol(0);//gross profit
             //1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
-        }*/
+        }
         Results res = new Results();
-        res.fitness = grossprofit;//stepfitness / datesarr.length;
+        res.fitness = stepfitness / datesarr.length;//grossprofit;//
         res.negdicestring = negdicestring;
         res.posdicestring = posdicestring;
         res.datesarr = this.datesarr;
@@ -115,8 +127,8 @@ public class PairTrading {
 
     public static void main(String[] args) throws Exception {
 
-        int limitsamples = 100;
-        int PAIR = 2, EPOCHS = 10000, TESTSET = 1, TRAINSET = 35;
+        int limitsamples = 300;
+        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 60;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR*60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
@@ -157,10 +169,11 @@ public class PairTrading {
         UDate[] datesarr = new UDate[TRAINSET];
         UDate[] testdates = new UDate[TESTSET];
         ArrayList<Double> netprofit=new ArrayList<>();
-        for (int i = 0; i < (datesall.length - TESTSET); i++) {
+        for (int i = 0; i < (datesall.length - TESTSET-TRAINSET+1); i++) {            
             for (int j = 0; j < datesarr.length; j++) {
                 datesarr[j] = datesall[i + j];
             }
+            logger.debug("i="+i);
             for (int j = 0; j < testdates.length; j++) {
                 testdates[j] = datesall[i + j + TRAINSET];
             }
@@ -215,8 +228,8 @@ public class PairTrading {
             });
             
             //fres.grossprofit = fres.grossprofit > 0 ? fres.grossprofit *.74 : fres.grossprofit;
-            //double finalcap = INITCAP * (1 + fres.grossprofit) * (1 - VARFEE) - FIXEDFEE * PAIR * 4;
-            double finalcap = INITCAP * (1 + fres.grossprofit);
+            double finalcap = INITCAP * (1 + fres.grossprofit) * (1 - VARFEE) - FIXEDFEE * PAIR * 4;
+            //double finalcap = INITCAP * (1 + fres.grossprofit);
             netprofit.add((finalcap - INITCAP));
             
             logger.info("net profit=" + (finalcap - INITCAP));
@@ -227,9 +240,14 @@ public class PairTrading {
             logger.info("initcap="+INITCAP+"\tpair="+PAIR+"\tvarfee="+VARFEE+"\tfixedfee="+FIXEDFEE+"\tsamples="+np.length);
             logger.info("sum ="+DoubleArray.sum(np));
             logger.info("mean ="+DoubleArray.mean(np));
+            logger.info("mean over 1y (200samples)="+DoubleArray.mean(np)*200);
+            logger.info("year yield% (200samples)="+100*DoubleArray.mean(np)*200/INITCAP);
+            
+            logger.info("std ="+DoubleArray.std(np));            
             logger.info("max ="+DoubleArray.max(np));
             logger.info("min ="+DoubleArray.min(np));
-            logger.info("std ="+DoubleArray.std(np));            
+            
+            
         }
         //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];
     }
