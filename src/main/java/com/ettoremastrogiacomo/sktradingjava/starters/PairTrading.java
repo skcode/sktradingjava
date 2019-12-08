@@ -41,7 +41,7 @@ class ThreadClass implements Callable<Results> {
 
     HashMap<String, TreeMap<UDate, Fints>> fintsmap;
     UDate[] datesarr;
-    
+
     Set<String> posdicestring, negdicestring;
 
     public ThreadClass(HashMap<String, TreeMap<UDate, Fints>> fintsmap, UDate[] datesarr, Set<String> posdicestring, Set<String> negdicestring) {
@@ -68,36 +68,36 @@ class ThreadClass implements Callable<Results> {
     }
 
     @Override
-    public Results call() throws Exception {        
+    public Results call() throws Exception {
 
-        double[] serie=new double[datesarr.length];
-        
-        for (int j=0;j<datesarr.length;j++){
-            double gp=0;
+        double[] serie = new double[datesarr.length];
+
+        for (int j = 0; j < datesarr.length; j++) {
+            double gp = 0;
             for (String x : posdicestring) {
-                Fints f1=fintsmap.get(x).get(datesarr[j]);
-                gp+=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
+                Fints f1 = fintsmap.get(x).get(datesarr[j]);
+                gp += (f1.get(f1.getLength() - 1, 0) - f1.get(0, 0)) / f1.get(0, 0);
             }
             for (String x : negdicestring) {
-                Fints f1=fintsmap.get(x).get(datesarr[j]);
-                gp-=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
-            }        
-            gp=gp/(posdicestring.size()+negdicestring.size());
-            serie[j]=gp;
-            
+                Fints f1 = fintsmap.get(x).get(datesarr[j]);
+                gp -= (f1.get(f1.getLength() - 1, 0) - f1.get(0, 0)) / f1.get(0, 0);
+            }
+            gp = gp / (posdicestring.size() + negdicestring.size());
+            serie[j] = gp;
+
         }
-        
+
         Results res = new Results();
         
-        //res.fitness=DoubleArray.mean(serie);
-        res.fitness = serie.length>1?DoubleArray.mean(serie) / DoubleArray.std(serie):serie[0];//grossprofit;//
-        res.fitness=Double.isFinite(res.fitness)?res.fitness:Double.NEGATIVE_INFINITY;
+        res.fitness=DoubleArray.mean(serie);
+        res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
+        res.fitness = Double.isFinite(res.fitness) ? res.fitness : Double.NEGATIVE_INFINITY;
         res.negdicestring = negdicestring;
         res.posdicestring = posdicestring;
         res.datesarr = this.datesarr;
         res.grossprofit = DoubleArray.sum(serie) / serie.length;
         return res;
-        
+
         /*
         for (int j = 0; j < datesarr.length; j++) {
             Fints eqall = new Fints();            
@@ -125,9 +125,7 @@ class ThreadClass implements Callable<Results> {
             //stepfitness += eqall.getLastRow()[0] - eqall.getFirstValueInCol(0);//gross profit
             //1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
         }
-        */
-        
-        
+         */
     }
 }
 
@@ -136,10 +134,11 @@ public class PairTrading {
     static Logger logger = Logger.getLogger(PairTrading.class);
 
     public static void main(String[] args) throws Exception {
-
+        String filename = "./pairtrading.dat";
+        File file = new File(filename);
         int limitsamples = 200;
-        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 80;
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR*60000;
+        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 75;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
         TreeSet<UDate> mio = Misc.mostRecentTimeSegment(dates, 1000 * 60 * 60 * 24 * 5);
@@ -150,40 +149,42 @@ public class PairTrading {
         HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
 
+        if (file.exists()) {
+            fintsmap = (HashMap<String, TreeMap<UDate, Fints>>) Misc.readObjFromFile(filename);
+        } else {
+            for (String x : map.keySet()) {
+                if (map.get(x).containsAll(mio) && nmap.get(x).contains("MLSE.STOCK")) {
 
-
-        for (String x : map.keySet()) {
-            if (map.get(x).containsAll(mio) && nmap.get(x).contains("MLSE.STOCK")) {
-
-                TreeMap<UDate, Fints> t1 = new TreeMap<>();
-                boolean toadd = true;
-                for (UDate d : mio) {
-                    Fints f1 = Database.getIntradayFintsQuotes(x, d);
-                    if (f1.getLength() < limitsamples) {
-                        toadd = false;
-                        break;
+                    TreeMap<UDate, Fints> t1 = new TreeMap<>();
+                    boolean toadd = true;
+                    for (UDate d : mio) {
+                        Fints f1 = Database.getIntradayFintsQuotes(x, d);
+                        if (f1.getLength() < limitsamples) {
+                            toadd = false;
+                            break;
+                        }
+                        // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
+                        t1.put(d, Fints.createContinuity(Security.changeFreq(f1, Fints.frequency.MINUTE).getSerieCopy(3)));
                     }
-                    // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
-                    t1.put(d, Fints.createContinuity(Security.changeFreq(f1, Fints.frequency.MINUTE).getSerieCopy(3)));
-                }
-                if (toadd) {
-                    logger.info("added " + nmap.get(x));
-                    fintsmap.put(x, t1);
+                    if (toadd) {
+                        logger.info("added " + nmap.get(x));
+                        fintsmap.put(x, t1);
+                    }
                 }
             }
+            Misc.writeObjToFile(fintsmap, filename);
         }
-
         logger.info(fintsmap.size() + "\tof\t" + map.size());
 
         UDate[] datesall = mio.stream().toArray(UDate[]::new);
         UDate[] datesarr = new UDate[TRAINSET];
         UDate[] testdates = new UDate[TESTSET];
-        ArrayList<Double> netprofit=new ArrayList<>();
-        for (int i = 0; i < (datesall.length - TESTSET-TRAINSET+1); i=i+TESTSET) {            
+        ArrayList<Double> netprofit = new ArrayList<>();
+        for (int i = 0; i < (datesall.length - TESTSET - TRAINSET + 1); i = i + TESTSET) {
             for (int j = 0; j < datesarr.length; j++) {
                 datesarr[j] = datesall[i + j];
             }
-            logger.debug("i="+i);
+            logger.debug("i=" + i);
             for (int j = 0; j < testdates.length; j++) {
                 testdates[j] = datesall[i + j + TRAINSET];
             }
@@ -236,28 +237,26 @@ public class PairTrading {
             fres.negdicestring.forEach((y) -> {
                 logger.info("neg :" + y + "." + nmap.get(y));
             });
-            
+
             //fres.grossprofit = fres.grossprofit > 0 ? fres.grossprofit *.74 : fres.grossprofit;
             double finalcap = INITCAP * (1 + fres.grossprofit) * (1 - VARFEE) - FIXEDFEE * PAIR * 4;
             //double finalcap = INITCAP * (1 + fres.grossprofit);
             netprofit.add((finalcap - INITCAP));
-            
+
             logger.info("net profit=" + (finalcap - INITCAP));
-            
-            
-            double[] np=  netprofit.stream().mapToDouble(Double::doubleValue).toArray();
+
+            double[] np = netprofit.stream().mapToDouble(Double::doubleValue).toArray();
             logger.info("net profit stats:");
-            logger.info("initcap="+INITCAP+"\tpair="+PAIR+"\tvarfee="+VARFEE+"\tfixedfee="+FIXEDFEE+"\tsamples="+np.length);
-            logger.info("sum ="+DoubleArray.sum(np));
-            logger.info("mean ="+DoubleArray.mean(np));
-            logger.info("mean over 1y (200samples)="+DoubleArray.mean(np)*200);
-            logger.info("year yield% (200samples)="+100*DoubleArray.mean(np)*200/INITCAP);
-            
-            logger.info("std ="+DoubleArray.std(np));            
-            logger.info("max ="+DoubleArray.max(np));
-            logger.info("min ="+DoubleArray.min(np));
-            
-            
+            logger.info("initcap=" + INITCAP + "\tpair=" + PAIR + "\tvarfee=" + VARFEE + "\tfixedfee=" + FIXEDFEE + "\tsamples=" + np.length);
+            logger.info("sum =" + DoubleArray.sum(np));
+            logger.info("mean =" + DoubleArray.mean(np));
+            logger.info("mean over 1y (200samples)=" + DoubleArray.mean(np) * 200);
+            logger.info("year yield% (200samples)=" + 100 * DoubleArray.mean(np) * 200 / INITCAP);
+
+            logger.info("std =" + DoubleArray.std(np));
+            logger.info("max =" + DoubleArray.max(np));
+            logger.info("min =" + DoubleArray.min(np));
+
         }
         //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];
     }

@@ -29,8 +29,8 @@ public class IntradayCloseOpenTradingTest3 {
     
     public static void main(String[] args) throws Exception {
         final int MAXGAP=5,MINSAMPLE=70;        
-        int POOLSIZE=3;
-        int WINDOW=30;
+        int POOLSIZE=1;
+        int WINDOW=50;
         double LASTEQ=120000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
         
@@ -54,20 +54,26 @@ public class IntradayCloseOpenTradingTest3 {
             HashMap<String,Fints> fmapfwd= new HashMap<>();
             for (String x : revmap.get(darr[i])) {                
                 if (names.get(x).contains("STOCK") && names.get(x).contains("MLSE")) {                    
-                    if (!revmap.get(darr[i+1]).contains(x)) { LOG.warn("day ahed empty for stock "+names.get(x));continue;}
-                    if (darr[i+1].diffdays(darr[i])>MAXGAP) {LOG.warn("day gap "+darr[i+1].diffdays(darr[i])); continue;}
+                    if (!revmap.get(darr[i+1]).contains(x)) {
+                    //    LOG.warn("day ahed empty for stock "+names.get(x));
+                    continue;
+                    }
+                    if (darr[i+1].diffdays(darr[i])>MAXGAP) {//LOG.warn("day gap "+darr[i+1].diffdays(darr[i])); 
+                    continue;}
                     boolean toadd=true;
                     for (int j=0;j<WINDOW;j++) {
                         if (!revmap.get(darr[i-j]).contains(x)) toadd=false;
                     }
-                    if (!toadd) { LOG.warn("day before empty for stock "+names.get(x));continue;}                    
+                    if (!toadd) {// LOG.warn("day before empty for stock "+names.get(x));
+                        continue;}                    
                     toadd=true;
                     ArrayList<Fints> tf1=new ArrayList<>();
                     for (int j=0;j<WINDOW;j++) {
                         Fints f1=Database.getIntradayFintsQuotes(x, darr[i-j]);
                         if (f1.getLength()>MINSAMPLE ) tf1.add(f1);else toadd=false;
                     }
-                    if (!toadd) { LOG.warn("too few samples "+names.get(x));continue;}                    
+                    if (!toadd) { //LOG.warn("too few samples "+names.get(x));
+                        continue;}                    
                     fmap.put(x, tf1);
                 }                         
             }
