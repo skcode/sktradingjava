@@ -62,29 +62,43 @@ class ThreadClass implements Callable<Results> {
                 eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquityShort() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort());
             }
             eqall = Fints.MEANCOLS(eqall);
-            eqall.merge(eqall.getLinReg(0)).plot("eq " + datesarr[j].toYYYYMMDD(), "y");
+            //eqall.merge(eqall.getLinReg(0)).plot("eq " + datesarr[j].toYYYYMMDD(), "y");
         }
         return tc.call();
     }
 
     @Override
     public Results call() throws Exception {        
-        double stepfitness=0;
-        double grossprofit = 0;        
-        /*
+
+        double[] serie=new double[datesarr.length];
+        
         for (int j=0;j<datesarr.length;j++){
+            double gp=0;
             for (String x : posdicestring) {
                 Fints f1=fintsmap.get(x).get(datesarr[j]);
-                grossprofit+=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
+                gp+=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
             }
             for (String x : negdicestring) {
                 Fints f1=fintsmap.get(x).get(datesarr[j]);
-                grossprofit-=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
+                gp-=(f1.get(f1.getLength()-1, 0)-f1.get(0, 0))/f1.get(0, 0);
             }        
-            grossprofit/=(posdicestring.size()+negdicestring.size());
+            gp=gp/(posdicestring.size()+negdicestring.size());
+            serie[j]=gp;
+            
         }
-        grossprofit/=datesarr.length;*/
         
+        Results res = new Results();
+        
+        //res.fitness=DoubleArray.mean(serie);
+        res.fitness = serie.length>1?DoubleArray.mean(serie) / DoubleArray.std(serie):serie[0];//grossprofit;//
+        res.fitness=Double.isFinite(res.fitness)?res.fitness:Double.NEGATIVE_INFINITY;
+        res.negdicestring = negdicestring;
+        res.posdicestring = posdicestring;
+        res.datesarr = this.datesarr;
+        res.grossprofit = DoubleArray.sum(serie) / serie.length;
+        return res;
+        
+        /*
         for (int j = 0; j < datesarr.length; j++) {
             Fints eqall = new Fints();            
             for (String x : posdicestring) {                
@@ -97,7 +111,7 @@ class ThreadClass implements Callable<Results> {
             }
             eqall=Fints.ER(eqall, 1, false);
             double[] m=new double[eqall.getLength()+1];m[0]=1;
-            for (int i1=0;i1<eqall.getLength();i1++){
+            for (int i1=0;i1<eqall.getLength();i1++)limitsamples{
                 double mean=0;                
                 for (int i2=0;i2<posdicestring.size();i2++) mean+=eqall.get(i1, i2);
                 for (int i2=posdicestring.size();i2<eqall.getNoSeries();i2++) mean-=eqall.get(i1, i2);
@@ -111,13 +125,9 @@ class ThreadClass implements Callable<Results> {
             //stepfitness += eqall.getLastRow()[0] - eqall.getFirstValueInCol(0);//gross profit
             //1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
         }
-        Results res = new Results();
-        res.fitness = stepfitness / datesarr.length;//grossprofit;//
-        res.negdicestring = negdicestring;
-        res.posdicestring = posdicestring;
-        res.datesarr = this.datesarr;
-        res.grossprofit = grossprofit / datesarr.length;
-        return res;
+        */
+        
+        
     }
 }
 
@@ -127,8 +137,8 @@ public class PairTrading {
 
     public static void main(String[] args) throws Exception {
 
-        int limitsamples = 300;
-        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 60;
+        int limitsamples = 200;
+        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 80;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR*60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
@@ -169,7 +179,7 @@ public class PairTrading {
         UDate[] datesarr = new UDate[TRAINSET];
         UDate[] testdates = new UDate[TESTSET];
         ArrayList<Double> netprofit=new ArrayList<>();
-        for (int i = 0; i < (datesall.length - TESTSET-TRAINSET+1); i++) {            
+        for (int i = 0; i < (datesall.length - TESTSET-TRAINSET+1); i=i+TESTSET) {            
             for (int j = 0; j < datesarr.length; j++) {
                 datesarr[j] = datesall[i + j];
             }
