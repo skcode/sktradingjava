@@ -48,6 +48,7 @@ public class IntradayCloseOpenTradingTest3 {
         LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tpoolsize="+POOLSIZE);
         LOG.debug("datearraysize="+dates.size());   
         double[] profit=new double[darr.length-1];
+        double progressprof=0;
         double[] profit_train=new double[darr.length-1];        
         for (int i=WINDOW;i<(darr.length-1);i++) {            
             HashMap<String,ArrayList<Fints>> fmap= new HashMap<>();
@@ -141,10 +142,14 @@ public class IntradayCloseOpenTradingTest3 {
 
             
             profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2); 
+            progressprof=0;
+            for (int k1=0;k1<=i ;k1++) progressprof+=profit[i];progressprof/=i;
             profit_train[i]=(mt-mh)/(POOLSIZE*2); 
-            LOG.debug("tot test head: "+mh_forw+"\t"+mh_forw/(POOLSIZE));
-            LOG.debug("tot tes tail: "+mt_forw+"\t"+mt_forw/(POOLSIZE));
-            LOG.debug("mean test : "+profit[i]);
+            LOG.info("tot test head: "+mh_forw+"\t"+mh_forw/(POOLSIZE));
+            LOG.info("tot tes tail: "+mt_forw+"\t"+mt_forw/(POOLSIZE));
+            LOG.info("mean test : "+profit[i]);
+            LOG.info("progress mean test : "+progressprof);
+            LOG.info("samples test : "+i);
 
             
         }

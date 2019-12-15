@@ -137,7 +137,7 @@ public class PairTrading {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
         int limitsamples = 200;
-        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 75;
+        int PAIR = 2, EPOCHS = 10000, TESTSET = 1, TRAINSET = 60;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();

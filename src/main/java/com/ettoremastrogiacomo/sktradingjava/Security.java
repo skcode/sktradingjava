@@ -100,6 +100,7 @@ public final class Security {
             }
             return new Fints(newdates, f.getName(), newf, newmat);
         }
+        
 	public Security(String hashcode) throws Exception {
                 this.hashcode=hashcode;
                 infomap =Database.getRecords(Optional.of(Arrays.asList(hashcode)),Optional.empty(),Optional.empty() , Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()).get(0) ;                
