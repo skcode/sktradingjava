@@ -91,6 +91,7 @@ class ThreadClass implements Callable<Results> {
         
         res.fitness=DoubleArray.mean(serie);
         res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
+        //res.fitness = DoubleArray.sum(serie) / serie.length;
         res.fitness = Double.isFinite(res.fitness) ? res.fitness : Double.NEGATIVE_INFINITY;
         res.negdicestring = negdicestring;
         res.posdicestring = posdicestring;
@@ -136,8 +137,8 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 200;
-        int PAIR = 2, EPOCHS = 10000, TESTSET = 1, TRAINSET = 60;
+        int limitsamples = 300;
+        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 90;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
@@ -252,10 +253,11 @@ public class PairTrading {
             logger.info("mean =" + DoubleArray.mean(np));
             logger.info("mean over 1y (200samples)=" + DoubleArray.mean(np) * 200);
             logger.info("year yield% (200samples)=" + 100 * DoubleArray.mean(np) * 200 / INITCAP);
-
             logger.info("std =" + DoubleArray.std(np));
             logger.info("max =" + DoubleArray.max(np));
             logger.info("min =" + DoubleArray.min(np));
+            logger.info("sharpe =" + DoubleArray.mean(np)/DoubleArray.std(np));
+            
 
         }
         //for (int i=0;i<20;i++) testdates[i]=datesarr[datesarr.length-20+i];

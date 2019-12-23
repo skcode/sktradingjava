@@ -223,7 +223,73 @@ final class jenetics4 implements Problem<ArrayList<Double>, DoubleGene, Double> 
     }
 }
  
- 
+
+
+final class jenetics5<T extends java.lang.Number & java.lang.Comparable,V extends io.jenetics.Gene,Z extends java.lang.Number & java.lang.Comparable> 
+        implements Problem<ArrayList<T>, Z, Double> {
+    final DoubleRange v1Domain;
+    final int elements,ngens;
+    final boolean duplicates;
+    final Function<ArrayList<T>,Double> f;
+    public jenetics5(DoubleRange ir,int elements, int ngens,Function<ArrayList<T>,Double> f,boolean duplicates) {
+        v1Domain=ir;
+        this.elements=elements;
+        this.ngens=ngens;
+        this.f=f;
+        this.duplicates=duplicates;
+        this.run();       
+    }
+    @Override
+    public Function<ArrayList<T>, Double> fitness() {
+        return this.f;
+    }
+    @Override
+    public Codec<ArrayList<T>, V> codec()  {
+        T t=null;
+        Object arr;        
+        if (t instanceof Double) {
+            arr= new ArrayList<DoubleChromosome>();    
+            for (int i=0;i<this.elements;i++) ((ArrayList<DoubleChromosome>)arr).add(DoubleChromosome.of(v1Domain));
+        }
+        else if (t instanceof Integer)  arr= new ArrayList<IntegerChromosome>();               
+        else ;///throw new Exception("type non supported");
+               
+        return Codec.of(
+            Genotype.of(arr),
+            (gt) -> {
+            ArrayList<T> ret=new ArrayList<>(); 
+            gt.forEach((x)->ret.add((T)x.getGene().getAllele()));                                                        
+            return ret;
+            }
+        );
+    }  
+    
+    public void run() {
+                               final Engine<DoubleGene, Double> engine = Engine
+                                               .builder(this)
+                                               .build();
+            final EvolutionStatistics<Double, ?>
+                                               statistics = EvolutionStatistics.ofNumber();
+            final Phenotype<DoubleGene, Double> best = engine.stream()
+                                               // Truncate the evolution stream after 7 "steady"
+                                               // generations.
+                                               //.limit(bySteadyFitness(10))
+                                               // The evolution will stop after maximal 1000
+                                               // generations.
+                                               .limit(this.ngens)
+                                               // Update the evaluation statistics after
+                                               // each generation
+                                               .peek(statistics)
+                                               // Collect (reduce) the evolution stream to
+                                               // its best phenotype.
+                                               .collect(toBestPhenotype());
+                               System.out.println(statistics);
+                               System.out.println(best);           
+    }
+}
+
+
+
  
  
  

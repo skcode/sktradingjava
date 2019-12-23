@@ -8,6 +8,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 
 
@@ -28,9 +30,9 @@ public class IntradayCloseOpenTradingTest3 {
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradayCloseOpenTradingTest3.class);   
     
     public static void main(String[] args) throws Exception {
-        final int MAXGAP=5,MINSAMPLE=70;        
+        final int MAXGAP=5,MINSAMPLE=300;        
         int POOLSIZE=1;
-        int WINDOW=50;
+        int WINDOW=60;
         double LASTEQ=120000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
         
@@ -38,18 +40,22 @@ public class IntradayCloseOpenTradingTest3 {
         TreeSet<UDate> dates=new TreeSet<>();
         java.util.TreeMap<UDate,ArrayList<String>> revmap=Database.getIntradayDatesReverseMap();
         java.util.HashMap<String,TreeSet<UDate>> map=Database.getIntradayDatesMap();        
-        revmap.keySet().forEach((x)->{if (revmap.get(x).size()>200) dates.add(x);});
+        //revmap.keySet().forEach((x)->{if (revmap.get(x).size()>200) dates.add(x);});
+        dates=Misc.mostRecentTimeSegment(Database.getIntradayDates(), 1000*60*60*24*5);
         HashMap<String,String> names=Database.getCodeMarketName(new ArrayList<>(map.keySet()));        
         dates.forEach((x)->{LOG.debug(x);});
+        
 
         
         final UDate []darr=dates.toArray(new UDate[dates.size()]);
 
         LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tpoolsize="+POOLSIZE);
         LOG.debug("datearraysize="+dates.size());   
-        double[] profit=new double[darr.length-1];
-        double progressprof=0;
-        double[] profit_train=new double[darr.length-1];        
+        //double[] profit=new double[darr.length-1];
+        ArrayList<Double> profit= new ArrayList<>();
+        ArrayList<Double> profit_train= new ArrayList<>();
+        //double progressprof=0;
+        //double[] profit_train=new double[darr.length-1];        
         for (int i=WINDOW;i<(darr.length-1);i++) {            
             HashMap<String,ArrayList<Fints>> fmap= new HashMap<>();
             HashMap<String,Fints> fmapfwd= new HashMap<>();
@@ -141,21 +147,22 @@ public class IntradayCloseOpenTradingTest3 {
             
 
             
-            profit[i]=(mt_forw-mh_forw)/(POOLSIZE*2); 
-            progressprof=0;
-            for (int k1=0;k1<=i ;k1++) progressprof+=profit[i];progressprof/=i;
-            profit_train[i]=(mt-mh)/(POOLSIZE*2); 
+            profit.add((mt_forw-mh_forw)/(POOLSIZE*2)); 
+            
+            
+            //for (int k1=0;k1<=i ;k1++) progressprof+=profit[i];progressprof/=i;
+            profit_train.add((mt-mh)/(POOLSIZE*2)); 
             LOG.info("tot test head: "+mh_forw+"\t"+mh_forw/(POOLSIZE));
             LOG.info("tot tes tail: "+mt_forw+"\t"+mt_forw/(POOLSIZE));
-            LOG.info("mean test : "+profit[i]);
-            LOG.info("progress mean test : "+progressprof);
-            LOG.info("samples test : "+i);
+            LOG.info("mean test : "+profit.get(profit.size()-1));
+            LOG.info("progress mean test : "+profit.stream().collect(Collectors.summingDouble(Double::doubleValue ))/profit.size());
+            LOG.info("size test samples "+profit.size());            
 
             
         }
         equity.put(darr[0], LASTEQ);        
-        for (int i=0;i<profit.length;i++) {
-                LASTEQ=LASTEQ*(1+profit[i]/100)-FEE*POOLSIZE*4;
+        for (int i=0;i<profit.size();i++) {
+                LASTEQ=LASTEQ*(1+profit.get(i)/100)-FEE*POOLSIZE*4;
                 LASTEQ=LASTEQ*(1-spreadPEN);
                 equity.put(darr[i+1], LASTEQ);        
         }
@@ -164,16 +171,17 @@ public class IntradayCloseOpenTradingTest3 {
         HashMap<String,Double> stats=DoubleArray.LinearRegression(eq.getCol(0));
         LOG.debug("*******");
         LOG.debug("MAXGAP="+MAXGAP+"\tMINSAMPLE="+MINSAMPLE+"\tPOOLSIZE="+POOLSIZE);
+        LOG.debug("Init EQUITY="+INITEQ);   
         LOG.debug("datearraysize="+dates.size());   
-        LOG.debug("TOT TRADES PROFIT="+DoubleArray.sum(profit));
-        LOG.debug("MEAN TRADES PROFIT="+DoubleArray.mean(profit));
-        LOG.debug("STD TRADES PROFIT="+DoubleArray.std(profit));
-        LOG.debug("SHARPE TRADES PROFIT="+DoubleArray.mean(profit)/DoubleArray.std(profit));
+        LOG.debug("TOT TRADES PROFIT="+DoubleArray.sum(profit.stream().mapToDouble(i->i).toArray()));
+        LOG.debug("MEAN TRADES PROFIT="+DoubleArray.mean(profit.stream().mapToDouble(i->i).toArray()));
+        LOG.debug("STD TRADES PROFIT="+DoubleArray.std(profit.stream().mapToDouble(i->i).toArray()));
+        LOG.debug("SHARPE TRADES PROFIT="+DoubleArray.mean(profit.stream().mapToDouble(i->i).toArray())/DoubleArray.std(profit.stream().mapToDouble(i->i).toArray()));
         LOG.debug("MINDD EQUITY="+eq.getMaxDD(0));
         LOG.debug("SLOPE REG EQUITY="+stats.get("slope"));
         LOG.debug("STDERR REG EQUITY="+stats.get("stderr"));
         LOG.debug("NET PROFIT EQUITY="+eq.getLastValueInCol(0));        
-        LOG.debug("CORR TRAIN TEST="+DoubleArray.corr(profit, profit_train));
+        LOG.debug("CORR TRAIN TEST="+DoubleArray.corr(profit.stream().mapToDouble(i->i).toArray(), profit_train.stream().mapToDouble(i->i).toArray()));
         LOG.debug("NET PROFIT%="+(eq.getLastValueInCol(0)/INITEQ-1)*100+"%");
         LOG.debug("NET PROFIT% x day="+(eq.getLastValueInCol(0)/INITEQ-1)*100/dates.size()+"%");
         eq.plot("equity", "profit");
