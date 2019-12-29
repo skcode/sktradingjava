@@ -19,8 +19,14 @@ public final class Security {
         private final Fints daily;
         private final Fints weekly;
         private final Fints monthly;
-        private final java.util.Map<String, String> infomap;
-        
+        private final java.util.Map<String, String> infomap;        
+        static public enum SERIE {OPEN(0),HIGH(1),LOW(2),CLOSE(3),VOLUME(4),OI(5);            
+            private final int value;
+            SERIE(final int newValue) {
+                value = newValue;
+            }
+            public int getValue() { return value; }                
+        };
         static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
             if (newf.ordinal()<f.getFrequency().ordinal()) throw new Exception("bad input :"+f.getFrequency()+" to "+newf);
             if (newf.ordinal()==f.getFrequency().ordinal()) return f;

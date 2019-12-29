@@ -27,7 +27,7 @@ public class CloseOpenStrategy {
         static  double LASTEQ=100000,FEE=7,spreadPEN=0.001;
     public static void main(String[] args) throws Exception {
         Portfolio ptf=Portfolio.createMLSEStockEURPortfolio(Optional.of(MINLEN), Optional.of(MAXGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL));
-        LOG.debug(ptf);
+        LOG.debug(ptf);        
         LOG.debug(ptf.closeER.getMaxDaysDateGap());
         Fints close=ptf.getClose(),open=ptf.getOpen();
         Fints f1=Fints.Diff(close, open);

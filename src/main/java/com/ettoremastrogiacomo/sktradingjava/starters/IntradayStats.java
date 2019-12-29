@@ -48,9 +48,9 @@ public class IntradayStats {
     
     public static void main(String[] args) throws Exception {
         
-        String hash="xo8HLPAdBEEx1oYDsnOFyUoC99c=";
-        checkp(hash, UDate.genDate(2019, 11, 13, 0, 0, 0), Fints.frequency.MINUTES5);
-        //if (true) return;
+        //String hash="xo8HLPAdBEEx1oYDsnOFyUoC99c=";
+        //checkp(hash, UDate.genDate(2019, 11, 13, 0, 0, 0), Fints.frequency.MINUTES5);
+        
         
         TreeSet<UDate> dates=Misc.mostRecentTimeSegment(Database.getIntradayDates(), 1000*60*60*24*5);        
         

@@ -437,6 +437,18 @@ public class Portfolio {
         Fints res= new Fints(ptf.dates, Arrays.asList(name), ptf.getFrequency(), mat);   
         return res;
     }
+    /**
+     * 
+     * @param i
+     * @return beta del i-esimo titolo nel portafoglio rispetto alla media di tutti
+     * @throws Exception 
+     */
+    public double Beta(int i)   throws Exception {
+        Fints ref= createFintsFromPortfolio(this, "campione");
+        Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        double[][] c=Fints.ER(Fints.merge(ref, sec), 100, true).getCovariance();
+        return c[0][1]/c[0][0];
+    }
     public static double equityEfficiency(Fints alleq,int idxeq,int idxbh)throws Exception {
         return ((alleq.getLastValueInCol(idxeq) - alleq.getLastValueInCol(idxbh)) / alleq.getLastValueInCol(idxbh)) * (alleq.getMaxDD(idxbh) / alleq.getMaxDD(idxeq)) / Math.log(alleq.getLength());
     }

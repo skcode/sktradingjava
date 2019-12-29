@@ -138,8 +138,9 @@ public class PairTrading {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
         int limitsamples = 300;
-        int PAIR = 1, EPOCHS = 10000, TESTSET = 1, TRAINSET = 90;
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
+        int PAIR = 3, EPOCHS = 100000, TESTSET = 1, TRAINSET = 40;
+        //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
+        final double VARFEE = .00, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
         TreeSet<UDate> mio = Misc.mostRecentTimeSegment(dates, 1000 * 60 * 60 * 24 * 5);
