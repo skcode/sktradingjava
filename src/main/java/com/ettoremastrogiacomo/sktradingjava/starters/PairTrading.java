@@ -140,8 +140,8 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 100;
-        int PAIR = 3, EPOCHS = 10000000, TESTSET = 1, TRAINSET = 3;
+        int limitsamples = 300;
+        int PAIR = 2, EPOCHS = 2000000, TESTSET = 1, TRAINSET = 60;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
