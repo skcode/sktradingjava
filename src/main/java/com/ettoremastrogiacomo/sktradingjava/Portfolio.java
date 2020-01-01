@@ -140,17 +140,22 @@ class GeneticOpt {
                 }                
                 break;
                 case MINVAR:{
-                    fitness=1.0/var;
-               
+                    fitness=1.0/var;               
                 }
                 break;           
                 case SMASHARPE:{fitness=meanret/var;}
                 break;
-                case MINCORR: {fitness=1.0/vcorr;}
+                case MINCORR: {fitness=-vcorr;}
                 break;
                 case MINVARBARRIER: {
                     if (meanret>0) fitness=1.0/var;
+                }break;
+                case MAXCORR: {fitness=vcorr;}
+                break; 
+                case MAXVAR:{
+                    fitness=var;               
                 }
+                break;     
                 default:
 //                                throw new Exception("not yet implemented");
         }
@@ -232,7 +237,9 @@ public class Portfolio {
         MINSTDERR,
         PROFITMINDDRATIO,
         SMASHARPE,
-        MINCORR
+        MINCORR,
+        MAXVAR,
+        MAXCORR
     };
 
     /**

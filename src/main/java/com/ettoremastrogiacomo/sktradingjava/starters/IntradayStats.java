@@ -57,7 +57,7 @@ public class IntradayStats {
         HashMap<String,TreeSet<UDate>> map=Database.getIntradayDatesMap();
         TreeMap<UDate,ArrayList<String>> rmap=Database.getIntradayDatesReverseMap();        
         HashMap<String,String> m=Database.getCodeMarketName(new ArrayList<> (map.keySet()));
-        TreeSet<UDate> dates2=dates.stream().sorted(Comparator.reverseOrder()).limit(5).collect(Collectors.toCollection(TreeSet::new));
+        TreeSet<UDate> dates2=dates.stream().sorted(Comparator.reverseOrder()).limit(20).collect(Collectors.toCollection(TreeSet::new));
         TreeMap<Double,String> c1= new TreeMap<> ();
         TreeMap<Double,String> c3= new TreeMap<> ();
         TreeMap<Double,String> c5= new TreeMap<> ();

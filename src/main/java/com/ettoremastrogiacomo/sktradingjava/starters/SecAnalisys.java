@@ -11,6 +11,7 @@ import org.jfree.chart.plot.XYPlot;
 import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.utils.DoubleArray;
 import java.util.Optional;
 //import speedking.trading.data.Datasource;
 /**
@@ -20,7 +21,7 @@ import java.util.Optional;
 public class SecAnalisys {
 
     public static void main(String[] args) throws Exception{
-            String symbol="ENEL";//INA.EURONEXT-XLIS
+            String symbol="FCA";//INA.EURONEXT-XLIS
             Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of("MLSE"),Optional.empty());
 
                 System.out.println(f);
@@ -39,19 +40,21 @@ public class SecAnalisys {
                 
                 System.out.println("symbol="+symbol);
                 System.out.println("freq="+f.getFrequency());
+                System.out.println("samples="+f.getLength());
                 System.out.println("first date="+f.getFirstDate());
                 System.out.println("last date="+f.getLastDate());
                 System.out.println("date gap="+f.getMaxDateGap()/(1000*60*60*24)+" day(s)");
-                System.out.println("std="+std+"\nmean="+mean+"\nmin="+min+"\nmax="+max);
-                for (int i=0;i<10;i++) {
-                    System.out.println("date:"+msharpe.getDate(msharpe.getLength()-1-i));
-                    System.out.println("sh:"+msharpe.get(msharpe.getLength()-1-i,0 ));
-                    System.out.println("dsh:"+dmsharpe.get(dmsharpe.getLength()-1-i,0 ));
-                    System.out.println("ddsh:"+dmsharpe2.get(dmsharpe2.getLength()-1-i,0 ));
-                }
+                System.out.println("er std="+std+"\nmean="+mean+"\nmin="+min+"\nmax="+max);                
+                System.out.println("date:"+msharpe.getDate(msharpe.getLength()-1));
+                System.out.println("sh:"+msharpe.get(msharpe.getLength()-1,0 ));
+                System.out.println("dsh:"+dmsharpe.get(dmsharpe.getLength()-1,0 ));
+                System.out.println("ddsh:"+dmsharpe2.get(dmsharpe2.getLength()-1,0 ));                               
+                System.out.println("ACF last 100 samples:\n"+f.getSerieCopy(3).head(100).getACF(10));
+                System.out.println("ACF last 200 samples:\n"+f.getSerieCopy(3).head(200).getACF(10));
+                System.out.println("ACF last 300 samples:\n"+f.getSerieCopy(3).head(300).getACF(10));
+                System.out.println("ACF "+f.getLength()+" samples:\n"+f.getSerieCopy(3).getACF(10));
+                Fints.Kron(Fints.multiLag(ER, 0), Fints.multiLag(ER, 0));
         Charts c1=new Charts("Analisys");
-        //Charts c2=new Charts("MOVING_SHARPE");
-        //Charts c3=new Charts("MOVING_SHARPE");
         Fints all=f.getSerieCopy(3);
         all=Fints.merge(all, msharpe);
         all=Fints.merge(all, dmsharpe);

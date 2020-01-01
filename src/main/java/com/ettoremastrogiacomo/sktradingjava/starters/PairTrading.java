@@ -86,11 +86,14 @@ class ThreadClass implements Callable<Results> {
             serie[j] = gp;
 
         }
-
+        //double[] equity= new double[serie.length+1];
+        //equity[0]=1;
+        //for (int i=1;i<equity.length;i++) equity[i]=equity[i-1]*(1+serie[i-1]);
+        //HashMap<String,Double> v=DoubleArray.LinearRegression(equity);
         Results res = new Results();
-        
+        //res.fitness=v.get("sharpe");
         res.fitness=DoubleArray.mean(serie);
-        res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
+        //res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
         //res.fitness = DoubleArray.sum(serie) / serie.length;
         res.fitness = Double.isFinite(res.fitness) ? res.fitness : Double.NEGATIVE_INFINITY;
         res.negdicestring = negdicestring;
@@ -137,10 +140,10 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 300;
-        int PAIR = 3, EPOCHS = 100000, TESTSET = 1, TRAINSET = 40;
+        int limitsamples = 100;
+        int PAIR = 3, EPOCHS = 10000000, TESTSET = 1, TRAINSET = 3;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
-        final double VARFEE = .00, FIXEDFEE = 7, INITCAP = PAIR * 60000;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
         TreeSet<UDate> mio = Misc.mostRecentTimeSegment(dates, 1000 * 60 * 60 * 24 * 5);
@@ -202,12 +205,14 @@ public class PairTrading {
             for (int k = 0; k < EPOCHS; k++) {
                 Set<String> posdicestring = new HashSet<>();
                 Set<String> negdicestring = new HashSet<>();
-                Integer[] dice = Misc.getDistinctRandom(PAIR * 2, fintsmap.size()).toArray(Integer[]::new);
+                //Integer[] dice = Misc.getDistinctRandom(PAIR * 2, fintsmap.size()).toArray(Integer[]::new);
+                Integer[] dicepos = Misc.getDistinctRandom(PAIR , fintsmap.size()).toArray(Integer[]::new);
+                Integer[] diceneg = Misc.getDistinctRandom(PAIR , fintsmap.size()).toArray(Integer[]::new);
                 for (int j = 0; j < PAIR; j++) {
-                    posdicestring.add(hasharr[dice[j]]);
+                    posdicestring.add(hasharr[dicepos[j]]);
                 }
-                for (int j = PAIR; j < (PAIR * 2); j++) {
-                    negdicestring.add(hasharr[dice[j]]);
+                for (int j = 0; j < PAIR ; j++) {
+                    negdicestring.add(hasharr[diceneg[j]]);
                 }
                 list.add(executor.submit(new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring)));
                 if (list.size() >= POOL) {
@@ -233,13 +238,19 @@ public class PairTrading {
             Results fres = ThreadClass.test(fintsmap, testdates, bestresult.posdicestring, bestresult.negdicestring);
             logger.info("check best fit : " + fres.fitness);
             logger.info("from " + fres.datesarr[0] + " to " + fres.datesarr[fres.datesarr.length - 1] + "\tsamples=" + fres.datesarr.length);
-            fres.posdicestring.forEach((y) -> {
+            double tp=0;
+            for (String y: fres.posdicestring){
                 logger.info("pos :" + y + "." + nmap.get(y));
-            });
-            fres.negdicestring.forEach((y) -> {
+                logger.info((fintsmap.get(y).get(fres.datesarr[0]).getLastValueInCol(0)-fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0))/fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0));            
+                tp+=(fintsmap.get(y).get(fres.datesarr[0]).getLastValueInCol(0)-fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0))/fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0);
+            }
+            for (String y: fres.negdicestring){
                 logger.info("neg :" + y + "." + nmap.get(y));
-            });
-
+                logger.info((fintsmap.get(y).get(fres.datesarr[0]).getLastValueInCol(0)-fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0))/fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0));            
+                tp-=(fintsmap.get(y).get(fres.datesarr[0]).getLastValueInCol(0)-fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0))/fintsmap.get(y).get(fres.datesarr[0]).getFirstValueInCol(0);
+            }
+            logger.info("TPTOT="+tp);
+            logger.info("TP="+tp/(PAIR*2.0)+"\t"+fres.grossprofit);
             //fres.grossprofit = fres.grossprofit > 0 ? fres.grossprofit *.74 : fres.grossprofit;
             double finalcap = INITCAP * (1 + fres.grossprofit) * (1 - VARFEE) - FIXEDFEE * PAIR * 4;
             //double finalcap = INITCAP * (1 + fres.grossprofit);

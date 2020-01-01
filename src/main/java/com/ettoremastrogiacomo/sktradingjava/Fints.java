@@ -7,6 +7,7 @@ import com.ettoremastrogiacomo.utils.Misc;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.apache.log4j.*;
 import org.jfree.chart.plot.XYPlot;
 
@@ -643,7 +645,23 @@ public final class Fints implements Serializable{
 
         return ret;
     }
-
+/**
+ * data la serie non stazionaria, ne prende gli incrementi e calcola la acf
+ * @param lags numero di ritardi
+ * @return vettore correlazioni per ogni lag
+ * @throws Exception 
+ */
+    public HashMap<String,ArrayList<Double>> getACF(int lags) throws Exception {
+        Fints er=Fints.ER(this, 1, false);
+        HashMap<String,ArrayList<Double>> ret= new HashMap<>();
+        for (int i=0;i<this.getNoSeries();i++){
+            Fints flag =er.getSerieCopy(i).merge(Fints.multiLag(er.getSerieCopy(i), lags));            
+            ArrayList<Double> m= new ArrayList<>(Arrays.stream(flag.getCorrelation()[0]).boxed().collect(Collectors.toList()));
+            ret.put("ACF("+er.getName(i)+")", m);
+        }
+        return ret;
+    }
+    
     static public Fints Sign(Fints f, double threshold, double low, double high) throws Exception {
         double[][] m = f.matrix;
         int len = f.getLength(), ts = f.getNoSeries();

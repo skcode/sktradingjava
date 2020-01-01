@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio.optMethod;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -57,7 +58,29 @@ public class ReportDailyTrading {
         logger.debug("eq covariance BH\n"+fcorr.getCovariance()[1][1]);
         return results;
     }
-
+    static boolean checkval(Double d){
+        if (d.isInfinite() || d.isNaN()) return false;
+        return true;
+    }
+    public static void sensivitytest() {
+        ArrayList<ArrayList<String>> list=Misc.CSVreader("test.txt", ';', 13);
+        HashMap<ArrayList<Double>,Double> map= new HashMap<>();
+        for (ArrayList<String> l: list) {
+            if (l.get(8).equals("MAXSLOPE")){
+                ArrayList<Double> t1= new  ArrayList<>();
+                Double v1=Double.valueOf(l.get(2)),v2=Double.valueOf(l.get(9)),v3=Double.valueOf(l.get(1));
+                if (!checkval(v1) || !checkval(v2) || !checkval(v3)) continue;
+                t1.add(v1);
+                t1.add(v2);                
+                map.put(t1, v3);            
+            }
+        }
+        com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map,Optional.of(10));
+        s.getRanking();        
+    }
+    
+    
+    
     public static void main(String[] args) throws Exception {
 
         int minvol = 10000, minvolETF = 1000;

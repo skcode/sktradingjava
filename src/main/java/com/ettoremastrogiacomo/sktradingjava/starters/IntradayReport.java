@@ -25,9 +25,9 @@ import java.util.TreeSet;
  *
  * @author sk
  */
-public class IntradaySecAnalisys {
+public class IntradayReport {
 
-    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradaySecAnalisys.class);
+    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradayReport.class);
 
     public static void main(String[] args) throws Exception {
         StringBuilder sb=new StringBuilder();
