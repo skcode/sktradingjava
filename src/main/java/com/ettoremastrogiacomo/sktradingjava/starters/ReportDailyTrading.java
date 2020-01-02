@@ -52,7 +52,18 @@ public class ReportDailyTrading {
         if (plot.orElse(false)) {
             alleq.plot("equity train=" + trainwin + "  test=" + testwin + "  fitness=" + opt.toString() + "  efficiency=" + String.valueOf(efficiency), "profit");
         }
-        Fints fcorr=Fints.ER(alleq.SubSeries(new ArrayList<>(Arrays.asList(0,1))), 100, true);        
+        Fints eq2=alleq.SubSeries(new ArrayList<>(Arrays.asList(0,1)));
+        double[][] mdiff= new double[eq2.getLength()][1];
+        mdiff[0][0]=1;
+        for (int i=1;i<eq2.getLength();i++){
+            mdiff[i][0]=mdiff[i-1][0]*(1+eq2.get(i, 0)/eq2.get(i-1, 0)-eq2.get(i, 1)/eq2.get(i-1, 1));
+        }
+        Fints fdiff= new Fints(eq2.getDate(), Arrays.asList("diffeq"), eq2.getFrequency(), mdiff);
+        if (plot.orElse(false)) {
+            fdiff.plot("difference", "return");
+        }        
+        Fints fcorr=Fints.ER(eq2, 100, true);        
+        
         logger.debug("eq correlation with BH\n"+fcorr.getCorrelation()[0][1]);
         logger.debug("eq covariance \n"+fcorr.getCovariance()[0][0]);
         logger.debug("eq covariance BH\n"+fcorr.getCovariance()[1][1]);
@@ -82,7 +93,7 @@ public class ReportDailyTrading {
     
     
     public static void main(String[] args) throws Exception {
-
+    //140-90-maxslope best 
         int minvol = 10000, minvolETF = 1000;
         int maxold = 30;
         int maxdaygap = 10;
@@ -92,11 +103,11 @@ public class ReportDailyTrading {
         int minoptset = 10, maxoptset = 25;
         int popsize = 10000;
         int ngens = 500;
-        int trainfrom = 60, trainto = 120, trainstep = 1;
-        int testfrom = 20, testto = 80, teststep = 1;
+        int trainfrom = 140, trainto = 140, trainstep = 1;
+        int testfrom = 90, testto = 90, teststep = 1;
         optMethod opt = optMethod.MAXSLOPE;
-        boolean plot = false;
-        boolean appendtofile = true;
+        boolean plot = true;
+        boolean appendtofile = false;
         //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
         //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
