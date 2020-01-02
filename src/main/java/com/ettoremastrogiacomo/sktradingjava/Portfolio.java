@@ -220,7 +220,7 @@ public class Portfolio {
     /**
      *
      */
-    public final Fints closeER;
+    public final Fints closeER,closeCampione;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
     /**
@@ -351,6 +351,18 @@ public class Portfolio {
         }
         closeERlog = Fints.ER(close, 100, true);
         closeER = Fints.ER(close, 1, false);
+        
+        double[][] mat=new double[closeER.getLength()+1][1];
+        mat[0][0]=1;
+        for (int i=1;i<mat.length;i++) {
+            double d=0;
+            for (int j=0;j<closeER.getNoSeries();j++){
+                d+=closeER.get(i-1, j);
+            }
+            d=d/closeER.getNoSeries();
+            mat [i][0]=mat[i-1][0]*(1+d);
+        }
+        closeCampione= new Fints(close.getDate(), Arrays.asList("campione"), close.getFrequency(), mat);           
     }
 
     
@@ -424,14 +436,8 @@ public class Portfolio {
         ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
     }
-    /**
-     * crea un fints che è la media dei valori di close di tutte le security nel portafoglio
-     * @param ptf
-     * @param name
-     * @return fints
-     * @throws Exception 
-     */
-    public static Fints createFintsFromPortfolio(Portfolio ptf,String name) throws Exception {
+    
+/*    public static Fints createFintsFromPortfolio(Portfolio ptf,String name) throws Exception {
         double[][] mat=new double[ptf.getLength()][1];
         for (int i=0;i<mat.length;i++) {
             double d=0;
@@ -443,7 +449,7 @@ public class Portfolio {
         }
         Fints res= new Fints(ptf.dates, Arrays.asList(name), ptf.getFrequency(), mat);   
         return res;
-    }
+    }*/
     /**
      * 
      * @param i
@@ -451,9 +457,9 @@ public class Portfolio {
      * @throws Exception 
      */
     public double Beta(int i)   throws Exception {
-        Fints ref= createFintsFromPortfolio(this, "campione");
+        //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
-        double[][] c=Fints.ER(Fints.merge(ref, sec), 100, true).getCovariance();
+        double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).getCovariance();
         return c[0][1]/c[0][0];
     }
     public static double equityEfficiency(Fints alleq,int idxeq,int idxbh)throws Exception {

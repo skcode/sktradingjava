@@ -49,7 +49,7 @@ public class BestCov2 {
             if (w[i]>0.001)
             logger.debug( ptf.getName(ptf.hashcodes.get(i))+"\t"+w[i]);
         }
-        Fints rif=Fints.ER(Portfolio.createFintsFromPortfolio(ptf, "campione"), 100, true);
+        Fints rif=Fints.ER(ptf.closeCampione, 100, true);
         Fints all=Fints.merge(rif, ptf.closeERlog);
         double [][] cov=all.getCorrelation();
         StringBuilder sb= new StringBuilder();
