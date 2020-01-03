@@ -25,7 +25,7 @@ public class BestCov2 {
     static Logger logger = Logger.getLogger(BestCov2.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=300,maxdaygap=6,maxold=30,minvol=10,setmin=15,setmax=35,popsize=15000,ngen=500;
+        int minsamples=300,maxdaygap=6,maxold=30,minvol=10,setmin=15,setmax=35,popsize=10000,ngen=500;
         double maxpcgap=.15;        
         boolean plot=false;
         Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
@@ -39,7 +39,7 @@ public class BestCov2 {
         //double[] w=ptf.optimizeMinVarQP(Optional.of(minsamples<ptf.getLength()?minsamples:ptf.getLength()-1), Optional.of(0), Optional.of(.05));
         Entry<Double,ArrayList<Integer>> winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MINVAR, plot, popsize, ngen);
         logger.info("************************ optimization GA ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_enddate, train_enddate).getLength());
+        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
         logger.info("setmin "+setmin+"\tsetmax "+setmax);
         logger.info("BEST "+1.0/winner.getKey());
         logger.info("BEST "+winner.getValue());
@@ -50,9 +50,20 @@ public class BestCov2 {
         logger.debug("\n\n");
         
         
-        
+        TreeMap<Double,String> corrmap= new TreeMap<>();
+        TreeMap<Double,String> betamap= new TreeMap<>();
+        TreeMap<Double,String> varmap=new TreeMap<>();
+        for (int i=0;i<ptf.getNoSecurities();i++) {
+            betamap.put(ptf.Beta(i, SIZE), ptf.realnames.get(i));
+            corrmap.put(ptf.corr(i, SIZE), ptf.realnames.get(i));
+            varmap.put(Math.pow(ptf.closeERlog.getSerieCopy(i).head(SIZE).getStd()[0], 2), ptf.realnames.get(i));
+        }
+        logger.info("************************ VAR ranking ************************ ");
+        varmap.keySet().forEach((x)-> logger.info(x+"\t"+varmap.get(x)));        
         logger.info("************************ CORRELATION ranking ************************ ");
-        
+        corrmap.keySet().forEach((x)-> logger.info(x+"\t"+corrmap.get(x)));
+        logger.info("************************ BETA ranking ************************ ");
+        betamap.keySet().forEach((x)-> logger.info(x+"\t"+betamap.get(x)));
     }
     
     
