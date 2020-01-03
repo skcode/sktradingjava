@@ -453,15 +453,30 @@ public class Portfolio {
     /**
      * 
      * @param i
+     * @param headlen campioni in testa da analizzare
      * @return beta del i-esimo titolo nel portafoglio rispetto alla media di tutti
      * @throws Exception 
      */
-    public double Beta(int i)   throws Exception {
+    public double Beta(int i,int headlen)   throws Exception {
         //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
-        double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).getCovariance();
+        double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).head(headlen).getCovariance();
         return c[0][1]/c[0][0];
     }
+    /**
+     * 
+     * @param i
+     * @param headlen campioni in testa da analizzare
+     * @return correlazione del i-esimo titolo nel portafoglio rispetto alla media di tutti
+     * @throws Exception 
+     */
+    public double corr(int i,int headlen)   throws Exception {
+        //Fints ref= createFintsFromPortfolio(this, "campione");
+        Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).head(headlen).getCorrelation();
+        return c[0][1];
+    }
+
     public static double equityEfficiency(Fints alleq,int idxeq,int idxbh)throws Exception {
         return ((alleq.getLastValueInCol(idxeq) - alleq.getLastValueInCol(idxbh)) / alleq.getLastValueInCol(idxbh)) * (alleq.getMaxDD(idxbh) / alleq.getMaxDD(idxeq)) / Math.log(alleq.getLength());
     }
@@ -517,13 +532,13 @@ public class Portfolio {
      * @throws Exception
      */
     public double[] optimizeMinVarQP(Optional<Integer> window, Optional<Integer> window_offset, Optional<Double> limit_upper_bound) throws Exception {
-        LOG.debug("first serie" + closeERlog);
+        LOG.debug("first serie" + closeER);
         if (window.isPresent()) {
-            if (window.get() > closeERlog.getLength()) {
-                throw new Exception("max windows = " + closeERlog.getLength());
+            if (window.get() > closeER.getLength()) {
+                throw new Exception("max windows = " + closeER.getLength());
             }
         }
-        Fints sub = closeERlog.SubRows(closeERlog.getLength() - window_offset.orElse(0) - window.orElse(closeERlog.getLength()), closeERlog.getLength() - window_offset.orElse(0) - 1);
+        Fints sub = closeER.SubRows(closeER.getLength() - window_offset.orElse(0) - window.orElse(closeER.getLength()), closeER.getLength() - window_offset.orElse(0) - 1);
         LOG.debug("sub serie" + sub);
         LOG.debug("length " + sub.getLength() + "\tno series" + sub.getNoSeries());
         LOG.debug("max date gap " + sub.getMaxDaysDateGap());
@@ -553,18 +568,6 @@ public class Portfolio {
             }
         }
         double upper_bound = limit_upper_bound.orElse(1.0) > min_upperb ? limit_upper_bound.orElse(1.0) : min_upperb;
-        LOG.debug("upper bound " + upper_bound);
-        /*double[][] ub_ineq = new double[cov.length][cov.length];
-        double[] ub_ineq_vector = new double[cov.length];
-        for (int i = 0; i < cov.length; i++) {
-            ub_ineq[i][i] = 1.0;
-            ub_ineq_vector[i]=upper_bound;
-        }*/
-        //
-
-        //double[][] td = ineq_constraints.orElse(default_ineq);
-        //double[] tdv = ineq_contraints_vector.orElse(default_ineq_vector);
-        //ineq_constraints.orElse(A)
         ConvexMultivariateRealFunction[] inequalities = new ConvexMultivariateRealFunction[cov.length * 2];
         for (int i = 0; i < cov.length; i++) {
             double[] td = new double[cov.length];
@@ -596,14 +599,13 @@ public class Portfolio {
                 bestvar += sol[i] * sol[j] * cov[i][j];
             }
         }
-        LOG.debug("\n\n\n\n\nnew best=" + bestvar);
-        for (int i = 0; i < sol.length; i++) {
-            if (sol[i] > 0.001) {
-                LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + sol[i]);
+        LOG.debug("\nbest qp=" + bestvar);
+        //for (int i = 0; i < sol.length; i++) {
+          //  if (sol[i] > 0.001) {
+                //LOG.debug(this.names.get(securities.get(i).getHashcode()) + "\t" + sol[i]);
                 //LOG.debug(this.securities.get(i).getName() + "\t" + sol[i]);
-            }
-        }
-
+            //}
+        //}
         return sol;
     }
     
