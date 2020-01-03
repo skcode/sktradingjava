@@ -12,18 +12,51 @@ import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
+import com.ettoremastrogiacomo.utils.UDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import org.apache.log4j.Logger;
 //import speedking.trading.data.Datasource;
 /**
  *
  * @author a241448
  */
 public class SecAnalisys {
+static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
             String symbol="FCA";//INA.EURONEXT-XLIS
-            Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of("MLSE"),Optional.empty());
-
+            String market="MLSE";
+            String hashcode=Database.getHashcode(symbol, market);
+            Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of(market),Optional.empty());
+            HashMap<String,TreeSet<UDate>> map=Database.getIntradayDatesMap();
+            TreeSet<UDate> dates=Misc.mostRecentTimeSegment(map.get(hashcode), 1000*60*60*24*5);
+            ArrayList<Double> closeopen=new ArrayList<>();
+            ArrayList<Double> meanv=new ArrayList<>();
+            ArrayList<Double> stdv=new ArrayList<>();
+            ArrayList<Integer> samples= new ArrayList<>();
+            ArrayList<Double> runs= new ArrayList<>();
+            
+            for (UDate d: dates){
+                Fints f1=Database.getIntradayFintsQuotes(hashcode, d);
+                closeopen.add((f1.getLastValueInCol(0)-f1.getFirstValueInCol(0))/f1.getFirstValueInCol(0));
+                Fints er1=Fints.ER(f1, 1, false);
+                meanv.add(er1.getMeans()[0]);
+                stdv.add(er1.getStd()[0]);
+                runs.add(f1.runTestZscore(0));
+                samples.add(f1.getLength());                
+            }
+            LOG.debug("intraday samples "+dates.size());
+            LOG.debug("closeopen "+closeopen.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.debug("meaner "+meanv.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.debug("stder "+stdv.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.debug("runs "+runs.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN));
+            LOG.debug("samples "+samples.stream().mapToDouble(a->a).average().orElse(Double.NaN));
+            
                 System.out.println(f);
                 System.out.println(f.getSerieCopy(3));
                 Fints ER=Fints.ER(f.getSerieCopy(3), 1, false);

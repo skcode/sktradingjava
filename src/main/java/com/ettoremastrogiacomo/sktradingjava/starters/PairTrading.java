@@ -140,7 +140,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 100;
+        int limitsamples = 600;
         int PAIR = 1, EPOCHS = 1000000, TESTSET = 1, TRAINSET = 60;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
