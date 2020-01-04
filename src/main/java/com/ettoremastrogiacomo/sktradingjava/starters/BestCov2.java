@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.*;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -64,11 +65,14 @@ public class BestCov2 {
             varmap.put(Math.pow(ptf.closeERlog.getSerieCopy(i).head(SIZE).getStd()[0], 2), ptf.realnames.get(i));
         }
         logger.info("************************ VAR ranking ************************ ");
-        varmap.keySet().forEach((x)-> logger.info(x+"\t"+varmap.get(x)));        
+        varmap.keySet().forEach((x)-> logger.info(x+"\t"+varmap.get(x)));   
+        Misc.map2csv(varmap, "./varmap.csv");
         logger.info("************************ CORRELATION ranking ************************ ");
         corrmap.keySet().forEach((x)-> logger.info(x+"\t"+corrmap.get(x)));
+        Misc.map2csv(corrmap, "./corrmap.csv");
         logger.info("************************ BETA ranking ************************ ");
         betamap.keySet().forEach((x)-> logger.info(x+"\t"+betamap.get(x)));
+        Misc.map2csv(betamap, "./betamap.csv");
     }
     
     

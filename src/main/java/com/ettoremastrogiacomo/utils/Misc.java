@@ -6,10 +6,12 @@
 package com.ettoremastrogiacomo.utils;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,6 +26,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -50,7 +53,15 @@ public class Misc {
         }
         return arr;
     }
-
+    public static <T,V> void map2csv(Map<T,V> map,String filename)throws Exception{
+        
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(filename))){
+            for(Map.Entry<T, V> entry : map.entrySet()){
+                writer.write(String.join(entry.getKey().toString(),";", entry.getValue().toString()));
+                writer.newLine();
+            }
+        }     
+    }
     /**
      *
      * @param a
