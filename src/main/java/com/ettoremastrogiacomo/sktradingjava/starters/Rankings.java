@@ -21,10 +21,10 @@ import java.util.TreeMap;
  *
  * @author a241448
  */
-public class BestCov2 {
+public class Rankings {
     
     
-    static Logger logger = Logger.getLogger(BestCov2.class);
+    static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
         int minsamples=300,maxdaygap=6,maxold=30,minvol=10000,setmin=15,setmax=50,popsize=10000,ngen=500;

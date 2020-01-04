@@ -57,7 +57,7 @@ public class Misc {
         
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(filename))){
             for(Map.Entry<T, V> entry : map.entrySet()){
-                writer.write(String.join(entry.getKey().toString(),";", entry.getValue().toString()));
+                writer.write(String.join(";",entry.getKey().toString(), entry.getValue().toString()));
                 writer.newLine();
             }
         }     
