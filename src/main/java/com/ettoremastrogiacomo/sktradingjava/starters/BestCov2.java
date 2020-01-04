@@ -8,6 +8,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import java.util.Optional;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.*;
+import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,7 +26,7 @@ public class BestCov2 {
     static Logger logger = Logger.getLogger(BestCov2.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=300,maxdaygap=6,maxold=30,minvol=10,setmin=15,setmax=35,popsize=10000,ngen=500;
+        int minsamples=300,maxdaygap=6,maxold=30,minvol=10000,setmin=15,setmax=50,popsize=10000,ngen=500;
         double maxpcgap=.15;        
         boolean plot=false;
         Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
@@ -43,9 +44,13 @@ public class BestCov2 {
         logger.info("setmin "+setmin+"\tsetmax "+setmax);
         logger.info("BEST "+1.0/winner.getKey());
         logger.info("BEST "+winner.getValue());
+        double[]w=new double[winner.getValue().size()];
+        DoubleArray.fill(w, 1.0/winner.getValue().size());        
+        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
+        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
         logger.info("BEST LEN "+winner.getValue().size());
         for (Integer x : winner.getValue()) {
-            logger.debug( ptf.getName(ptf.hashcodes.get(x)));
+            logger.info( ptf.getName(ptf.hashcodes.get(x)));
         }
         logger.debug("\n\n");
         
@@ -54,8 +59,8 @@ public class BestCov2 {
         TreeMap<Double,String> betamap= new TreeMap<>();
         TreeMap<Double,String> varmap=new TreeMap<>();
         for (int i=0;i<ptf.getNoSecurities();i++) {
-            betamap.put(ptf.Beta(i, SIZE), ptf.realnames.get(i));
-            corrmap.put(ptf.corr(i, SIZE), ptf.realnames.get(i));
+            betamap.put(ptf.getBeta(i, SIZE), ptf.realnames.get(i));
+            corrmap.put(ptf.getCorrelation(i, SIZE), ptf.realnames.get(i));
             varmap.put(Math.pow(ptf.closeERlog.getSerieCopy(i).head(SIZE).getStd()[0], 2), ptf.realnames.get(i));
         }
         logger.info("************************ VAR ranking ************************ ");

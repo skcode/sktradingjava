@@ -216,10 +216,6 @@ public class Portfolio {
      *
      */
     public final Fints closeERlog;
-
-    /**
-     *
-     */
     public final Fints closeER,closeCampione;
     static final Logger LOG = Logger.getLogger(Portfolio.class);
 
@@ -437,19 +433,7 @@ public class Portfolio {
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());    
     }
     
-/*    public static Fints createFintsFromPortfolio(Portfolio ptf,String name) throws Exception {
-        double[][] mat=new double[ptf.getLength()][1];
-        for (int i=0;i<mat.length;i++) {
-            double d=0;
-            for (int j=0;j<ptf.getNoSecurities();j++){
-                d+=ptf.close.get(i, j);
-            }
-            d=d/ptf.getNoSecurities();
-            mat [i][0]=d;
-        }
-        Fints res= new Fints(ptf.dates, Arrays.asList(name), ptf.getFrequency(), mat);   
-        return res;
-    }*/
+    
     /**
      * 
      * @param i
@@ -457,12 +441,23 @@ public class Portfolio {
      * @return beta del i-esimo titolo nel portafoglio rispetto alla media di tutti
      * @throws Exception 
      */
-    public double Beta(int i,int headlen)   throws Exception {
+    public double getBeta(int i,int headlen)   throws Exception {
         //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
         double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).head(headlen).getCovariance();
         return c[0][1]/c[0][0];
     }
+    
+    public double getVariance(double[] weights,int headlen)throws Exception {
+        double v=0;
+        return closeER.head(headlen).getWeightedCovariance(weights);
+    }
+    
+    public double getLOGVariance(double[] weights,int headlen)throws Exception {
+        double v=0;
+        return closeERlog.head(headlen).getWeightedCovariance(weights);
+    }
+
     /**
      * 
      * @param i
@@ -470,7 +465,7 @@ public class Portfolio {
      * @return correlazione del i-esimo titolo nel portafoglio rispetto alla media di tutti
      * @throws Exception 
      */
-    public double corr(int i,int headlen)   throws Exception {
+    public double getCorrelation(int i,int headlen)   throws Exception {
         //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec=this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
         double[][] c=Fints.ER(Fints.merge(closeCampione, sec), 100, true).head(headlen).getCorrelation();
