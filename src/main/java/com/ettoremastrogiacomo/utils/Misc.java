@@ -21,12 +21,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -53,11 +55,15 @@ public class Misc {
         }
         return arr;
     }
-    public static <T,V> void map2csv(Map<T,V> map,String filename)throws Exception{
+    public static <T,V> void map2csv(Map<T,V> map,String filename,Optional<AbstractMap.SimpleEntry<T,V>> head)throws Exception{
         
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(filename))){
+            if (head.isPresent()){
+                writer.write(head.get().getKey()+";"+head.get().getValue());
+                writer.newLine();
+            }
             for(Map.Entry<T, V> entry : map.entrySet()){
-                writer.write(String.join(";",entry.getKey().toString(), entry.getValue().toString()));
+                writer.write(entry.getKey().toString()+ ";"+entry.getValue().toString());
                 writer.newLine();
             }
         }     

@@ -27,7 +27,7 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=300,maxdaygap=6,maxold=30,minvol=10000,setmin=15,setmax=50,popsize=10000,ngen=500;
+        int minsamples=300,maxdaygap=6,maxold=30,minvol=1000,setmin=15,setmax=50,popsize=10000,ngen=500;
         double maxpcgap=.15;        
         boolean plot=false;
         Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
@@ -66,13 +66,13 @@ public class Rankings {
         }
         logger.info("************************ VAR ranking ************************ ");
         varmap.keySet().forEach((x)-> logger.info(x+"\t"+varmap.get(x)));   
-        Misc.map2csv(varmap, "./varmap.csv");
+        Misc.map2csv(varmap, "./varmap.csv",Optional.empty());
         logger.info("************************ CORRELATION ranking ************************ ");
         corrmap.keySet().forEach((x)-> logger.info(x+"\t"+corrmap.get(x)));
-        Misc.map2csv(corrmap, "./corrmap.csv");
+        Misc.map2csv(corrmap, "./corrmap.csv",Optional.empty());
         logger.info("************************ BETA ranking ************************ ");
         betamap.keySet().forEach((x)-> logger.info(x+"\t"+betamap.get(x)));
-        Misc.map2csv(betamap, "./betamap.csv");
+        Misc.map2csv(betamap, "./betamap.csv",Optional.empty());
     }
     
     
