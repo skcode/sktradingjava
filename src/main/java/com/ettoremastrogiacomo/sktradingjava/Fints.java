@@ -690,21 +690,40 @@ public final class Fints implements Serializable{
   * @throws Exception 
   */
     static public Fints KAMA(Fints f, int periods, int fastestma,int slowestma) throws Exception {
-        TreeMap<UDate,Double> AMA= new TreeMap<>();
+       
         if ( (fastestma>=slowestma) || (fastestma<=1))  throw new Exception("bad params");
-        double[][] newm= new double[f.length-periods][f.getNoSeries()];
+        double[][] newm= new double[f.length-periods+1][f.getNoSeries()];
+        for (int i=0;i<newm[0].length;i++) newm [0][i]=f.matrix[periods-1][i];
+        ArrayList<UDate> newdates= new ArrayList<>();
+        newdates.add(f.getDate(periods-1));
+//AMA.put(f.getDate(periods-1), f.get(periods-1, 0));
         
-        AMA.put(f.getDate(periods-1), f.get(periods-1, 0));
         double fc=2./(fastestma+1.0),sc=2./(slowestma+1.0);
         for (int i=periods;i<f.length;i++) {
-            double sum=0;
-            double vi=f.matrix[i][0]-f.matrix[i-periods][0];
-            for (int k=i-periods+1;k<=i;k++) sum+=f.matrix[k][0]-f.matrix[k-1][0];
-            double er=vi/sum;
-            double alfa=Math.pow(vi*(fc-sc)+sc, 2);
-            AMA.put(f.getDate(i), AMA.lastEntry().getValue()+alfa*f.matrix[i][0]-AMA.lastEntry().getValue());
+            double[] sum=new double[f.getNoSeries()];
+            double [] vi = new double[f.getNoSeries()];
+            double [] er=new double[f.getNoSeries()];
+            double [] alfa=new double[f.getNoSeries()];
+            for (int j=0;j<vi.length;j++) vi[j]=Math.abs(f.matrix[i][j]-f.matrix[i-periods][j]);
+            for (int k=i-periods+1;k<=i;k++) 
+                for (int j=0;j<sum.length;j++)
+                    sum[j]+=Math.abs(f.matrix[k][j]-f.matrix[k-1][j]);            
+            for (int j=0;j<er.length;j++) er[j]=vi[j]/sum[j];            
+            for (int j=0;j<alfa.length;j++) alfa[j]=Math.pow(er[j]*(fc-sc)+sc, 2);
+            for (int j=0;j<alfa.length;j++) 
+                if (Double.isFinite(alfa[j])) newm[i-periods+1][j]=newm[i-periods][j]+alfa[j]*(f.matrix[i][j]-newm[i-periods][j]);
+                else newm[i-periods+1][j]=newm[i-periods][j];
+            newdates.add(f.getDate(i));
+//AMA.put(f.getDate(i), AMA.lastEntry().getValue()+alfa*f.matrix[i][0]-AMA.lastEntry().getValue());
         }
-        return new Fints(AMA, Arrays.asList("KAMA("+f.getName(0)+","+periods+")"),f.freq);
+        ArrayList<String> newn = new ArrayList<>();
+        for (int i = 0; i < f.getNoSeries(); i++) {
+            newn.add("KAMA(" + f.names.get(i) + "," + periods + "," + fastestma+ "," + slowestma + ")");
+        }
+        
+        Fints newf = new Fints(newdates, newn, f.freq, newm);
+        return newf;
+
     }
     
     

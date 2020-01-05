@@ -297,20 +297,12 @@ public class Temp {
         return true;
     }
     public static void main(String[] args) throws Exception {
-        ArrayList<ArrayList<String>> list=Misc.CSVreader("test.txt", ';', 13);
-        HashMap<ArrayList<Double>,Double> map= new HashMap<>();
-        for (ArrayList<String> l: list) {
-            if (l.get(8).equals("MAXSLOPE")){
-                ArrayList<Double> t1= new  ArrayList<>();
-                Double v1=Double.valueOf(l.get(2)),v2=Double.valueOf(l.get(9)),v3=Double.valueOf(l.get(1));
-                if (!checkval(v1) || !checkval(v2) || !checkval(v3)) continue;
-                t1.add(v1);
-                t1.add(v2);                
-                map.put(t1, v3);            
-            }
-        }
-        com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity s = new com.ettoremastrogiacomo.sktradingjava.backtesting.Sensivity(map,Optional.of(10));
-        s.getRanking();
-        return;
+        String hash=Database.getHashcode("ENEL", "MLSE");
+        Fints f=Database.getIntradayFintsQuotes(hash, Database.getIntradayDates(hash).last()).getSerieCopy(3);
+        Fints k=Fints.KAMA(f, 10, 2, 30);
+        Fints.merge(f, k).plot("cross", "price");
+        LOG.debug(f);
+        LOG.debug(k.toStringL());
+        k.plot("kama", "price");
     }
 }
