@@ -94,17 +94,17 @@ public class ReportDailyTrading {
     
     public static void main(String[] args) throws Exception {
     //140-90-maxslope best 
-        int minvol = 10000, minvolETF = 1000;
+        int minvol = 100, minvolETF = 1000;
         int maxold = 30;
         int maxdaygap = 10;
         double maxgap = .2;
-        int minlen = 2000, minlenETF = 2000;
+        int minlen = 4000, minlenETF = 2000;
         boolean duplicates = false;
-        int minoptset = 10, maxoptset = 25;
+        int minoptset = 7, maxoptset = 25;
         int popsize = 10000;
         int ngens = 500;
-        int trainfrom = 140, trainto = 140, trainstep = 1;
-        int testfrom = 90, testto = 90, teststep = 1;
+        int trainfrom = 1000, trainto = 1000, trainstep = 1;
+        int testfrom = 250, testto = 250, teststep = 1;
         optMethod opt = optMethod.MAXSLOPE;
         boolean plot = true;
         boolean appendtofile = false;

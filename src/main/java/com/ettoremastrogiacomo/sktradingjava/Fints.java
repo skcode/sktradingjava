@@ -680,6 +680,34 @@ public final class Fints implements Serializable{
 
         return ret;
     }
+ /**
+  * 
+  * @param f
+  * @param periods 10
+  * @param fastestma 2
+  * @param slowestma 30
+  * @return
+  * @throws Exception 
+  */
+    static public Fints KAMA(Fints f, int periods, int fastestma,int slowestma) throws Exception {
+        TreeMap<UDate,Double> AMA= new TreeMap<>();
+        if ( (fastestma>=slowestma) || (fastestma<=1))  throw new Exception("bad params");
+        double[][] newm= new double[f.length-periods][f.getNoSeries()];
+        
+        AMA.put(f.getDate(periods-1), f.get(periods-1, 0));
+        double fc=2./(fastestma+1.0),sc=2./(slowestma+1.0);
+        for (int i=periods;i<f.length;i++) {
+            double sum=0;
+            double vi=f.matrix[i][0]-f.matrix[i-periods][0];
+            for (int k=i-periods+1;k<=i;k++) sum+=f.matrix[k][0]-f.matrix[k-1][0];
+            double er=vi/sum;
+            double alfa=Math.pow(vi*(fc-sc)+sc, 2);
+            AMA.put(f.getDate(i), AMA.lastEntry().getValue()+alfa*f.matrix[i][0]-AMA.lastEntry().getValue());
+        }
+        return new Fints(AMA, Arrays.asList("KAMA("+f.getName(0)+","+periods+")"),f.freq);
+    }
+    
+    
 /**
  * 
  * @param f
