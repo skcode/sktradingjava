@@ -768,6 +768,7 @@ public class Database {
         int k2 = res.indexOf("\"", k1 + 22);
         String crumb = res.substring(k1 + 21, k2).replace("\"", "").replace("\\u00", "%");
        // LOG.info("crumb=" + crumb);
+                   //https://query1.finance.yahoo.com/v7/finance/download/HFRN.MI?period1=0&period2=1578265200&interval=1d&events=history&crumb=hCd0SUv4Zf2
         String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history&crumb=" + crumb;
         res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.of(http.getCookies())));
         LOG.debug("getting "+symbol+"\tURL=" + u2);
