@@ -8,6 +8,7 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.File;
@@ -132,6 +133,89 @@ class ThreadClass implements Callable<Results> {
          */
     }
 }
+class ThreadClass2 implements Callable<Results> {
+
+    HashMap<String, TreeMap<UDate, Fints>> fintsmap;
+    UDate[] datesarr;
+
+    Set<String> posdicestring, negdicestring;
+
+    public ThreadClass2(HashMap<String, TreeMap<UDate, Fints>> fintsmap, UDate[] datesarr, Set<String> posdicestring, Set<String> negdicestring) {
+        this.fintsmap = fintsmap;
+        this.datesarr = datesarr;
+        this.posdicestring = posdicestring;
+        this.negdicestring = negdicestring;
+    }
+
+    static Results test(HashMap<String, TreeMap<UDate, Fints>> fintsmap, UDate[] datesarr, Set<String> posdicestring, Set<String> negdicestring) throws Exception {
+        ThreadClass tc = new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring);
+        for (int j = 0; j < datesarr.length; j++) {
+            Fints eqall = new Fints();
+            for (String x : posdicestring) {
+                eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquity() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquity());
+            }
+            for (String x : negdicestring) {
+                eqall = eqall.isEmpty() ? fintsmap.get(x).get(datesarr[j]).getEquityShort() : Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]).getEquityShort());
+            }
+            eqall = Fints.MEANCOLS(eqall);
+            //eqall.merge(eqall.getLinReg(0)).plot("eq " + datesarr[j].toYYYYMMDD(), "y");
+        }
+        return tc.call();
+    }
+
+    @Override
+    public Results call() throws Exception {
+
+        double[] serie = new double[datesarr.length];
+
+        //double[] equity= new double[serie.length+1];
+        //equity[0]=1;
+        //for (int i=1;i<equity.length;i++) equity[i]=equity[i-1]*(1+serie[i-1]);
+        //HashMap<String,Double> v=DoubleArray.LinearRegression(equity);
+        double grossprofit=0;        
+        double stepfitness=0;
+        //double[][] allmat= new double[datesarr.length][];
+        for (int j = 0; j < datesarr.length; j++) {
+            Fints eqall = new Fints();                        
+            for (String x : posdicestring) {                                
+                eqall=eqall.isEmpty()?fintsmap.get(x).get(datesarr[j]):Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]));
+            }
+            for (String x : negdicestring) {
+                eqall=eqall.isEmpty()?fintsmap.get(x).get(datesarr[j]):Fints.merge(eqall, fintsmap.get(x).get(datesarr[j]));
+            }
+            eqall=Fints.ER(eqall, 1, false);            
+            double[] m=new double[eqall.getLength()+1];m[0]=1;
+            for (int i1=0;i1<eqall.getLength();i1++){
+                double mean=0;                
+                for (int i2=0;i2<posdicestring.size();i2++) mean+=eqall.get(i1, i2);
+                for (int i2=posdicestring.size();i2<eqall.getNoSeries();i2++) mean-=eqall.get(i1, i2);
+                mean/=eqall.getNoSeries();
+                m[i1+1]=m[i1]*(1.0+mean);            
+            }
+            //allmat[j]=m;
+            HashMap<String, Double> stats = DoubleArray.LinearRegression(m);
+            grossprofit += m[m.length-1]-1;//gross profit
+            //stepfitness+=m[m.length-1]-1;
+            stepfitness+=stats.get("slope")/stats.get("stderr");//sharpe
+            //stepfitness += eqall.getLastRow()[0] - eqall.getFirstValueInCol(0);//gross profit
+            //1.0/Math.abs(eqall.getFirstValueInCol(0)-eqall.getLastRow()[0]);
+        }
+        //double[] resmat=DoubleDoubleArray.mean(allmat);        
+        Results res = new Results();
+        res.fitness=stepfitness/datesarr.length;
+        //res.fitness=DoubleArray.mean(serie);
+//        res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
+        //res.fitness = DoubleArray.sum(serie) / serie.length;
+        res.fitness = Double.isFinite(res.fitness) ? res.fitness : Double.NEGATIVE_INFINITY;
+        res.negdicestring = negdicestring;
+        res.posdicestring = posdicestring;
+        res.datesarr = this.datesarr;
+        res.grossprofit = grossprofit/datesarr.length;
+        return res;
+         
+    }
+}
+
 
 public class PairTrading {
 
@@ -141,7 +225,7 @@ public class PairTrading {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
         int limitsamples = 600;
-        int PAIR = 1, EPOCHS = 1000000, TESTSET = 1, TRAINSET = 60;
+        int PAIR = 1, EPOCHS = 100000, TESTSET = 1, TRAINSET = 5;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
@@ -214,7 +298,7 @@ public class PairTrading {
                 for (int j = 0; j < PAIR ; j++) {
                     negdicestring.add(hasharr[diceneg[j]]);
                 }
-                list.add(executor.submit(new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring)));
+                list.add(executor.submit(new ThreadClass2(fintsmap, datesarr, posdicestring, negdicestring)));
                 if (list.size() >= POOL) {
                     for (Future<Results> x : list) {
                         Results resfuture = x.get();
