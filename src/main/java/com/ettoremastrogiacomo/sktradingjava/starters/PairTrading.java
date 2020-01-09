@@ -224,8 +224,8 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 600;
-        int PAIR = 1, EPOCHS = 100000, TESTSET = 1, TRAINSET = 5;
+        int limitsamples = 300;
+        int PAIR = 1, EPOCHS = 100000, TESTSET = 1, TRAINSET = 80;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
