@@ -155,6 +155,8 @@ public final class UDate
        return this.time<d.time;
     }
     public long diffmills(UDate d) {return this.time-d.time;}
+    public double diffseconds(UDate d) {return (this.time-d.time)/1000;}
+    
     public double diffdays(UDate d) {return (this.time-d.time-0.0)/(1000.0*60.0*60.0*24.0);}
     @Override
     public int compareTo(UDate o) {

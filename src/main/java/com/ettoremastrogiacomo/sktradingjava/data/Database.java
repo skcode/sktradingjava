@@ -1401,8 +1401,7 @@ public class Database {
         ArrayList<UDate> dates = new ArrayList<>();
         ArrayList<String> names = new ArrayList<>();
         double[][] matrix;
-        java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();
-        java.util.TreeMap<UDate, Double> mapprice = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();        
         java.util.TreeMap<UDate, Double> mapopen = new java.util.TreeMap<>();
         java.util.TreeMap<UDate, Double> maphigh = new java.util.TreeMap<>();
         java.util.TreeMap<UDate, Double> maplow = new java.util.TreeMap<>();
@@ -1445,9 +1444,8 @@ public class Database {
                     LocalDateTime datetime = LocalDateTime.parse(ora, DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
                     Calendar c = Calendar.getInstance();
                     c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
-                    c.set(Calendar.MILLISECOND, 0);
+                    c.set(Calendar.MILLISECOND, 0);                    
                     UDate d = new UDate(c.getTimeInMillis());
-                    //LOG.debug(d+"\t"+prezzo+"\t"+volume);
                     if (mapvolume.containsKey(d) )   mapvolume.replace(d, mapvolume.get(d) + nf.parse(volume).doubleValue());
                     else mapvolume.put(d, nf.parse(volume).doubleValue());
                     double t1=nf.parse(prezzo).doubleValue();
@@ -1457,6 +1455,31 @@ public class Database {
                     if (mapopen.containsKey(d) ) mapopen.replace(d, t1);else mapopen.put(d, t1);                    
                     k1 = k2;
                 }
+                
+                //per i gap
+                
+                UDate[] tempd=mapvolume.keySet().stream().map(i->i).toArray(UDate[]::new);
+                for (int i=1;i<tempd.length;i++){                    
+                    if (tempd[i].diffseconds(tempd[i-1])>1)                        
+                    {
+                        Calendar dt = Calendar.getInstance();
+                        dt.setTimeInMillis(tempd[i-1].time);
+                        dt.add(Calendar.SECOND, 1);
+                        while (!mapvolume.containsKey(new UDate(dt.getTimeInMillis()))){
+                            UDate dt1=new UDate(dt.getTimeInMillis());
+                            mapvolume.put(dt1, 0.);//no volume
+                            mapopen.put(dt1, mapclose.get(tempd[i-1]));
+                            maphigh.put(dt1, mapclose.get(tempd[i-1]));
+                            maplow.put(dt1, mapclose.get(tempd[i-1]));
+                            mapclose.put(dt1, mapclose.get(tempd[i-1]));                            
+                            dt.add(Calendar.SECOND, 1);
+                        }                                            
+                    }                
+                }
+                
+                //                    
+                
+                
                 dates.addAll(mapvolume.keySet());
                 names.add("OPEN(" + code + "." + market + ")");
                 names.add("HIGH(" + code + "." + market + ")");

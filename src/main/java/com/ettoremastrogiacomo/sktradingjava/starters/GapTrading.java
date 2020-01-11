@@ -29,9 +29,9 @@ public class GapTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 300;
+        int minvol = 1000000;
         int PAIR = 6;
-        int hourstart=9,minutestart=0,hourend=17,minuteend=29;
+        int hourstart=9,minutestart=30,hourend=17,minuteend=00;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
@@ -54,12 +54,13 @@ public class GapTrading {
                     boolean toadd = true;
                     for (UDate d : mio) {
                         Fints f1 = Database.getIntradayFintsQuotes(x, d);
-                        if (f1.getLength() < limitsamples) {
+                        
+                        if (f1.getSums()[4] < minvol) {
                             toadd = false;
                             break;
                         }
                         // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
-                        t1.put(d, Fints.createContinuity(Security.changeFreq(f1, Fints.frequency.MINUTE).getSerieCopy(3)));
+                        t1.put(d, f1.getSerieCopy(3));
                     }
                     if (toadd) {
                         logger.info("added " + nmap.get(x));

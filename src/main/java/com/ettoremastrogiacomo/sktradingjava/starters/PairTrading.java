@@ -253,7 +253,7 @@ public class PairTrading {
                             break;
                         }
                         // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
-                        t1.put(d, Fints.createContinuity(Security.changeFreq(f1, Fints.frequency.MINUTE).getSerieCopy(3)));
+                        t1.put(d, Security.changeFreq(f1, Fints.frequency.MINUTE).getSerieCopy(3));
                     }
                     if (toadd) {
                         logger.info("added " + nmap.get(x));

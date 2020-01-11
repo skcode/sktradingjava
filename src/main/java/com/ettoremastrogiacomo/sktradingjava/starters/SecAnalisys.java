@@ -98,12 +98,13 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
         XYPlot p4=c1.createXYPlot(all.getName(3),all.getSerieCopy(3));
         XYPlot []arr={p1,p2,p3,p4};
         CombinedDomainXYPlot  cp=  c1.createCombinedDomainXYPlot("dom", arr, false);
-
+        Database.getIntradayFintsQuotes(hashcode, dates.last()).toCSV("/tmp/intraday.csv");
+        
         c1.plotCombined(cp,640,480);
 
-        //System.out.println(Database.getIntradayFintsQuotes(hashcode, dates.last()).toStringL()+"\n\n\n");
-        Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(0).plot(symbol, "price");
-        Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, dates.last()), Fints.frequency.MINUTE).getSerieCopy(3)).plot(symbol, "price");
+        
+        //Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(0).plot(symbol, "price");
+        Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, dates.last()), Fints.frequency.MINUTES5).getSerieCopy(3).plot(symbol, "price");
         //c1.plot(p1,640,480);
     }
     

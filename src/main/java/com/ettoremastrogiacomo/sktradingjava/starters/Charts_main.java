@@ -45,8 +45,8 @@ public class Charts_main {
         map.forEach((x)->{hc.add(x.get( "hashcode"));});
         List<String> list=Database.getFilteredPortfolio(Optional.of(hc), Optional.of(5000), Optional.of(.2), Optional.of(6), Optional.of(10), Optional.of(1000000), Optional.empty());
         Fints f= new Fints();
-        for (String x: list) {f=f.isEmpty()?Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(3500)):f.merge(Fints.createContinuity(Database.getFintsQuotes(x).getSerieCopy(3).head(3500)));}
-        f=Fints.SMA(Fints.ER(Fints.createContinuity(f), 100, true), 200);
+        for (String x: list) {f=f.isEmpty()?Database.getFintsQuotes(x).getSerieCopy(3).head(3500):f.merge(Database.getFintsQuotes(x).getSerieCopy(3).head(3500));}
+        f=Fints.SMA(Fints.ER(f, 100, true), 200);
         Fints fm=Fints.MEANCOLS(f);
         //Fints f=Database.getFilteredPortfolioOfClose(Optional.of(300), Optional.of("STOCK"), Optional.of("MLSE"), Optional.empty(), Optional.empty(), Optional.of(50),Optional.empty(), Optional.empty());
         Charts c1=new Charts("MOVING_SHARPE");

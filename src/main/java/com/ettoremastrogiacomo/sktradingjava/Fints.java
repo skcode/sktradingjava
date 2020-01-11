@@ -1007,12 +1007,8 @@ public final class Fints implements Serializable{
         Fints dest = new Fints(newdate, newn, source.freq, newm);
         return dest;
     }
-    /**
-     * 
-     * @param f
-     * @return un fints senza buchi temporali in base alla frequenza
-     * @throws Exception 
-     */
+    
+    /*
     static public Fints createContinuity(Fints f) throws Exception {
         TreeMap<UDate,ArrayList<Double>> map = new TreeMap<>();
         ArrayList<UDate> newdates=new ArrayList<>();
@@ -1047,7 +1043,7 @@ public final class Fints implements Serializable{
         }
         return new Fints(newdates, f.getName(), f.freq, newm);
     }
-    
+    */
     static public Fints Volatility(Fints source, int period) throws Exception {
         if ((period < 1) || period > source.getLength()) {
             throw new Exception("bad length :" + period + "\n" + source.toString());
@@ -1335,7 +1331,8 @@ public final class Fints implements Serializable{
             builder.append("\n");
             java.text.SimpleDateFormat sdf=new java.text.SimpleDateFormat("YYYY-MM-dd HH.mm.SS");
             for (int i=0;i<matrix.length;i++) {
-                builder.append(sdf.format( new Date(dates.get(i).time)));
+                //builder.append(sdf.format( new Date(dates.get(i).time)));
+                builder.append(dates.get(i));
                 for (int j=0;j<names.size();j++) builder.append(";").append(matrix[i][j]);
                 builder.append("\n");
             }
