@@ -13,6 +13,7 @@ import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.File;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,44 +32,39 @@ public class GapTrading {
         File file = new File(filename);
         int minvol = 1000000;
         int PAIR = 6;
-        int hourstart=9,minutestart=30,hourend=17,minuteend=00;
+        int hourstart=9,minutestart=00,hourend=17,minuteend=29;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         
-        HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
+        HashMap<String, TreeMap<UDate, AbstractMap.SimpleEntry<Double,Double>> > fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
         TreeSet<UDate> mio = Misc.mostRecentTimeSegment(dates, 1000 * 60 * 60 * 24 * 5);
-        mio.forEach((x) -> {
-            logger.debug(x.toString());
-        });
-        logger.debug(mio.size());
+
         HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
 
-        if (file.exists()) {
-            fintsmap = (HashMap<String, TreeMap<UDate, Fints>>) Misc.readObjFromFile(filename);
-        } else {
-            for (String x : map.keySet()) {
-                if (map.get(x).containsAll(mio) && nmap.get(x).contains("MLSE.STOCK")) {
 
-                    TreeMap<UDate, Fints> t1 = new TreeMap<>();
-                    boolean toadd = true;
-                    for (UDate d : mio) {
-                        Fints f1 = Database.getIntradayFintsQuotes(x, d);
-                        
-                        if (f1.getSums()[4] < minvol) {
-                            toadd = false;
-                            break;
-                        }
-                        // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
-                        t1.put(d, f1.getSerieCopy(3));
+        for (String x : map.keySet()) {
+            if (map.get(x).containsAll(mio) && nmap.get(x).contains("MLSE.STOCK")) {
+
+                TreeMap<UDate, AbstractMap.SimpleEntry<Double,Double>> t1 = new TreeMap<>();
+                boolean toadd = true;
+                for (UDate d : mio) {
+                    Fints f1 = Database.getIntradayFintsQuotes(x, d);
+                    UDate d1s=UDate.getNewDate(d, hourstart, minutestart, 0);
+                    UDate d1e=UDate.getNewDate(d, hourend, minuteend, 0);
+
+                    if (f1.getSums()[4] < minvol || f1.getIndex(d1e)<0 || f1.getIndex(d1s)<0) {
+                        toadd = false;
+                        break;
                     }
-                    if (toadd) {
-                        logger.info("added " + nmap.get(x));
-                        fintsmap.put(x, t1);
-                    }
+                    // tmap1.put(d, Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(x, d), Fints.frequency.MINUTE).getSerieCopy(3)));
+                    t1.put(d, new AbstractMap.SimpleEntry<>(f1.get(d1s, 0),f1.get(d1e, 3)));
+                }
+                if (toadd) {
+                    logger.info("added " + nmap.get(x));
+                    fintsmap.put(x, t1);
                 }
             }
-            Misc.writeObjToFile(fintsmap, filename);
         }
         logger.info(fintsmap.size() + "\tof\t" + map.size());
         String[] hasharr = fintsmap.keySet().stream().toArray(String[]::new);
@@ -88,8 +84,8 @@ public class GapTrading {
             logger.debug("check dates:"+prevdateend+"\t"+currdatestart+"\t"+currdateend);
             for (String s:hasharr) {
                 try {
-                    double delta=(fintsmap.get(s).get(datesall[i]).get(currdatestart, 0)-fintsmap.get(s).get(datesall[i-1]).get(prevdateend, 0))/fintsmap.get(s).get(datesall[i-1]).get(prevdateend, 0);
-                    fintsmap.get(s).get(datesall[i]).get(currdateend, 0);
+                    double delta=(fintsmap.get(s).get(datesall[i]).getKey()-fintsmap.get(s).get(datesall[i-1]).getValue())/fintsmap.get(s).get(datesall[i-1]).getValue();
+                    fintsmap.get(s).get(datesall[i]).getValue();
                     closeopengap.put(delta, s);                
                 }
                 catch(Exception e) {
@@ -101,18 +97,18 @@ public class GapTrading {
             double gp=0;            
             
             for (Double neggapbest1 : neggapbest) {
-                Fints f1 = fintsmap.get(closeopengap.get(neggapbest1)).get(datesall[i]);
+                //Fints f1 = fintsmap.get(closeopengap.get(neggapbest1)).get(datesall[i]);
                 String x=closeopengap.get(neggapbest1);
                 logger.debug("buy "+nmap.get(x));                
-                gp+=(f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
-                logger.debug("values open-close "+f1.get(currdatestart,0)+"\t"+f1.get(currdateend,0));                
+                gp+=  (fintsmap.get(x).get(datesall[i]).getValue()-fintsmap.get(x).get(datesall[i]).getKey())/fintsmap.get(x).get(datesall[i]).getKey(); // f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
+                logger.debug("values open-close "+fintsmap.get(x).get(datesall[i]).getKey()+"\t"+fintsmap.get(x).get(datesall[i]).getValue());                
             }
             for (Double posgapbest1 : posgapbest) {
-                Fints f1 = fintsmap.get(closeopengap.get(posgapbest1)).get(datesall[i]);
                 String x=closeopengap.get(posgapbest1);
                 logger.debug("sell "+nmap.get(x));
-                gp-=(f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
-                logger.debug("values open-close "+f1.get(currdatestart,0)+"\t"+f1.get(currdateend,0));                
+                gp-=  (fintsmap.get(x).get(datesall[i]).getValue()-fintsmap.get(x).get(datesall[i]).getKey())/fintsmap.get(x).get(datesall[i]).getKey(); // f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
+                logger.debug("values open-close "+fintsmap.get(x).get(datesall[i]).getKey()+"\t"+fintsmap.get(x).get(datesall[i]).getValue());                
+
             }
             gp=gp/(PAIR*2);
             double np=INITCAP*(gp-VARFEE)-FIXEDFEE*PAIR*2;
