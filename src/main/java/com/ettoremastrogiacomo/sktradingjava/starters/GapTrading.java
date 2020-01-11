@@ -16,15 +16,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
@@ -36,10 +29,11 @@ public class GapTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 100;
+        int limitsamples = 300;
         int PAIR = 6;
-        //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 30000;
+        int hourstart=9,minutestart=0,hourend=17,minuteend=29;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
+        
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Database.getIntradayDates();
         TreeSet<UDate> mio = Misc.mostRecentTimeSegment(dates, 1000 * 60 * 60 * 24 * 5);
@@ -81,28 +75,48 @@ public class GapTrading {
         ArrayList<Double> netprofit = new ArrayList<>();
         ArrayList<Double> cumprofit = new ArrayList<>();
         ArrayList<Double>grossprofit = new ArrayList<>();
+        
         for (int i = 1; i < (datesall.length); i++) {
+            
             logger.debug("dates " + datesall[i] + "\t" + datesall[i-1]);
             logger.debug("stocks " + fintsmap.size());
             TreeMap<Double,String> closeopengap=new  TreeMap<>();
+            UDate prevdateend=UDate.getNewDate(datesall[i-1], hourend, minuteend, 0);
+            UDate currdateend=UDate.getNewDate(datesall[i], hourend, minuteend, 0);
+            UDate currdatestart=UDate.getNewDate(datesall[i], hourstart, minutestart, 0);
+            logger.debug("check dates:"+prevdateend+"\t"+currdatestart+"\t"+currdateend);
             for (String s:hasharr) {
-                double delta=(fintsmap.get(s).get(datesall[i]).getFirstValueInCol(0)-fintsmap.get(s).get(datesall[i-1]).getLastValueInCol(0))/fintsmap.get(s).get(datesall[i-1]).getLastValueInCol(0);
-                closeopengap.put(delta, s);                
+                try {
+                    double delta=(fintsmap.get(s).get(datesall[i]).get(currdatestart, 0)-fintsmap.get(s).get(datesall[i-1]).get(prevdateend, 0))/fintsmap.get(s).get(datesall[i-1]).get(prevdateend, 0);
+                    fintsmap.get(s).get(datesall[i]).get(currdateend, 0);
+                    closeopengap.put(delta, s);                
+                }
+                catch(Exception e) {
+                    logger.warn(nmap.get(s) + " skipped");;
+                }
             }
             Double[] neggapbest=closeopengap.keySet().stream().sorted().limit(PAIR).toArray(Double[]::new);
             Double[] posgapbest=closeopengap.keySet().stream().sorted(Comparator.reverseOrder()).limit(PAIR).toArray(Double[]::new);
-            double gp=0;
+            double gp=0;            
+            
             for (Double neggapbest1 : neggapbest) {
                 Fints f1 = fintsmap.get(closeopengap.get(neggapbest1)).get(datesall[i]);
-                gp+=(f1.getLastValueInCol(0)-f1.getFirstValueInCol(0))/f1.getFirstValueInCol(0);                
+                String x=closeopengap.get(neggapbest1);
+                logger.debug("buy "+nmap.get(x));                
+                gp+=(f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
+                logger.debug("values open-close "+f1.get(currdatestart,0)+"\t"+f1.get(currdateend,0));                
             }
             for (Double posgapbest1 : posgapbest) {
                 Fints f1 = fintsmap.get(closeopengap.get(posgapbest1)).get(datesall[i]);
-                gp-=(f1.getLastValueInCol(0)-f1.getFirstValueInCol(0))/f1.getFirstValueInCol(0);                
+                String x=closeopengap.get(posgapbest1);
+                logger.debug("sell "+nmap.get(x));
+                gp-=(f1.get(currdateend,0)-f1.get(currdatestart,0))/f1.get(currdatestart,0);                
+                logger.debug("values open-close "+f1.get(currdatestart,0)+"\t"+f1.get(currdateend,0));                
             }
             gp=gp/(PAIR*2);
             double np=INITCAP*(gp-VARFEE)-FIXEDFEE*PAIR*2;
-            logger.info("profit "+gp);
+            logger.info("gross profit "+gp);
+            logger.info("net profit "+np);
             grossprofit.add(gp);
             netprofit.add(np);
             if (cumprofit.isEmpty()) cumprofit.add(np);else cumprofit.add(cumprofit.get(cumprofit.size()-1)+np);

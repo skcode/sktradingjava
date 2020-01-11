@@ -73,6 +73,23 @@ public final class UDate
        return new UDate(c.getTimeInMillis());
    }
    
+   /**
+    * ritorna una nuova data da una data in input settando ore minuti e secondi
+    * @param date
+    * @param hour
+    * @param minute
+    * @param second
+    * @return 
+    */
+   public static UDate getNewDate(UDate date,int hour,int minute,int second){
+       Calendar c=Calendar.getInstance();
+       c.setTimeInMillis(date.time);
+       c.set(Calendar.MILLISECOND, 0);
+       c.set(Calendar.SECOND, second);              
+       c.set(Calendar.MINUTE, minute);     
+       c.set(Calendar.HOUR_OF_DAY, hour);            
+       return new UDate(c.getTimeInMillis());
+   }
 
    
 
@@ -86,6 +103,8 @@ public final class UDate
        return new UDate(c.getTimeInMillis());
    }
 
+   
+   
    public static UDate roundWeek(UDate date){
        Calendar c=Calendar.getInstance();
        c.setTimeInMillis(date.time);       

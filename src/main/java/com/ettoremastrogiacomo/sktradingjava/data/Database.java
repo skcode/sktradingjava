@@ -1284,7 +1284,7 @@ public class Database {
         return new Fints(dates, names, Fints.frequency.SECOND, matrix);
     }
 */
-    
+    /*
         public static Fints getIntradayFintsQuotes(String hashcode, UDate date) throws Exception {
         Connection conn = null;
         Statement stmt = null;
@@ -1393,7 +1393,116 @@ public class Database {
         return new Fints(dates, names, Fints.frequency.SECOND, matrix);
     }
 
-    
+*/
+        public static Fints getIntradayFintsQuotes(String hashcode, UDate date) throws Exception {
+        Connection conn = null;
+        Statement stmt = null;
+        java.sql.ResultSet res = null;
+        ArrayList<UDate> dates = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
+        double[][] matrix;
+        java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> mapprice = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> mapopen = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> maphigh = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> maplow = new java.util.TreeMap<>();
+        java.util.TreeMap<UDate, Double> mapclose = new java.util.TreeMap<>();        
+        try {
+            String month = (date.getMonth() + 1) < 10 ? "0" + Integer.toString(date.getMonth() + 1) : Integer.toString(date.getMonth() + 1);
+            String day = (date.getDayofMonth()) < 10 ? "0" + Integer.toString(date.getDayofMonth()) : Integer.toString(date.getDayofMonth());
+            String strdate = day + "/" + month + "/" + (date.getYear() - 2000);
+            conn = DriverManager.getConnection(Init.db_url);
+            stmt = conn.createStatement();
+            String sql = "select quotes from intradayquotes where hashcode='" + hashcode + "' and date='" + strdate + "'";            
+            NumberFormat nf = NumberFormat.getInstance(Locale.ITALY);
+            res = stmt.executeQuery("select * from shares where hashcode='" + hashcode + "'");
+            String code, market;
+            if (res.next()) {
+                code = res.getString("code");
+                market = res.getString("market");
+            } else {
+                throw new Exception("hashcode " + hashcode + " not found");
+            }
+            res = stmt.executeQuery(sql);
+            if (res.next()) {
+                String data = res.getString("quotes");
+                String b1 = "{", b2 = "}";
+                int k1 = 0, k2;
+                while (true) {
+                    k1 = data.indexOf(b1, k1);
+                    k2 = data.indexOf(b2, k1);
+                    if (k1 < 0 || k2 < 0) {
+                        break;
+                    }
+                    String s = data.substring(k1 + 1, k2);
+                    //LOG.debug(s);
+                    int k3 = s.indexOf("PREZZO"), k4 = s.indexOf("VARIAZIONE");
+                    String prezzo = s.substring(k3 + 7, k4 - 2).trim();
+                    k3 = s.indexOf("VOLUME");
+                    k4 = s.indexOf("PREZZO");
+                    String volume = s.substring(k3 + 7, k4 - 2).trim();
+                    String ora = s.substring(s.indexOf("ORA") + 4);
+                    LocalDateTime datetime = LocalDateTime.parse(ora, DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
+                    Calendar c = Calendar.getInstance();
+                    c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
+                    c.set(Calendar.MILLISECOND, 0);
+                    UDate d = new UDate(c.getTimeInMillis());
+                    //LOG.debug(d+"\t"+prezzo+"\t"+volume);
+                    if (mapvolume.containsKey(d) )   mapvolume.replace(d, mapvolume.get(d) + nf.parse(volume).doubleValue());
+                    else mapvolume.put(d, nf.parse(volume).doubleValue());
+                    double t1=nf.parse(prezzo).doubleValue();
+                    if (maphigh.containsKey(d) ) {if (t1>maphigh.get(d)) maphigh.replace(d, t1);} else maphigh.put(d, t1);
+                    if (maplow.containsKey(d) ) {if (t1<maplow.get(d)) maplow.replace(d, t1);}else maplow.put(d, t1);
+                    if (!mapclose.containsKey(d) ) mapclose.put(d, t1);
+                    if (mapopen.containsKey(d) ) mapopen.replace(d, t1);else mapopen.put(d, t1);                    
+                    k1 = k2;
+                }
+                dates.addAll(mapvolume.keySet());
+                names.add("OPEN(" + code + "." + market + ")");
+                names.add("HIGH(" + code + "." + market + ")");
+                names.add("LOW(" + code + "." + market + ")");
+                names.add("CLOSE(" + code + "." + market + ")");
+                names.add("VOLUME(" + code + "." + market + ")");
+                names.add("OI(" + code + "." + market + ")");
+                matrix = new double[dates.size()][6];
+                for (int i = 0; i < matrix.length; i++) {
+                    matrix[i][0] = mapopen.get(dates.get(i));
+                    matrix[i][1] = maphigh.get(dates.get(i));
+                    matrix[i][2] = maplow.get(dates.get(i));
+                    matrix[i][3] = mapclose.get(dates.get(i));
+                    matrix[i][4] = mapvolume.get(dates.get(i));
+                    matrix[i][5] = 0;
+                }
+            } else {
+                throw new Exception("cannot fetch " + hashcode);
+            }
+        } catch (Exception e) {
+            //LOG.error("cannot fetch "+isin, e);
+            throw e;
+        } finally {
+            try {
+                if (res != null) {
+                    res.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }
+        return new Fints(dates, names, Fints.frequency.SECOND, matrix);
+    }
+        
+        
     public static void fetchEODquotesST() throws Exception {
         /*
                 /**

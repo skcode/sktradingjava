@@ -4,6 +4,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import com.ettoremastrogiacomo.utils.UDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,9 @@ public final class Security {
             }
             public int getValue() { return value; }                
         };
+        
+        /*
+        
         static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
             if (newf.ordinal()<f.getFrequency().ordinal()) throw new Exception("bad input :"+f.getFrequency()+" to "+newf);
             if (newf.ordinal()==f.getFrequency().ordinal()) return f;
@@ -105,7 +109,92 @@ public final class Security {
                 i++;
             }
             return new Fints(newdates, f.getName(), newf, newmat);
+        }*/
+
+        static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
+            if (newf.ordinal()<f.getFrequency().ordinal()) throw new Exception("bad input :"+f.getFrequency()+" to "+newf);
+            if (newf.ordinal()==f.getFrequency().ordinal()) return f;
+            java.util.TreeMap<UDate,java.util.ArrayList<Double>> map=new java.util.TreeMap<>();
+            UDate previous=new UDate(0),actual;
+            java.util.ArrayList<Double> row;//=new java.util.ArrayList<>(6);
+            double high=0,low=0,open=0,close=0,volume=0,oi=0;
+            for (int i=0;i<f.getLength();i++){
+                actual=f.getDate(i);
+                switch (newf) {
+                    case MINUTE:
+                        actual=UDate.roundMinute(actual);
+                        break;
+                    case MINUTES3:
+                        actual=UDate.roundXMinutes(actual,3);
+                        break;
+                    case MINUTES5:
+                        actual=UDate.roundXMinutes(actual,5);
+                        break;
+                    case MINUTES10:
+                        actual=UDate.roundXMinutes(actual,10);
+                        break;
+                    case MINUTES15:
+                        actual=UDate.roundXMinutes(actual,15);
+                        break;
+                    case MINUTES30:
+                        actual=UDate.roundXMinutes(actual,30);
+                        break;                        
+                    case HOUR:
+                        actual=UDate.roundHour(actual);
+                        break;
+                    case DAILY :
+                        actual=UDate.roundDayOfMonth(actual);
+                        break;         
+                    case WEEKLY :
+                        actual=UDate.roundWeek(actual);
+                        break;                                 
+                    case MONTHLY:
+                        actual=UDate.roundMonth(actual);
+                        break;                        
+                    default:
+                        throw new Exception("not implemented yet "+newf);
+                }
+                if (i==0) {
+                    open=f.get(i, 0);low=f.get(i, 2);
+                    high=f.get(i, 1);close=f.get(i, 3);
+                    volume=f.get(i, 4);oi=f.get(i, 5);
+                    previous=actual;
+                } else {
+                    if (actual.after(previous)) {
+                        row=new java.util.ArrayList<>();
+                        row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);
+                        map.put(previous, row);
+                        open=f.get(i, 0);low=f.get(i, 2);
+                        high=f.get(i, 1);close=f.get(i, 3);
+                        volume=f.get(i, 4);oi=f.get(i, 5);
+                        previous=actual;
+                    } else {
+                        if (f.get(i, 1)>high) high=f.get(i, 1);
+                        if (f.get(i, 2)<low) low=f.get(i, 2);
+                        close=f.get(i, 3);
+                        volume+=f.get(i, 4);oi+=f.get(i, 5);
+                        if (i==(f.getLength()-1)) {
+                            row=new java.util.ArrayList<>();
+                            row.add(open);row.add(high);row.add(low);row.add(close);row.add(volume);row.add(oi);                            
+                            map.put(actual, row);                            
+                        }
+                    }
+                }
+            }
+            //Fints second=Database.getIntradayFintsQuotes(isin, date);
+            double[][] newmat=new double[map.size()][6];
+            int i=0;
+            java.util.ArrayList<UDate> newdates=new java.util.ArrayList<>();
+            for (UDate d : map.keySet()){
+                List<Double> l=map.get(d);
+                newdates.add(d);
+                for (int j=0;j<l.size();j++) {newmat[i][j]=l.get(j);}                
+                i++;
+            }
+            return new Fints(newdates, f.getName(), newf, newmat);
         }
+
+
         
 	public Security(String hashcode) throws Exception {
                 this.hashcode=hashcode;

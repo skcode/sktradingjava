@@ -428,6 +428,10 @@ public final class Fints implements Serializable{
         return this.matrix[i][j];
     }
 
+    public double get(UDate d, int j) {
+        return this.matrix[this.getIndex(d)][j];
+    }
+
     public Fints.frequency getFrequency() {
         return this.freq;
     }

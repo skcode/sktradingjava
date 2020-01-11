@@ -10,6 +10,7 @@ import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
 import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
+import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
@@ -100,7 +101,10 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
         c1.plotCombined(cp,640,480);
 
-
+        //System.out.println(Database.getIntradayFintsQuotes(hashcode, dates.last()).toStringL()+"\n\n\n");
+        Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(0).plot(symbol, "price");
+        Fints.createContinuity(Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, dates.last()), Fints.frequency.MINUTE).getSerieCopy(3)).plot(symbol, "price");
         //c1.plot(p1,640,480);
     }
+    
 }
