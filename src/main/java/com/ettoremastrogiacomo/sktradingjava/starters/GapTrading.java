@@ -30,8 +30,8 @@ public class GapTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int minvol = 1000000;
-        int PAIR = 6;
+        int minvol = 100000;
+        int PAIR = 5;
         int hourstart=9,minutestart=00,hourend=17,minuteend=29;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         

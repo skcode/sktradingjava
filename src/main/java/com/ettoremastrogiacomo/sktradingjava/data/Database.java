@@ -1457,7 +1457,7 @@ public class Database {
                 }
                 
                 //per i gap
-                
+                /*
                 UDate[] tempd=mapvolume.keySet().stream().map(i->i).toArray(UDate[]::new);
                 for (int i=1;i<tempd.length;i++){                    
                     if (tempd[i].diffseconds(tempd[i-1])>1)                        
@@ -1476,7 +1476,7 @@ public class Database {
                         }                                            
                     }                
                 }
-                
+                */
                 //                    
                 
                 

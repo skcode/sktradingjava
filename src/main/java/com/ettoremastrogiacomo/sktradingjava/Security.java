@@ -6,6 +6,7 @@ import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import org.apache.log4j.Logger;
@@ -110,7 +111,77 @@ public final class Security {
             }
             return new Fints(newdates, f.getName(), newf, newmat);
         }*/
-
+        static public Fints createContinuity (Fints f) throws Exception {
+                //per i gap
+            java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();        
+            java.util.TreeMap<UDate, Double> mapopen = new java.util.TreeMap<>();
+            java.util.TreeMap<UDate, Double> maphigh = new java.util.TreeMap<>();
+            java.util.TreeMap<UDate, Double> maplow = new java.util.TreeMap<>();
+            java.util.TreeMap<UDate, Double> mapclose = new java.util.TreeMap<>();                
+            java.util.TreeMap<UDate, Double> mapoi = new java.util.TreeMap<>();                
+            
+            f.getDate().forEach((d)->
+                    
+            {        
+                mapvolume.put(d, f.get(d, Security.SERIE.VOLUME.getValue()));
+                mapopen.put(d, f.get(d, Security.SERIE.OPEN.getValue()));
+                maphigh.put(d, f.get(d, Security.SERIE.HIGH.getValue()));
+                maplow.put(d, f.get(d, Security.SERIE.LOW.getValue()));
+                mapclose.put(d, f.get(d, Security.SERIE.CLOSE.getValue()));                            
+                mapoi.put(d, f.get(d, Security.SERIE.OI.getValue()));                            
+            
+            }
+            
+            );
+            UDate[] tempd=mapvolume.keySet().stream().map(i->i).toArray(UDate[]::new);
+            ArrayList<UDate> dates = new ArrayList<>();
+            
+            for (int i=1;i<tempd.length;i++){                    
+            //    if (tempd[i].diffseconds(tempd[i-1])>1)                        
+                //{
+                    Calendar dt = Calendar.getInstance();
+                    dt.setTimeInMillis(tempd[i-1].time);
+                    switch (f.getFrequency()) {
+                        case DAILY:dt.add(Calendar.HOUR, 24);break;
+                        case MINUTE:dt.add(Calendar.MINUTE, 1);break;
+                        case HOUR:dt.add(Calendar.HOUR, 1);break;
+                        case MINUTES10:dt.add(Calendar.MINUTE, 10);break;
+                        case MINUTES15:dt.add(Calendar.MINUTE, 15);break;
+                        case MINUTES3:dt.add(Calendar.MINUTE, 3);break;
+                        case MINUTES30:dt.add(Calendar.MINUTE, 30);break;
+                        case MINUTES5:dt.add(Calendar.MINUTE, 5);break;
+                        case MONTHLY:dt.add(Calendar.MONTH, 1);break;
+                        case SECOND:dt.add(Calendar.SECOND, 1);break;
+                        case WEEKLY:dt.add(Calendar.HOUR, 24*7);break;
+                        case YEARLY:dt.add(Calendar.YEAR, 1);break;
+                        default: throw new Exception ("not yet implemented "+f.getFrequency());                    
+                    }
+                    
+                    while (!mapvolume.containsKey(new UDate(dt.getTimeInMillis()))){
+                        UDate dt1=new UDate(dt.getTimeInMillis());
+                        mapvolume.put(dt1, 0.);//no volume
+                        mapopen.put(dt1, mapclose.get(tempd[i-1]));
+                        maphigh.put(dt1, mapclose.get(tempd[i-1]));
+                        maplow.put(dt1, mapclose.get(tempd[i-1]));
+                        mapclose.put(dt1, mapclose.get(tempd[i-1]));                            
+                        mapoi.put(dt1, mapoi.get(tempd[i-1]));                            
+                        dt.add(Calendar.SECOND, 1);
+                    }              
+                //}                
+            }
+            dates.addAll(mapvolume.keySet());
+            double[][] matrix = new double[dates.size()][6];
+            for (int i = 0; i < matrix.length; i++) {
+                matrix[i][0] = mapopen.get(dates.get(i));
+                matrix[i][1] = maphigh.get(dates.get(i));
+                matrix[i][2] = maplow.get(dates.get(i));
+                matrix[i][3] = mapclose.get(dates.get(i));
+                matrix[i][4] = mapvolume.get(dates.get(i));
+                matrix[i][5] = mapoi.get(dates.get(i));
+            }                    
+            return new Fints(dates, f.getName(), f.getFrequency(), matrix);
+        }
+        
         static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
             if (newf.ordinal()<f.getFrequency().ordinal()) throw new Exception("bad input :"+f.getFrequency()+" to "+newf);
             if (newf.ordinal()==f.getFrequency().ordinal()) return f;

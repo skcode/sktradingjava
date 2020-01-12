@@ -15,8 +15,10 @@ import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
@@ -29,7 +31,7 @@ public class SecAnalisys {
 static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
-            String symbol="FCA";//INA.EURONEXT-XLIS
+            String symbol="ISP";//INA.EURONEXT-XLIS
             String market="MLSE";
             String hashcode=Database.getHashcode(symbol, market);
             Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of(market),Optional.empty());
@@ -47,7 +49,7 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
                 Fints er1=Fints.ER(f1, 1, false);
                 meanv.add(er1.getMeans()[0]);
                 stdv.add(er1.getStd()[0]);
-                runs.add(f1.runTestZscore(0));
+                runs.add(f1.runTestZscore(Security.SERIE.CLOSE.getValue()));
                 samples.add(f1.getLength());                
             }
             LOG.debug("intraday samples "+dates.size());
@@ -101,10 +103,23 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
         Database.getIntradayFintsQuotes(hashcode, dates.last()).toCSV("/tmp/intraday.csv");
         
         c1.plotCombined(cp,640,480);
-
+        Fints iday=Security.createContinuity(Database.getIntradayFintsQuotes(hashcode, dates.last())).getSerieCopy(3);
+        Fints totrade=Fints.KAMA(iday, 10, 20, 60).merge(Fints.KAMA(iday, 10, 60, 120)).merge(iday);
+        totrade.plot(symbol, "price");        
+        TreeMap<UDate,Double> equity= new TreeMap<>();
+        equity.put(totrade.getFirstDate(), 1.);
+        for (int i=1;i<totrade.getLength();i++){
+            if (totrade.get(i, 0)>=totrade.get(i, 1)){
+                equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));            
+            }else {
+                equity.put(totrade.getDate(i),equity.lastEntry().getValue()*(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
+            }
+            
+        }
+          (new Fints(equity, Arrays.asList("ieq"), Fints.frequency.SECOND)).plot("equity", "val");
         
         //Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(0).plot(symbol, "price");
-        Security.changeFreq(Database.getIntradayFintsQuotes(hashcode, dates.last()), Fints.frequency.MINUTES5).getSerieCopy(3).plot(symbol, "price");
+        //Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(3).plot(symbol, "price");
         //c1.plot(p1,640,480);
     }
     
