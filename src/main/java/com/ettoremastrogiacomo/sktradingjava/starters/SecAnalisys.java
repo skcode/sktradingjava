@@ -108,10 +108,21 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
         totrade.plot(symbol, "price");        
         TreeMap<UDate,Double> equity= new TreeMap<>();
         equity.put(totrade.getFirstDate(), 1.);
+        boolean longpos=false,shortpos=false;
+        double fee=7,spreadfee=0.001;
+        
         for (int i=1;i<totrade.getLength();i++){
-            if (totrade.get(i, 0)>=totrade.get(i, 1)){
-                equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));            
+            if (totrade.get(i, 2)>=totrade.get(i, 0)){
+                if (shortpos){
+                    shortpos=false;longpos=true;
+                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                                
+                }else
+                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
             }else {
+                if (longpos){
+                    shortpos=true;longpos=false;
+                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                            
+                }
                 equity.put(totrade.getDate(i),equity.lastEntry().getValue()*(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
             }
             
