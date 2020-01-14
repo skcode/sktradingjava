@@ -2,12 +2,19 @@ package com.ettoremastrogiacomo.utils;
 
 import java.net.*;
 import java.io.*;
+import java.security.cert.CertificateException;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.log4j.Logger;
+import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.TrustManager;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 
 /**
  *
@@ -22,6 +29,27 @@ public class HttpFetch {
     List<HttpCookie> cookieList;
     Map<String, List<String>> headers;
     final int TIMEOUT=60000;
+    
+    public static void disableSSLcheck() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+        }};
+ 
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());       
+    }
+    
+    
     public HttpFetch() {
         useproxy = false;
     }

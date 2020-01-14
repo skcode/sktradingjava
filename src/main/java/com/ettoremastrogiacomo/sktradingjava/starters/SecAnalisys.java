@@ -113,15 +113,19 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
         
         for (int i=1;i<totrade.getLength();i++){
             if (totrade.get(i, 2)>=totrade.get(i, 0)){
-                if (shortpos){
+                if (shortpos || (!shortpos && ! longpos)){
                     shortpos=false;longpos=true;
                     equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                                
-                }else
+                    LOG.debug(" buy at "+totrade.getDate(i)+"\t"+totrade.get(i, 2));
+                }else{                    
                     equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
+                
+                }
             }else {
-                if (longpos){
+                if (longpos || (!shortpos && ! longpos)){
                     shortpos=true;longpos=false;
                     equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                            
+                    LOG.debug(" sell at "+totrade.getDate(i)+"\t"+totrade.get(i, 2));
                 }
                 equity.put(totrade.getDate(i),equity.lastEntry().getValue()*(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
             }

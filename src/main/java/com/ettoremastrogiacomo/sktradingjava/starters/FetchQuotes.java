@@ -7,8 +7,8 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
+import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.util.Calendar;
 
 
 /**
@@ -22,9 +22,10 @@ public class FetchQuotes {
        java.io.File f=new java.io.File(dbname);
        UDate t1=new UDate();
        LOG.debug("start at "+t1);
+        HttpFetch.disableSSLcheck();
        Database.createSecTable();       
-       //try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}
-       //try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
+       try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}
+       try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
        LOG.debug("end at "+t2);
