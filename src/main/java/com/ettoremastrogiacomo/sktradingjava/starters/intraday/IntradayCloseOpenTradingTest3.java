@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.ettoremastrogiacomo.sktradingjava.starters;
+package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
@@ -32,7 +32,7 @@ public class IntradayCloseOpenTradingTest3 {
     public static void main(String[] args) throws Exception {
         final int MAXGAP=5,MINSAMPLE=300;        
         int POOLSIZE=1;
-        int WINDOW=60;
+        int WINDOW=1;
         double LASTEQ=120000,FEE=7,spreadPEN=.001;
         double INITEQ=LASTEQ;
         

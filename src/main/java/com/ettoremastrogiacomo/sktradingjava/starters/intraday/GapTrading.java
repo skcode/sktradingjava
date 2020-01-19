@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.ettoremastrogiacomo.sktradingjava.starters;
+package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;

@@ -104,34 +104,13 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
         
         c1.plotCombined(cp,640,480);
         Fints iday=Security.createContinuity(Database.getIntradayFintsQuotes(hashcode, dates.last())).getSerieCopy(3);
-        Fints totrade=Fints.KAMA(iday, 10, 20, 60).merge(Fints.KAMA(iday, 10, 60, 120)).merge(iday);
-        totrade.plot(symbol, "price");        
-        TreeMap<UDate,Double> equity= new TreeMap<>();
-        equity.put(totrade.getFirstDate(), 1.);
-        boolean longpos=false,shortpos=false;
-        double fee=7,spreadfee=0.001;
+
         
-        for (int i=1;i<totrade.getLength();i++){
-            if (totrade.get(i, 2)>=totrade.get(i, 0)){
-                if (shortpos || (!shortpos && ! longpos)){
-                    shortpos=false;longpos=true;
-                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                                
-                    LOG.debug(" buy at "+totrade.getDate(i)+"\t"+totrade.get(i, 2));
-                }else{                    
-                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1+(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
-                
-                }
-            }else {
-                if (longpos || (!shortpos && ! longpos)){
-                    shortpos=true;longpos=false;
-                    equity.put(totrade.getDate(i), equity.lastEntry().getValue() *(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)-spreadfee)-fee*2);                            
-                    LOG.debug(" sell at "+totrade.getDate(i)+"\t"+totrade.get(i, 2));
-                }
-                equity.put(totrade.getDate(i),equity.lastEntry().getValue()*(1-(totrade.get(i, 2)-totrade.get(i-1, 2))/totrade.get(i-1, 2)));
-            }
-            
-        }
-          (new Fints(equity, Arrays.asList("ieq"), Fints.frequency.SECOND)).plot("equity", "val");
+        
+        
+        Fints totrade=Fints.KAMA(iday, 10, 2, 30).merge(Fints.KAMA(iday, 10, 20, 60)).merge(iday);
+        totrade.plot(symbol, "price");        
+        
         
         //Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(0).plot(symbol, "price");
         //Database.getIntradayFintsQuotes(hashcode, dates.last()).getSerieCopy(3).plot(symbol, "price");

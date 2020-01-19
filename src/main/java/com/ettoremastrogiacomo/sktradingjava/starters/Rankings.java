@@ -24,12 +24,12 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=300,maxdaygap=6,maxold=30,minvol=1000,setmin=15,setmax=50,popsize=10000,ngen=500;
+        int minsamples=300,maxdaygap=6,maxold=30,minvol=10,setmin=15,setmax=50,popsize=10000,ngen=500;
         double maxpcgap=.15;        
         boolean plot=false;
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         int SIZE=minsamples<ptf.getLength()?minsamples:ptf.getLength()-1;
         logger.info("no sec "+ptf.getNoSecurities());
         logger.info("len "+ptf.getLength());
