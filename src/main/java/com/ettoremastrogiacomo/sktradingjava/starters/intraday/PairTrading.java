@@ -93,8 +93,8 @@ class ThreadClass implements Callable<Results> {
         //HashMap<String,Double> v=DoubleArray.LinearRegression(equity);
         Results res = new Results();
         //res.fitness=v.get("sharpe");
-        res.fitness=DoubleArray.mean(serie);
-        //res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
+        //res.fitness=DoubleArray.mean(serie);
+        res.fitness = serie.length > 1 ? DoubleArray.mean(serie) / DoubleArray.std(serie) : serie[0];//grossprofit;//
         //res.fitness = DoubleArray.sum(serie) / serie.length;
         res.fitness = Double.isFinite(res.fitness) ? res.fitness : Double.NEGATIVE_INFINITY;
         res.negdicestring = negdicestring;
@@ -224,7 +224,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 100;
+        int limitsamples = 300;
         int PAIR = 1, EPOCHS = 100000, TESTSET = 1, TRAINSET = 70;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
