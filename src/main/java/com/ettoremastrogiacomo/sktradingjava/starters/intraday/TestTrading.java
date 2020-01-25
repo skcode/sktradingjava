@@ -8,26 +8,82 @@ package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import static com.ettoremastrogiacomo.sktradingjava.starters.intraday.TestTrading.logger;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
  *
  * @author a241448
  */
+
+class CallableClass  implements Callable<CallableClass>{
+    final Fints f;
+    final int h,k;
+    Fints eqres;
+    static double INITCAP=10000,FIXEDFEE=7,VARFEE=0.001;
+    
+    public static void setParams(double initcap,double fixedfee,double varfee){
+        INITCAP=initcap;FIXEDFEE=fixedfee;VARFEE=varfee;
+    }
+    List<Integer> getParams() {
+        return Arrays.asList(h,k);
+    }
+    Fints getEquity() {
+    return eqres;
+    }
+    public  CallableClass  (Fints f, int h,int k) throws Exception { 
+        if (f.isEmpty() || f.getNoSeries()>1) throw new RuntimeException("only one serie allowed");
+        this.f=f;
+        this.k=k;
+        this.h=h;
+    }
+    
+    @Override
+    public CallableClass call() throws Exception {
+        Fints i1 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), h);
+        Fints i2 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), k);
+        Fints tot = i1.merge(i2).merge(f);
+        TreeMap<UDate, Double> eq = new TreeMap<>();
+        eq.put(tot.getFirstDate(), INITCAP);
+        boolean flat=true;                    
+        for (int j = 0; j < (tot.getLength() - 1); j++) {
+            if (tot.get(j, 1) > tot.get(j, 0)) {
+                double v = (tot.get(j + 1, 2) - tot.get(j, 2)) / tot.get(j, 2);
+                if (flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v)-FIXEDFEE);
+                else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v));
+                flat=false;
+            } else {
+                if (!flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j))-FIXEDFEE);
+                else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)));
+                flat=true;
+            }
+        }                    
+        eqres= new Fints(eq, Arrays.asList("equity-"+f.getName(0)+"-"+tot.getFirstDate().toYYYYMMDD()), tot.getFrequency());        
+        return this;
+        
+    }
+
+}
 public class TestTrading {
 
     static Logger logger = org.apache.log4j.Logger.getLogger(TestTrading.class);
 
     public static void main(String[] args) throws Exception {
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 300;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 100;
 
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
 
@@ -37,7 +93,7 @@ public class TestTrading {
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
 
         for (String x : map.keySet()) {
-            if (map.get(x).containsAll(dates) && nmap.get(x).contains("ISP.MLSE.STOCK")) {
+            if (map.get(x).containsAll(dates) && nmap.get(x).contains("ENEL.MLSE.STOCK")) {
                 boolean toadd = true;
                 TreeMap<UDate, Fints> t1 = new TreeMap<>();
                 for (UDate d : dates) {
@@ -60,14 +116,29 @@ public class TestTrading {
         }
         logger.info(fintsmap.size() + "\tof\t" + map.size());
         logger.info("time range: " + dates.first() + " -> " + dates.last() + "\tsamples=" + dates.size());
+        CallableClass.setParams(INITCAP, FIXEDFEE, VARFEE);
+        int POOL = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(POOL);
+        List<Future<CallableClass>> list = new ArrayList<>();        
         for (String x : fintsmap.keySet()) {
             AbstractMap.SimpleEntry<ArrayList<Integer>, ArrayList<Double>> bestprofit = new AbstractMap.SimpleEntry(new ArrayList<Integer>(), new ArrayList<Double>());
             for (int k = 2; k <= 120; k++) 
                 for (int h = 2; h <= 120; h++) 
             {
                 ArrayList<Double> profit = new ArrayList<>();
+                
                 for (UDate d : dates) {
                     Fints f = fintsmap.get(x).get(d);
+                    list.add(executor.submit(new CallableClass(f, h, k)));
+                    
+                    if (list.size()>=POOL || (d.equals(dates.last()) )) {
+                        for (Future<CallableClass> z: list) {
+                            Fints reseq=z.get().getEquity();                            
+                                profit.add(reseq.getLastValueInCol(0));                          
+                        }
+                        list.clear();
+                    }
+/*                    
                     Fints i1 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), h);
                     Fints i2 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), k);
                     Fints tot = i1.merge(i2).merge(f);
@@ -87,15 +158,17 @@ public class TestTrading {
                             flat=true;
                         }
                     }                    
+*/
                     // (new Fints(eq, Arrays.asList("equity"), tot.getFrequency())).plot(d.toYYYYMMDD(), "price");
                     // tot.plot("tot", "price");
-                    profit.add(eq.lastEntry().getValue());
+                    
                     //logger.info("profit for day " + d + "\t" + eq.lastEntry().getValue());
                     //logger.info("mean " + profit.stream().mapToDouble(i -> i).summaryStatistics().getAverage());
                     //logger.info("max " + profit.stream().mapToDouble(i -> i).summaryStatistics().getMax());
                     //logger.info("min " + profit.stream().mapToDouble(i -> i).summaryStatistics().getMin());
 
                 }
+                
                 double mean = profit.stream().mapToDouble(i -> i).summaryStatistics().getAverage();
                 if (bestprofit.getKey().isEmpty()) {
                     bestprofit = new AbstractMap.SimpleEntry<>(new ArrayList<>(Arrays.asList(k,h)), profit);
@@ -117,6 +190,8 @@ public class TestTrading {
             }
 
         }
+        executor.shutdown();  
+        executor.awaitTermination(10, TimeUnit.MINUTES);
     }
 }
 
