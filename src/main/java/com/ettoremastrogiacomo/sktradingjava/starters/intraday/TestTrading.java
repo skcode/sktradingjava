@@ -31,9 +31,9 @@ import org.apache.log4j.Logger;
  */
 
 class CallableClass  implements Callable<CallableClass>{
-    final Fints f;
-    final int h,k;
-    Fints eqres;
+    private final Fints f;
+    private final int h,k;
+    private Fints eqres;
     static double INITCAP=10000,FIXEDFEE=7,VARFEE=0.001;
     
     public static void setParams(double initcap,double fixedfee,double varfee){
@@ -61,7 +61,7 @@ class CallableClass  implements Callable<CallableClass>{
         eq.put(tot.getFirstDate(), INITCAP);
         boolean flat=true;                    
         for (int j = 0; j < (tot.getLength() - 1); j++) {
-            if (tot.get(j, 1) > tot.get(j, 0)) {
+            if (tot.get(j, 1) > tot.get(j, 0)) {// k sma above h sma
                 double v = (tot.get(j + 1, 2) - tot.get(j, 2)) / tot.get(j, 2);
                 if (flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v)-FIXEDFEE);
                 else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v));
@@ -81,7 +81,16 @@ class CallableClass  implements Callable<CallableClass>{
 public class TestTrading {
 
     static Logger logger = org.apache.log4j.Logger.getLogger(TestTrading.class);
-
+    public static ArrayList<Double>  test(String hash, int h,int k,TreeSet<UDate> dates)throws Exception{
+        ArrayList<Double> profit = new ArrayList<>();
+        for (UDate d: dates){            
+            Fints f=Security.changeFreq(Security.createContinuity(Database.getIntradayFintsQuotes(hash, d)), Fints.frequency.MINUTE).getSerieCopy(3);
+            CallableClass c= new CallableClass(f, h, k).call();
+            c.getEquity().plot("equity", "v");
+            profit.add(c.getEquity().getLastValueInCol(0));
+        }
+        return profit;
+    }
     public static void main(String[] args) throws Exception {
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 100;
 
@@ -93,7 +102,7 @@ public class TestTrading {
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
 
         for (String x : map.keySet()) {
-            if (map.get(x).containsAll(dates) && nmap.get(x).contains("ENEL.MLSE.STOCK")) {
+            if (map.get(x).containsAll(dates) && nmap.get(x).contains("MLSE.STOCK")) {
                 boolean toadd = true;
                 TreeMap<UDate, Fints> t1 = new TreeMap<>();
                 for (UDate d : dates) {
@@ -121,6 +130,7 @@ public class TestTrading {
         ExecutorService executor = Executors.newFixedThreadPool(POOL);
         List<Future<CallableClass>> list = new ArrayList<>();        
         for (String x : fintsmap.keySet()) {
+            logger.info("analizing "+nmap.get(x));
             AbstractMap.SimpleEntry<ArrayList<Integer>, ArrayList<Double>> bestprofit = new AbstractMap.SimpleEntry(new ArrayList<Integer>(), new ArrayList<Double>());
             for (int k = 2; k <= 120; k++) 
                 for (int h = 2; h <= 120; h++) 
