@@ -5,6 +5,7 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
 
+import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
@@ -24,6 +25,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
+import org.jfree.chart.plot.XYPlot;
 
 /**
  *
@@ -33,7 +36,7 @@ import org.apache.log4j.Logger;
 class CallableClass  implements Callable<CallableClass>{
     private final Fints f;
     private final int h,k;
-    private Fints eqres;
+    private Fints eqres,tot;
     static double INITCAP=10000,FIXEDFEE=7,VARFEE=0.001;
     
     public static void setParams(double initcap,double fixedfee,double varfee){
@@ -43,7 +46,15 @@ class CallableClass  implements Callable<CallableClass>{
         return Arrays.asList(h,k);
     }
     Fints getEquity() {
-    return eqres;
+        return eqres;
+    }
+    void  plotTot() throws Exception{
+        Charts c= new Charts("stock");
+        XYPlot p2=c.createXYPlot(tot.getName(2), tot.getSerieCopy(2));
+        XYPlot p1=c.createXYPlot(tot.getName(1), tot.getSerieCopy(1));
+        XYPlot p0=c.createXYPlot(tot.getName(0), tot.getSerieCopy(0));
+        CombinedDomainXYPlot p= c.createCombinedDomainXYPlot("", new XYPlot[]{p2,p1,p0}, true);
+        c.plotCombined(p,640,480);        
     }
     public  CallableClass  (Fints f, int h,int k) throws Exception { 
         if (f.isEmpty() || f.getNoSeries()>1) throw new RuntimeException("only one serie allowed");
@@ -56,12 +67,12 @@ class CallableClass  implements Callable<CallableClass>{
     public CallableClass call() throws Exception {
         Fints i1 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), h);
         Fints i2 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), k);
-        Fints tot = i1.merge(i2).merge(f);
+        tot = i1.merge(i2).merge(f);
         TreeMap<UDate, Double> eq = new TreeMap<>();
         eq.put(tot.getFirstDate(), INITCAP);
         boolean flat=true;                    
         for (int j = 0; j < (tot.getLength() - 1); j++) {
-            if (tot.get(j, 1) > tot.get(j, 0)) {// k sma above h sma
+            if (tot.get(j, 1) >0  && tot.get(j, 0)>0) {// k sma & h sma
                 double v = (tot.get(j + 1, 2) - tot.get(j, 2)) / tot.get(j, 2);
                 if (flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v)-FIXEDFEE);
                 else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v));
@@ -86,13 +97,13 @@ public class TestTrading {
         for (UDate d: dates){            
             Fints f=Security.changeFreq(Security.createContinuity(Database.getIntradayFintsQuotes(hash, d)), Fints.frequency.MINUTE).getSerieCopy(3);
             CallableClass c= new CallableClass(f, h, k).call();
-            c.getEquity().plot("equity", "v");
+            c.plotTot();
             profit.add(c.getEquity().getLastValueInCol(0));
         }
         return profit;
     }
     public static void main(String[] args) throws Exception {
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 100;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 300;
 
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
 
@@ -101,6 +112,12 @@ public class TestTrading {
         HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
 
+        
+        TreeSet<UDate> datest=new TreeSet<>();
+        datest.add(dates.last());
+        TestTrading.test(Database.getHashcode("ENEL", "MLSE"), 2, 26, datest);
+        
+        
         for (String x : map.keySet()) {
             if (map.get(x).containsAll(dates) && nmap.get(x).contains("MLSE.STOCK")) {
                 boolean toadd = true;
@@ -133,8 +150,8 @@ public class TestTrading {
             logger.info("analizing "+nmap.get(x));
             AbstractMap.SimpleEntry<ArrayList<Integer>, ArrayList<Double>> bestprofit = new AbstractMap.SimpleEntry(new ArrayList<Integer>(), new ArrayList<Double>());
             for (int k = 2; k <= 120; k++) 
-                for (int h = 2; h <= 120; h++) 
-            {
+                for (int h = 2; h <= 120; h++) {
+            
                 ArrayList<Double> profit = new ArrayList<>();
                 
                 for (UDate d : dates) {
@@ -148,35 +165,6 @@ public class TestTrading {
                         }
                         list.clear();
                     }
-/*                    
-                    Fints i1 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), h);
-                    Fints i2 = Fints.SMA(Fints.Sharpe(Fints.ER(f, 100, true), 10), k);
-                    Fints tot = i1.merge(i2).merge(f);
-
-                    TreeMap<UDate, Double> eq = new TreeMap<>();
-                    eq.put(tot.getFirstDate(), INITCAP);
-                    boolean flat=true;                    
-                    for (int j = 0; j < (tot.getLength() - 1); j++) {
-                        if (tot.get(j, 1) > tot.get(j, 0)) {
-                            double v = (tot.get(j + 1, 2) - tot.get(j, 2)) / tot.get(j, 2);
-                            if (flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v)-FIXEDFEE);
-                            else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)) * (1 + v));
-                            flat=false;
-                        } else {
-                            if (!flat) eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j))-FIXEDFEE);
-                            else eq.put(tot.getDate(j + 1), eq.get(tot.getDate(j)));
-                            flat=true;
-                        }
-                    }                    
-*/
-                    // (new Fints(eq, Arrays.asList("equity"), tot.getFrequency())).plot(d.toYYYYMMDD(), "price");
-                    // tot.plot("tot", "price");
-                    
-                    //logger.info("profit for day " + d + "\t" + eq.lastEntry().getValue());
-                    //logger.info("mean " + profit.stream().mapToDouble(i -> i).summaryStatistics().getAverage());
-                    //logger.info("max " + profit.stream().mapToDouble(i -> i).summaryStatistics().getMax());
-                    //logger.info("min " + profit.stream().mapToDouble(i -> i).summaryStatistics().getMin());
-
                 }
                 
                 double mean = profit.stream().mapToDouble(i -> i).summaryStatistics().getAverage();

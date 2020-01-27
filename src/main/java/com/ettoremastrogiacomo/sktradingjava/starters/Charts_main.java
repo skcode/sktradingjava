@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import org.apache.log4j.*;
 
 //import speedking.trading.data.DBExplorer;
 
