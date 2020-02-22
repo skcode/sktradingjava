@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -25,7 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.log4j.Logger;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
@@ -161,16 +159,16 @@ public class TestTrading {
 
     public static void main(String[] args) throws Exception {
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 300;
-        final int TRAINWIN = 50, TESTWIN = 5;
+        final int TRAINWIN = 100, TESTWIN = 10;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Misc.mostRecentTimeSegment(Database.getIntradayDates(), 1000 * 60 * 60 * 24 * 5);
         HashMap<String, TreeSet<UDate>> map = Database.getIntradayDatesMap();
         HashMap<String, String> nmap = Database.getCodeMarketName(new ArrayList<>(map.keySet()));
-        TreeSet<UDate> datest = new TreeSet<>();
+        
 
         //TestTrading.test(Database.getHashcode("ENEL", "MLSE"), 2, 26, datest);
         for (String x : map.keySet()) {
-            if (map.get(x).containsAll(dates) && nmap.get(x).contains("FBK.MLSE.STOCK")) {//best profit at k,h=[187, 202] FBK
+            if (map.get(x).containsAll(dates) && nmap.get(x).contains("BPE.MLSE.STOCK")) {//best profit at k,h=[187, 202] FBK
                 boolean toadd = true;
                 TreeMap<UDate, Fints> t1 = new TreeMap<>();
                 for (UDate d : dates) {
@@ -201,10 +199,14 @@ public class TestTrading {
             for (int m = 0; m < (dates.size() - TESTWIN); m = m + TESTWIN) {
                 TreeSet<UDate> traindates = new TreeSet<>();
                 TreeSet<UDate> testdates = new TreeSet<>();
+                if ((m+TRAINWIN)>=(datesarr.length-1)) break;
+                
                 for (int jj = m; jj < m + TRAINWIN; jj++) {
                     traindates.add(datesarr[jj]);
                 }
-                for (int jj = m + TRAINWIN; jj < m + TRAINWIN + TESTWIN; jj++) {
+                int limtest=m+TRAINWIN+TESTWIN;
+                if (limtest>datesarr.length) limtest=datesarr.length;
+                for (int jj = m + TRAINWIN; jj < limtest; jj++) {
                     testdates.add(datesarr[jj]);
                 }
                 logger.info("train dates " + traindates.first()+"->"+traindates.last()+"\t"+traindates.size());
@@ -213,8 +215,7 @@ public class TestTrading {
                 try {
                     executor = Executors.newFixedThreadPool(POOL);
                     List<Future<CallableClass>> list = new ArrayList<>();
-                    logger.info("analizing " + nmap.get(x));
-                    
+                    logger.info("analizing " + nmap.get(x));                    
                     for (int k = 2; k <= 240; k++) {
                         for (int h = k; h <= 240; h++) {
                             try {
@@ -261,8 +262,10 @@ public class TestTrading {
                 } catch (Exception e) {
                     logger.warn("skip due to error");
                 } finally {
+                    if (executor!=null) {
                     executor.shutdown();
-                    executor.awaitTermination(10, TimeUnit.MINUTES);
+                    executor.awaitTermination(10, TimeUnit.MINUTES);                    
+                    }
                 }
                 ArrayList<Double> tp=test(x, bestprofit.getKey().get(0),bestprofit.getKey().get(1), testdates);
                 logger.info("average test profit :"+tp.stream().mapToDouble(i->i).summaryStatistics().getAverage());
