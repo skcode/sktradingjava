@@ -8,7 +8,6 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
-import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.File;
@@ -225,7 +224,7 @@ public class PairTrading {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
         int limitsamples = 300;
-        int PAIR = 1, EPOCHS = 100000, TESTSET = 1, TRAINSET = 70;
+        int PAIR = 2, EPOCHS = 100000, TESTSET = 1, TRAINSET = 100;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
