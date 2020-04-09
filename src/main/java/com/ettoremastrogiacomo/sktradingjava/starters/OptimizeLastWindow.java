@@ -11,21 +11,23 @@ import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio.optMethod;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
+import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 /**
  *
  * @author sk
  */
-public class ReportDailyTrading {
+public class OptimizeLastWindow {
 
-    static Logger logger = Logger.getLogger(ReportDailyTrading.class);
+    static Logger logger = Logger.getLogger(OptimizeLastWindow.class);
 
     static HashMap<String, String> runWF(Portfolio ptf, int trainwin, int testwin, optMethod opt, Optional<Boolean> duplicates, Optional<Integer> optSetMin, Optional<Integer> optSetMax, Optional<Integer> populationSize, Optional<Integer> generations, Optional<Boolean> plot) throws Exception {
         HashMap<String, String> results = new HashMap<>();
@@ -100,42 +102,22 @@ public class ReportDailyTrading {
         double maxgap = .2;
         int minlen = 1500, minlenETF = 1500;
         boolean duplicates = false;
-        int minoptset = 7, maxoptset = 25;
+        int minoptset = 10, maxoptset = 25;
         int popsize = 10000;
         int ngens = 500;
-        int trainfrom = 250, trainto = 250, trainstep = 1;
-        int testfrom = 250, testto = 250, teststep = 1;
+        int trainwin=1000;
+        
         optMethod opt = optMethod.MAXSLOPE;
-        boolean plot = true;
-        boolean appendtofile = false;
-        //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
-        //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
-        Portfolio ptfSTOCK = Portfolio.createStockEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        Portfolio ptfETF = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvolETF));
-        try ( BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"), true))) {//append mode            
-            for (int i = trainfrom; i <= trainto; i = i + trainstep) {//train win
-                for (int j = testfrom; j <= testto && j <= i; j = j + teststep) {//test win
-                    HashMap<String, String> m = runWF(ptfSTOCK, i, j, opt, Optional.of(duplicates), Optional.of(minoptset), Optional.of(maxoptset), Optional.of(popsize), Optional.of(ngens), Optional.of(plot));
-                    if (appendtofile) {
-                        if (l.isEmpty()) {
-                            bwr.write("\n");
-                            for (String x : m.keySet()) {
-                                bwr.write(x + ";");
-                            }
-                        }
-                        bwr.write("\n");
-                        for (String x : m.keySet()) {
-                            bwr.write(m.get(x) + ";");
-                        }
-                        bwr.flush();
-                    }
-                    l.add(m);
-
-                }
-            }
-        }
-        //bwr.close();
-        l.forEach((x) -> System.out.println(x));
+        Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvolETF));
+        UDate startDate=ptf.getDate(ptf.getLength()-trainwin);
+        UDate endDate=ptf.getDate(ptf.getLength()-1);
+        logger.info("start at "+startDate);
+        logger.info("end at "+endDate);
+        logger.info("samples "+trainwin);
+        Entry<Double,ArrayList<Integer>> res=ptf.opttrain(startDate, endDate, minoptset, maxoptset, opt, duplicates, popsize, ngens);
+        logger.info("BEST VAL = "+res.getKey());
+        ptf.list2names(res.getValue()).forEach((x)->logger.info(x));                
     }
 }

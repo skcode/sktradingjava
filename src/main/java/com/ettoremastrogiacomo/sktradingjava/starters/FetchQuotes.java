@@ -23,8 +23,10 @@ public class FetchQuotes {
        UDate t1=new UDate();
        LOG.debug("start at "+t1);
         HttpFetch.disableSSLcheck();
-       Database.createSecTable();       
+       Database.createSecTable();     
+       
        try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}
+       try {FetchData.NYSE();}    catch (Exception e) {LOG.warn(e);}
        try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();

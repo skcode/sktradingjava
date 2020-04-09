@@ -168,7 +168,7 @@ public class TestTrading {
 
         //TestTrading.test(Database.getHashcode("ENEL", "MLSE"), 2, 26, datest);
         for (String x : map.keySet()) {
-            if (map.get(x).containsAll(dates) && nmap.get(x).contains("BPE.MLSE.STOCK")) {//best profit at k,h=[187, 202] FBK
+            if (map.get(x).containsAll(dates) && nmap.get(x).contains("FBK.MLSE.STOCK")) {//best profit at k,h=[187, 202] FBK
                 boolean toadd = true;
                 TreeMap<UDate, Fints> t1 = new TreeMap<>();
                 for (UDate d : dates) {

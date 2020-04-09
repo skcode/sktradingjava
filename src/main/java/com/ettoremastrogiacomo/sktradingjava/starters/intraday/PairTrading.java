@@ -297,7 +297,7 @@ public class PairTrading {
                 for (int j = 0; j < PAIR ; j++) {
                     negdicestring.add(hasharr[diceneg[j]]);
                 }
-                list.add(executor.submit(new ThreadClass(fintsmap, datesarr, posdicestring, negdicestring)));
+                list.add(executor.submit(new ThreadClass2(fintsmap, datesarr, posdicestring, negdicestring)));
                 if (list.size() >= POOL) {
                     for (Future<Results> x : list) {
                         Results resfuture = x.get();
