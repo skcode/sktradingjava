@@ -814,7 +814,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         //Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size
-        String details = "https://it.finance.yahoo.com/quote/MSFT/profile?p=#";
+        //String details = "https://it.finance.yahoo.com/quote/MSFT/profile?p=#";
         String url_nasdaq = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt";
         //ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol
         String url_others = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt";
@@ -827,7 +827,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 continue;
             }
             if (s[1].contains("Common Stock")) {
-                String name = s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
                 if (name.equals("")) {
                     continue;
                 }
