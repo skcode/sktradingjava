@@ -36,7 +36,7 @@ public final class Security {
             secType(String envUrl) {
                 this.url = envUrl;
             }
-            secType ValueOf(String s) {
+            public static secType getEnum(String s) {
                 if (s.equalsIgnoreCase("STOCK")) return secType.STOCK;
                 else if (s.equalsIgnoreCase("ETF")) return secType.ETF;
                 else if (s.equalsIgnoreCase("ETCETN")) return secType.ETCETN;
@@ -44,7 +44,7 @@ public final class Security {
                 else if (s.equalsIgnoreCase("BOND")) return secType.BOND;
                 else if (s.equalsIgnoreCase("CURRENCY")) return secType.CURRENCY;
                 else if (s.equalsIgnoreCase("INDEX")) return secType.INDEX;
-                else throw new RuntimeException("type unknown : "+s);                
+                else throw new IllegalArgumentException("type unknown : "+s);                
             }
         @Override
             public String toString() {
@@ -347,5 +347,5 @@ public final class Security {
         public String getCurrency() {return infomap.get("currency");}
         public String getSector() {return infomap.get("sector");}
         public String getType() {return infomap.get("type");}
-        public secType getTypeEnum() {return secType.valueOf(infomap.get("type"))  ;}
+        public secType getTypeEnum() {return secType.getEnum(infomap.get("type"))  ;}
 }

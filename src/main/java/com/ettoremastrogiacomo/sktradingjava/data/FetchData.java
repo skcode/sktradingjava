@@ -463,7 +463,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         for (HashMap<String, String> s : records) {
             // LOG.debug("starting thread for "+s.get("hashcode")+"\t"+s.get("name"));
-            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secType.valueOf(s.get("type")) );
+            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secType.getEnum(s.get("type")) );
             //dataarr.put(s.get("hashcode"), t1);
             executor.execute(t1);
         }
