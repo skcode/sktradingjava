@@ -28,7 +28,7 @@ import org.jsoup.select.Elements;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jsoup.nodes.Element;
-
+import com.ettoremastrogiacomo.sktradingjava.Security.secType;
 /*class Tdata implements Runnable {
     
     final FetchData.secType st;
@@ -91,7 +91,7 @@ import org.jsoup.nodes.Element;
  */
 class Tintradaydata implements Runnable {
 
-    final FetchData.secType st;
+    final secType st;
     // final com.ettoremastrogiacomo.utils.HttpFetch http;
     final String url;
     final String hashcode, isin;
@@ -105,7 +105,7 @@ class Tintradaydata implements Runnable {
     public String data, fase;
     private final String sql = "insert or replace into intradayquotes (hashcode,date,quotes) values(?,?,?);";
 
-    Tintradaydata(String isin, String hashcode, FetchData.secType st) throws Exception {
+    Tintradaydata(String isin, String hashcode, secType st) throws Exception {
         this.st = st;
         switch (st) {
             case STOCK:
@@ -161,11 +161,11 @@ class Tintradaydata implements Runnable {
                     } else {
                         throw new Exception("cannot grab date, maybe no contracts for  ISIN " + isin + "\thash " + hashcode);
                     }
-                    if (st != FetchData.secType.FUTURE && !fase.equalsIgnoreCase("CHIUSURA")) {
+                    if (st != secType.FUTURE && !fase.equalsIgnoreCase("CHIUSURA")) {
                         throw new Exception("market not closed");
                     }
 
-                    if (st == FetchData.secType.FUTURE && !fase.equalsIgnoreCase("Fine Servizio")) {
+                    if (st == secType.FUTURE && !fase.equalsIgnoreCase("Fine Servizio")) {
                         throw new Exception("future market not closed");
                     }
 
@@ -248,21 +248,7 @@ public final class FetchData {
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
 
     //final com.ettoremastrogiacomo.utils.HttpFetch http;
-    public static enum secType {
-        STOCK, ETF, ETCETN, FUTURE, BOND, CURRENCY, INDEX
-    };
 
-    public static final java.util.HashMap<String, secType> secMap = new java.util.HashMap<String, secType>() {
-        {
-            put("STOCK", secType.STOCK);
-            put("ETF", secType.ETF);
-            put("ETCETN", secType.ETCETN);
-            put("FUTURE", secType.FUTURE);
-            put("BOND", secType.BOND);
-            put("CURRENCY", secType.CURRENCY);
-            put("INDEX", secType.INDEX);
-        }
-    };
 
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
@@ -477,7 +463,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         for (HashMap<String, String> s : records) {
             // LOG.debug("starting thread for "+s.get("hashcode")+"\t"+s.get("name"));
-            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secMap.get(s.get("type")));
+            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secType.valueOf(s.get("type")) );
             //dataarr.put(s.get("hashcode"), t1);
             executor.execute(t1);
         }
@@ -807,7 +793,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }        
         
     }*/
-    public static java.util.HashMap<String, java.util.HashMap<String, String>> NYSE() throws Exception {
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSE() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
@@ -867,7 +853,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         LOG.info("fetching NYSE");
         try {
-            all.putAll(NYSE());
+            all.putAll(fetchNYSE());
         } catch (Exception e) {
             LOG.warn(e.getMessage());
         }        

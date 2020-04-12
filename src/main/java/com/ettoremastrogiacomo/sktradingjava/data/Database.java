@@ -210,6 +210,33 @@ public class Database {
             return "";
         }
     };
+    
+    public static void deleteSharesTable() {
+        String url = Init.db_url;
+        Connection conn = null;
+        Statement stmt = null;       
+        try {
+            conn = DriverManager.getConnection(url);
+            stmt = conn.createStatement();
+            stmt.execute("drop table  if exists shares");
+        } catch (SQLException e) {
+            LOG.error(e, e);
+        } finally {
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }        
+    }
+    
     /**
      * create db with table securities
      * (isin,name,code,type,market,currency,sector,yahooquotes,bitquotes)

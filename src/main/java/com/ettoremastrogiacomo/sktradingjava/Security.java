@@ -2,7 +2,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 
 
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
+
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +22,47 @@ public final class Security {
         private final Fints weekly;
         private final Fints monthly;
         private final java.util.Map<String, String> infomap;        
-        static public enum SERIE {OPEN(0),HIGH(1),LOW(2),CLOSE(3),VOLUME(4),OI(5);            
+        static public enum SERIE {OPEN(0),HIGH(1),LOW(2),CLOSE(3),VOLUME(4),OI(5);           
             private final int value;
             SERIE(final int newValue) {
                 value = newValue;
             }
             public int getValue() { return value; }                
         };
-        
+
+        static public  enum secType {STOCK("STOCK"), ETF("ETF"), ETCETN("ETCETN"), FUTURE("FUTURE"), BOND("BOND"), CURRENCY("CURRENCY"), INDEX("INDEX");
+            private final String url;
+
+            secType(String envUrl) {
+                this.url = envUrl;
+            }
+            secType ValueOf(String s) {
+                if (s.equalsIgnoreCase("STOCK")) return secType.STOCK;
+                else if (s.equalsIgnoreCase("ETF")) return secType.ETF;
+                else if (s.equalsIgnoreCase("ETCETN")) return secType.ETCETN;
+                else if (s.equalsIgnoreCase("FUTURE")) return secType.FUTURE;
+                else if (s.equalsIgnoreCase("BOND")) return secType.BOND;
+                else if (s.equalsIgnoreCase("CURRENCY")) return secType.CURRENCY;
+                else if (s.equalsIgnoreCase("INDEX")) return secType.INDEX;
+                else throw new RuntimeException("type unknown : "+s);                
+            }
+        @Override
+            public String toString() {
+                return url;
+            }            
+        };
+        /*
+        static public final java.util.HashMap<String, secType> secMap = new java.util.HashMap<String, secType>() {
+            {
+                put("STOCK", secType.STOCK);
+                put("ETF", secType.ETF);
+                put("ETCETN", secType.ETCETN);
+                put("FUTURE", secType.FUTURE);
+                put("BOND", secType.BOND);
+                put("CURRENCY", secType.CURRENCY);
+                put("INDEX", secType.INDEX);
+            }
+        };*/         
         /*
         
         static public Fints changeFreq(Fints f,Fints.frequency newf) throws Exception {
@@ -314,5 +347,5 @@ public final class Security {
         public String getCurrency() {return infomap.get("currency");}
         public String getSector() {return infomap.get("sector");}
         public String getType() {return infomap.get("type");}
-        public FetchData.secType getTypeEnum() {return FetchData.secMap.get(infomap.get("type")) ;}
+        public secType getTypeEnum() {return secType.valueOf(infomap.get("type"))  ;}
 }

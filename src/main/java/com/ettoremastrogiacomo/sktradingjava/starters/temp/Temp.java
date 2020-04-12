@@ -14,7 +14,6 @@ import com.ettoremastrogiacomo.sktradingjava.Charts;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.NYSE;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.Misc;
@@ -51,6 +50,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.fetchNYSE;
 
 /**
  *

@@ -9,6 +9,7 @@ import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.UDate;
+import java.util.Calendar;
 
 
 /**
@@ -23,11 +24,13 @@ public class FetchQuotes {
        UDate t1=new UDate();
        LOG.debug("start at "+t1);
         HttpFetch.disableSSLcheck();
-       Database.createSecTable();     
-       
-       try {FetchData.NYSE();}    catch (Exception e) {LOG.warn(e);}
-       try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}
-       
+        Calendar c1= Calendar.getInstance();
+        if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || 
+            c1.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)        {
+            try {Database.deleteSharesTable(); } catch (Exception e){LOG.warn(e);}   
+            try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
+            try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}       
+        }              
        try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
