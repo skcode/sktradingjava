@@ -24,7 +24,7 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=1000,maxdaygap=10,maxold=10,minvol=100000,minvoletf=10,setmin=15,setmax=50,popsize=10000,ngen=500;
+        int minsamples=500,maxdaygap=10,maxold=10,minvol=5000,minvoletf=10,setmin=10,setmax=50,popsize=20000,ngen=1000;
         double maxpcgap=.15;        
         boolean plot=false;
         Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
@@ -35,6 +35,7 @@ public class Rankings {
         logger.info("no sec "+ptf.getNoSecurities());
         logger.info("len "+ptf.getLength());
         logger.info("minvol "+minvol);
+        logger.info("minvoletf "+minvoletf);
         logger.info("start date "+ptf.getDate(0)+"\tend date "+ptf.getDate(ptf.getLength()-1));        
         TreeMap<Double,String> corrmap= new TreeMap<>();
         TreeMap<Double,String> betamap= new TreeMap<>();
@@ -87,6 +88,10 @@ public class Rankings {
         });
         Fints f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
         f.plot("minvar", "price");        
+        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
+        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
+        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
+        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
         logger.debug("\n\n");
 
 
@@ -107,6 +112,10 @@ public class Rankings {
         });
         f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
         f.plot("mindd", "price");
+        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
+        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
+        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
+        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));
         logger.debug("\n\n");        
         
         winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MAXSLOPE, plot, popsize, ngen);
@@ -126,6 +135,10 @@ public class Rankings {
         });
         f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
         f.plot("maxslope", "price");
+        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
+        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
+        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
+        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
         logger.debug("\n\n");        
 
 
@@ -146,6 +159,10 @@ public class Rankings {
         });
         f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
         f.plot("mincorr", "price");
+        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
+        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
+        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
+        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
         logger.debug("\n\n");        
 
         

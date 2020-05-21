@@ -105,12 +105,12 @@ public class OptimizeLastWindow {
         
         boolean duplicates = false;
         
-        int popsize = 10000;
-        int ngens = 500;
+        int popsize = 50000;
+        int ngens = 1000;
         //int trainwin=750;
-        int minoptset = 10, maxoptset = 25;
+        int minoptset = 15, maxoptset = 25;
         //int minlen = trainwin+100;
-        int minvol = 10000;
+        int minvol = 100000;
         List<Integer> windows= Arrays.asList(250,500,750,1000);
         List<Integer> minlens= new ArrayList<>();//Arrays.asList(250,500,750,1000);
         windows.forEach((x)->minlens.add(windows.indexOf(x),x+100));
@@ -118,7 +118,7 @@ public class OptimizeLastWindow {
         TreeSet<String> all= new TreeSet<>();
         for (int i=0;i<windows.size();i++){
             
-            //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //Portfolio ptf = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             UDate startDate=ptf.getDate(ptf.getLength()-windows.get(i));
