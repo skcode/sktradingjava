@@ -24,12 +24,13 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=500,maxdaygap=10,maxold=10,minvol=5000,minvoletf=10,setmin=10,setmax=50,popsize=20000,ngen=1000;
+        int minsamples=500,maxdaygap=10,maxold=10,minvol=10000,minvoletf=10,setmin=10,setmax=50,popsize=20000,ngen=1000;
         double maxpcgap=.15;        
         boolean plot=false;
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createNYSEStockUSDPortfolio (Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         int SIZE=minsamples<ptf.getLength()?minsamples:ptf.getLength()-1;
         logger.info("no sec "+ptf.getNoSecurities());
@@ -159,6 +160,30 @@ public class Rankings {
         });
         f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
         f.plot("mincorr", "price");
+        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
+        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
+        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
+        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
+        logger.debug("\n\n");        
+
+
+        winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MAXSHARPE, plot, popsize, ngen);
+        logger.info("************************ optimization GA MAXSHARPE ************************ ");
+        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
+        logger.info("setmin "+setmin+"\tsetmax "+setmax);
+        logger.info("BEST "+1.0/winner.getKey());
+        logger.info("BEST "+winner.getValue());
+        w=new double[winner.getValue().size()];
+        DoubleArray.fill(w, 1.0/winner.getValue().size());        
+        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
+        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
+        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
+        logger.info("BEST LEN "+winner.getValue().size());
+        winner.getValue().forEach((x) -> {
+            logger.info( ptf.getName(ptf.hashcodes.get(x)));
+        });
+        f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
+        f.plot("maxsharpe", "price");
         logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
         logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
         logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));

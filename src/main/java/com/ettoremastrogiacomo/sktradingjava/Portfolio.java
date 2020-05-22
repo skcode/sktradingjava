@@ -489,7 +489,72 @@ public class Portfolio {
         ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
+/*
+            ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%TIPO STRUMENTO=ETF ATTIVI%'"));
+        map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%TIPO STRUMENTO=ETF STRUTTURATI%'"));
+        map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI%'"));
+        map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 2 IND AZIONARIO%'"));
+        map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 1 IND OBBLIGAZIONARIO%'"));
 
+    */
+    public static Portfolio create_ETF_STRUTTURATI_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%TIPO STRUMENTO=ETF STRUTTURATI%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    public static Portfolio create_ETF_ATTIVI_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%TIPO STRUMENTO=ETF ATTIVI%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    public static Portfolio create_ETF_INDICIZZATI_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    public static Portfolio create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 2 IND AZIONARIO%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    public static Portfolio create_ETF_INDICIZZATI_OBBLIGAZIONARIO_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 1 IND OBBLIGAZIONARIO%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    
     public static Portfolio createETFEURPortfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         //ArrayList<String> markets = Database.getMarkets();
         ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and (sector like '%CLASSE 2 IND AZIONARIO%' or sector like '%OBBLIGAZIONARIO%') and not sector like '%Benchmark:=COMMODITIES%' and not sector like '%HEDGED%'"));
