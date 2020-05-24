@@ -262,11 +262,18 @@ public class Database {
                 + "	sector text not null,\n"
                 + "	primary key (hashcode) ,\n"
                 + "     unique (isin,market));";//,\n" 
+        
         String sqleod = "CREATE TABLE IF NOT EXISTS eoddata (\n"
                 + "     hashcode not null,\n"
                 + "     yahooquotes text,\n"
                 + "     googlequotes text,\n"
                 + "     PRIMARY KEY (hashcode));";
+        String sqleodmlse = "CREATE TABLE IF NOT EXISTS eoddatamlse (\n"
+                + "     hashcode not null,\n"
+                + "     date text not null,\n"
+                + "     data text,\n"
+                + "     PRIMARY KEY (hashcode,date));";
+        
         String sqleod2 = "CREATE TABLE IF NOT EXISTS eoddatav2 (\n"
                 + "     hashcode not null,\n"
                 + "	date text not null,\n"

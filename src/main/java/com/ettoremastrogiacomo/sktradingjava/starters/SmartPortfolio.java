@@ -24,7 +24,7 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=750,maxsamples=750,stepsamples=250,maxdaygap=10,maxold=10,minvol=100000,minvoletf=0,setmin=6,setmax=50,popsize=20000,ngen=1000;
+        int minsamples=250,maxsamples=1500,stepsamples=250,maxdaygap=10,maxold=10,minvol=100000,minvoletf=1000,setmin=6,setmax=50,popsize=20000,ngen=1000;
         double maxpcgap=.15;      
         Portfolio.optMethod optm=Portfolio.optMethod.MAXSHARPE;
         boolean plot=false,plotlist=true;
@@ -32,7 +32,7 @@ public class SmartPortfolio {
         HashMap<Integer,Double> meaneq= new HashMap<>();
         HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKUSDPortfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());

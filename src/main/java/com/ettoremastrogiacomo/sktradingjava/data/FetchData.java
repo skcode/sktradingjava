@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jsoup.nodes.Element;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
+import com.ettoremastrogiacomo.utils.UDate;
 /*class Tdata implements Runnable {
     
     final FetchData.secType st;
@@ -250,6 +251,62 @@ public final class FetchData {
     //final com.ettoremastrogiacomo.utils.HttpFetch http;
 
 
+    static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
+        //https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0010877643&lang=it        
+        HashMap<String,String> m= new HashMap<>();
+        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+        }        
+        String urletf="https://www.borsaitaliana.it/borsa/etf/dettaglio.html?isin=#&lang=it";
+        String urlstock="https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=#&lang=it";
+        String urletcetn="https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#&lang=it";
+        //
+        String url="";
+        if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.STOCK) url = urlstock.replace("#", isin);
+        else if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.ETF) url = urletf.replace("#", isin);
+        else if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.ETCETN) url = urletcetn.replace("#", isin);
+        else throw new RuntimeException("type not implemented :"+type.toString());
+                LOG.debug(url);
+                Document doc = Jsoup.parse(new String(http.HttpGetUrl(url, Optional.of(20), Optional.empty())));
+                Element table1= doc.select("table[class=\"m-table -clear-m\"]").get(0);
+                Element table2= doc.select("table[class=\"m-table -clear-m\"]").get(1);
+                Elements rows = table1.select("tr");
+                for (int i = 0; i < rows.size(); i++) { //first row is the col names so skip it.
+                    Element row = rows.get(i);
+                    Elements cols = row.select("td");
+                    if (cols.size()==2){
+                        for (int j=0;j<cols.size();j++){
+                            LOG.debug("ROW "+i+"\t"+cols.get(j).text());                        
+                        }
+                    m.put(cols.get(0).text(), cols.get(1).text());
+                    }
+                }         
+                rows = table2.select("tr");
+                for (int i = 0; i < rows.size(); i++) { //first row is the col names so skip it.
+                    Element row = rows.get(i);
+                    Elements cols = row.select("td");
+                    if (cols.size()==2){
+                        for (int j=0;j<cols.size();j++){
+                            LOG.debug("ROW "+i+"\t"+cols.get(j).text());
+                        }
+                        m.put(cols.get(0).text(), cols.get(1).text());                    
+                    }
+                }         
+                String pdr=m.get("Prezzo di riferimento");
+                int idx=pdr.indexOf("-");
+                pdr=pdr.substring(idx+2);                
+                int y=Integer.parseInt(pdr.substring(6, 8));
+                int M=Integer.parseInt(pdr.substring(3, 5));
+                int day=Integer.parseInt(pdr.substring(0, 2));
+                int h=Integer.parseInt(pdr.substring(9, 11));
+                int min=Integer.parseInt(pdr.substring(12, 14));
+                int sec=Integer.parseInt(pdr.substring(15));                
+                UDate d=UDate.genDate(y+2000 , M-1, day, h, min, sec);
+                LOG.debug(d);
+                return new java.util.AbstractMap.SimpleEntry<>(d,m);        
+    }
+    
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
@@ -1231,7 +1288,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
 
     public static void main(String[] args) throws Exception {
 
-        fetchMLSEList(secType.FUTURE);
+        //fetchMLSEList(secType.FUTURE);
+        fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
     }
 
