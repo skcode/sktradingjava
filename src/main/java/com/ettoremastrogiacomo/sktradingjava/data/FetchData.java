@@ -828,8 +828,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 map.put("market", "NYSE");
                 map.put("sector", "NA");
                 all.put(map.get("isin"), map);
-            }
-            if (s[4].contains("ETF")) {
+            } else
+            if (s[4].contains("Y")) {//ETF
                 String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
                 if (name.equals("")) {
                     continue;
