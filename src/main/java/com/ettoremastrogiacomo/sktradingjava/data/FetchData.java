@@ -829,6 +829,24 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 map.put("sector", "NA");
                 all.put(map.get("isin"), map);
             }
+            if (s[4].contains("ETF")) {
+                String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                if (name.equals("")) {
+                    continue;
+                }
+                LOG.info(s[0] + "\t" + name);
+                java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                long hc=Math.abs(9999999999L-Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                map.put("isin", "US" + Long.toString(hc));
+                map.put("name", name);
+                map.put("code", s[0]);
+                map.put("type", "ETF");
+                map.put("currency", "USD");
+                map.put("market", "NYSE");
+                map.put("sector", "NA");
+                all.put(map.get("isin"), map);
+            }
+            
         }
         return all;
     }

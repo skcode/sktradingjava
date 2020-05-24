@@ -24,13 +24,15 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=250,maxsamples=1500,stepsamples=100,maxdaygap=10,maxold=10,minvol=10000,minvoletf=10,setmin=5,setmax=50,popsize=10000,ngen=500;
+        int minsamples=750,maxsamples=750,stepsamples=250,maxdaygap=10,maxold=10,minvol=100000,minvoletf=0,setmin=6,setmax=50,popsize=20000,ngen=1000;
         double maxpcgap=.15;      
-        Portfolio.optMethod optm=Portfolio.optMethod.MINDD;
-        boolean plot=false;
+        Portfolio.optMethod optm=Portfolio.optMethod.MAXSHARPE;
+        boolean plot=false,plotlist=true;
         HashMap<String,Integer> list= new HashMap<>();
+        HashMap<Integer,Double> meaneq= new HashMap<>();
+        HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());
@@ -64,13 +66,22 @@ public class SmartPortfolio {
             logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
             logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
             logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));
-            logger.debug("\n\n");        
+            logger.debug("\n\n");   
+            meaneq.put(samples, f.getLastValueInCol(0));
+            meanmaxdd.put(samples, f.getMaxDD(0));
             f.plot(optm.toString()+" size="+SIZE+" maxdd="+f.getMaxDD(0)+" finaleq="+f.getLastValueInCol(0), "price");
-            
+            if (plotlist){
+                for (Integer x : winner.getValue()){
+                    ptf.getClose().getSerieCopy(x).plot(ptf.getName(ptf.hashcodes.get(x)), "price");
+                }
+                
+            }
         
         }
         logger.info("LIST");
         list.keySet().forEach((x)->logger.info( x+"\t"+list.get(x)));        
+        logger.info("MEAN EQUITY: "+meaneq.values().stream().mapToDouble(i-> i).average().orElse(Double.NaN));
+        logger.info("MEAN MAXDD: "+meanmaxdd.values().stream().mapToDouble(i-> i).average().orElse(Double.NaN));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));

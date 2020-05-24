@@ -297,6 +297,9 @@ public class Temp {
         return true;
     }
     public static void main(String[] args) throws Exception {
+        String s=Database.getYahooQuotes("FTS100.MI");
+        LOG.info(s);
+                if (true) return;
         String hash=Database.getHashcode("ENEL", "MLSE");
         Fints f=Database.getIntradayFintsQuotes(hash, Database.getIntradayDates(hash).last()).getSerieCopy(3);
         Fints k=Fints.KAMA(f, 10, 2, 30);

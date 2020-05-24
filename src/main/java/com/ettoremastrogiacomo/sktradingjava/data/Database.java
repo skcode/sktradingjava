@@ -1003,21 +1003,21 @@ public class Database {
                             Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
                             //dates.add(new UDate(c.getTimeInMillis()));
                             java.util.ArrayList<Double> drow = new java.util.ArrayList<>();
-                            try {
+                            //try {
                                 for (int j = 1; j < (row.length); j++) {
                                     //matrix[lines.length - i - 1][j - 1] = Double.parseDouble(row[j]);
                                     if (j != 5) {
                                         drow.add(Double.parseDouble(row[j]));
                                     }
                                 }
-                            } catch (Exception e) {//fill 0volume rows with previous close
+                            /*} catch (Exception e) {//fill 0volume rows with previous close
                                 double prev_close = map.lastEntry().getValue().get(3);
                                 drow.add(prev_close);
                                 drow.add(prev_close);
                                 drow.add(prev_close);
                                 drow.add(prev_close);
                                 drow.add(0.0);
-                            }
+                            }*/
                             if (row.length != 7) {
                                 throw new Exception(" row size must be = 7\t" + lines[i]);
                             }
