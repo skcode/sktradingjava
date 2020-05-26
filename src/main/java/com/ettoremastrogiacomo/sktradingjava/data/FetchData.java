@@ -30,66 +30,11 @@ import java.util.concurrent.Executors;
 import org.jsoup.nodes.Element;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
 import com.ettoremastrogiacomo.utils.UDate;
-/*class Tdata implements Runnable {
-    
-    final FetchData.secType st;
-    final com.ettoremastrogiacomo.utils.HttpFetch http;
-    final String url;
-    final String hashcode;
-    static final String ALLSHARE_URL_DETAILS = "http://www.borsaitaliana.it/borsa/azioni/dati-completi.html?&hashcode=#";
-    static final String ETF_DETAILS = "http://www.borsaitaliana.it/borsa/etf/dettaglio.html?hashcode=#";
-    static final String ETCETN_DETAILS = "http://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?hashcode=#";
-    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Tdata.class);
-    public final java.util.HashMap<String, String> map;
-    
-    Tdata(String hashcode, FetchData.secType st) throws Exception {
-        http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }
-        this.st = st;
-        switch (st) {
-            case STOCK:
-                url = ALLSHARE_URL_DETAILS;
-                break;
-            case ETF:
-                url = ETF_DETAILS;
-                break;
-            case ETCETN:
-                url = ETCETN_DETAILS;
-                break;
-            default:
-                throw new Exception(st + " not yet implemented");
-        }
-        this.hashcode = hashcode;//String sd = url.replace("#", hashcode);
-        map = new java.util.HashMap<>();
-    }
-    
-    @Override
-    public void run() {
-        try {
-            String sd = url.replace("#", hashcode);
-            sd = new String(http.HttpGetUrl(sd, Optional.of(30), Optional.empty()));
-            Document docd = Jsoup.parse(sd);
-            Elements elements = docd.select("span[class='t-text -size-xs'] > strong");
-            Elements elements2 = docd.select("span[class*='t-text -right ']");
-            int min = elements.size() < elements2.size() ? elements.size() : elements2.size();
-            synchronized (this) {
-                map.clear();
-                LOG.debug("**********" + hashcode + "**********");
-                for (int i = 0; i < min; i++) {
-                    map.put(elements.get(i).text(), elements2.get(i).text());
-                    LOG.debug(elements.get(i).text() + "\t" + elements2.get(i).text());
-                }
-                LOG.debug("********************");
-            }
-        } catch (Exception e) {
-            LOG.error(e, e);
-        }
-        
-    }
-}
- */
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+
+
 class Tintradaydata implements Runnable {
 
     final secType st;
@@ -249,7 +194,9 @@ public final class FetchData {
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
 
     //final com.ettoremastrogiacomo.utils.HttpFetch http;
-
+    static public String computeHashcode(String isin, String market) throws Exception{
+        return Encoding.base64encode(getSHA1(String2Byte((isin + market))));
+    }
 
     static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
         //https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0010877643&lang=it        
@@ -448,7 +395,7 @@ public final class FetchData {
                                 LOG.debug(y + "\t" + map.get(y));
                             });
                             LOG.debug("********************");
-                            String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + market))));
+                            String hash = computeHashcode(map.get("isin"), market);//Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + market))));
                             if (!all.containsKey(hash)) {
                                 all.put(hash, map);
                             }
@@ -494,24 +441,6 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         return all;
     }
 
-    /*static java.util.HashMap<String, java.util.HashMap<String, String>> fetchDetailsBIT(java.util.HashMap<String, java.util.HashMap<String, String>> isins) throws Exception {
-        int pcount = Runtime.getRuntime().availableProcessors();
-        //java.util.ArrayList<Thread> tarr=new java.util.ArrayList<>();fetchDetails
-        java.util.HashMap<String, Tdata> dataarr = new java.util.HashMap<>();
-        ExecutorService executor = Executors.newFixedThreadPool(pcount);
-        for (String s : isins.keySet()) {            
-            Tdata t1 = new Tdata(s, secMap.get(isins.get(s).get("type")));            
-            dataarr.put(s, t1);
-            executor.execute(t1);
-        }
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-        }
-        dataarr.keySet().forEach((x) -> {
-            isins.get(x).putAll(dataarr.get(x).map);
-        });
-        return isins;
-    }*/
     public static void fetchIntraday() throws Exception {
         int pcount = Runtime.getRuntime().availableProcessors();
         java.util.HashMap<String, Tintradaydata> dataarr = new java.util.HashMap<>();
@@ -527,28 +456,9 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         executor.shutdown();
         while (!executor.isTerminated()) {
         }
-        /*        String sql = "insert or replace into intradayquotes (hashcode,date,quotes) values(?,?,?);";
-        Connection conn = DriverManager.getConnection(Init.db_url);
-        java.sql.PreparedStatement stmt = conn.prepareStatement(sql);          
-        try {
-        dataarr.keySet().forEach((x) -> {
-            if (!dataarr.get(x).data.equals("") && !dataarr.get(x).list.isEmpty()) {
-                //map.put(x + ";" + dataarr.get(x).data, dataarr.get(x).list);
-                try {
-                stmt.setString(1, x);
-                stmt.setString(2, dataarr.get(x).data);
-                stmt.setString(3, dataarr.get(x).list.toString());
-                stmt.addBatch();
-                } catch (SQLException e) { LOG.warn(e);}
-            }
-        });
-        stmt.executeBatch();
-
-        } finally {conn.close();}
-         */      //return map;
     }
 
-    /*static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
+    static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
@@ -570,7 +480,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             while (true) {
                 String s = s_url + Integer.toString(cnt);
                 //String fase="",data="";
-                s = new String(http.HttpGetUrl(s));                
+                s = new String(http.HttpGetUrl(s,Optional.empty(),Optional.empty()));                
                 Document doc = Jsoup.parse(s);//"m-table -responsive -clear-m"            
                 Elements b = doc.select("table[class='table_dati']  tr td");
                 Elements c = doc.select("a[title='Successiva']");
@@ -642,214 +552,8 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         
         return list;
         
-    } */
- /*static java.util.HashMap<String, String> getBorseitInfo(String name, String hashcode) throws Exception {        
-        java.util.HashMap<String, String> map = new java.util.HashMap<>();
-        String tname = name.replace(" ", "").replaceAll("[^\\p{Print}]", "");        
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }
-        
-        String baseURL = "http://www.borse.it/quotazioni/valore/#/";
-        String URL = baseURL.replace("#", tname + "%5F%5F" + hashcode);
-        LOG.debug("fetching " + URL);
-        String data = new String(http.HttpGetUrl(URL));
-        //pagespeed_lsc_expiry="Mon, 17 Apr 2017 08:07:52 GMT"
-        Document doc = Jsoup.parse(data);
-        Elements el = doc.select("div.schede li");
-        for (int k = 0; k < el.size(); k++) {
-            //if (k%2 == 0) map.put(el.get(k).text().replaceAll("[^\\p{Print}]", "").replace(" ", "").toUpperCase(), el.get(k+1).text().replaceAll("[^\\p{Print}]", "").replace(" ", "").toUpperCase());
-            if (k % 2 == 0) {
-                map.put(el.get(k).text().replaceAll("[^A-Za-z0-9]", "").toLowerCase(), el.get(k + 1).text().replaceAll("[^A-Za-z0-9\\p{Punct}]", "").toLowerCase());
-            }
-        }
-        //map.keySet().forEach((x)->{System.out.println("*"+x+"*"+map.get(x)+"*" );});
-        return map;
-    }
-     */
- /*static void DBloadEOD(java.util.HashMap<String, java.util.HashMap<String, String>> eodquotes) throws Exception {
-        String sql = "insert or replace into eoddata values(?,?,?);";
-        Connection conn = null;
-        java.sql.PreparedStatement stmt = null;        
-        try {
-            conn = DriverManager.getConnection(Init.db_url);
-            stmt = conn.prepareStatement(sql);
-            for (String hashcode : eodquotes.keySet()) {
-                try {
-                    String yq = eodquotes.get(hashcode).get("yahooquotes");
-                    String gq = eodquotes.get(hashcode).get("googlequotes");
-                    if (yq != null && !yq.isEmpty()) {
-                        stmt.setString(2, yq);
-                    } else {
-                        stmt.setNull(2, java.sql.Types.VARCHAR);
-                    }
-                    if (gq != null && !gq.isEmpty()) {
-                        stmt.setString(3, gq);
-                    } else {
-                        stmt.setNull(3, java.sql.Types.VARCHAR);
-                    }
-                    stmt.setString(1, hashcode);
-                    stmt.executeUpdate();
-                } catch (SQLException e) {
-                    LOG.warn(e);
-                }
-                
-            }
-        } catch (SQLException e) {
-            LOG.error(e, e);
-        } finally {
-            try {
-                if (stmt != null) {
-                    stmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-            }
-            
-        }
-        
-    }*/
- /*static void DBloadIntraday(java.util.HashMap<String, java.util.ArrayList<java.util.HashMap<String, String>>> iday) throws Exception {
-        String sql = "insert or replace into intradayquotes (isin,date,quotes) values(?,?,?);";
-        Connection conn = null;
-        java.sql.PreparedStatement stmt = null;        
-        try {
-            conn = DriverManager.getConnection(Init.db_url);
-            stmt = conn.prepareStatement(sql);
-            for (String isin : iday.keySet()) {
-                try {
-                    String[] p = isin.split(";");
-                    if (p.length != 2) {
-                        throw new Exception("bad format : " + isin);
-                    }
-                    stmt.setString(1, p[0]);
-                    stmt.setString(2, p[1]);
-                    stmt.setString(3, iday.get(isin).toString());
-                    stmt.executeUpdate();
-                } catch (Exception e) {
-                    LOG.warn("error loading " + isin, e);
-                }
-                
-            }            
-        } catch (SQLException e) {
-            LOG.error(e, e);
-        } finally {
-            try {
-                if (stmt != null) {
-                    stmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-            }
-        }
-    }
-     */
- /*static void DBloadDetailsBIT(java.util.HashMap<String, java.util.HashMap<String, String>> details) throws Exception {
-        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
-                + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
-        String usql = "update securities set bitquotes=? where hashcode=?";
-        Connection conn = null;
-        java.sql.PreparedStatement stmt = null;        
-        java.sql.PreparedStatement ustmt = null;        
-        java.sql.Statement qstmt = null;        
-        try {
-            conn = DriverManager.getConnection(Init.db_url);
-            stmt = conn.prepareStatement(sql);
-            ustmt = conn.prepareStatement(usql);
-            qstmt = conn.createStatement();
-            for (String hashcode : details.keySet()) {
-                try {
-                    String type = details.get(hashcode).get("type");
-                    String fase = details.get(hashcode).get("Fase di Mercato");
-                    stmt.setString(1, hashcode);
-                    stmt.setString(2, details.get(hashcode).get("name"));
-                    stmt.setString(3, details.get(hashcode).get("Codice Alfanumerico"));
-                    stmt.setString(4, details.get(hashcode).get("type"));
-                    stmt.setString(5, details.get(hashcode).get("market"));
-                    stmt.setString(6, details.get(hashcode).get("currency"));
-                    StringBuilder sector = new StringBuilder();
-                    
-                    details.get(hashcode).keySet().forEach((m) -> {
-                        sector.append(m).append("=").append(details.get(hashcode).get(m)).append(";");
-                    });                    
-                    String dividendi = "dividendi=";
-                    if (type.equalsIgnoreCase("STOCK") || type.equalsIgnoreCase("ETF")) {
-                        java.util.ArrayList<java.util.HashMap<String, String>> div = dividendiBIT(hashcode, type);
-                        if (div != null && !div.isEmpty()) {
-                            dividendi = dividendi + div.toString() + ";";
-                        }                        
-                    }
-                    
-                    stmt.setString(7, sector.toString() + dividendi);
-                    stmt.setString(8, hashcode);
-                    
-                    stmt.setString(9, hashcode);
-                    stmt.setString(10, hashcode);
-                    stmt.executeUpdate();
-                    LOG.debug(hashcode + "\t" + details.get(hashcode).get("name") + "\t loaded");
-                    if (fase.equalsIgnoreCase("chiusura")) {
-                        try (ResultSet res = qstmt.executeQuery("select bitquotes from securities where hashcode='" + hashcode + "'")) {
-                            String v = res.getString("bitquotes");
-                            if (v == null || !v.contains(sector.toString())) {
-                                if (v != null) {
-                                    ustmt.setString(1, v + "|" + sector.toString() + "|");
-                                } else {
-                                    ustmt.setString(1, "|" + sector.toString() + "|");
-                                }
-                                ustmt.setString(2, hashcode);
-                                ustmt.executeUpdate();
-                            }
-                        }
-                    }
-                    
-                } catch (Exception e) {
-                    LOG.warn("error loading " + hashcode, e);
-                }
-            }
-            //stmt.execute();
-            //conn.commit();
-        } catch (SQLException e) {
-            LOG.error(e, e);
-        } finally {
-            try {
-                if (stmt != null) {
-                    stmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (ustmt != null) {
-                    ustmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (qstmt != null) {
-                    qstmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-            }
-        }        
-        
-    }*/
+    } 
+    
     public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSE() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -908,6 +612,24 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         return all;
     }
     
+    public static void fetchMLSEEOD() throws Exception {
+        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
+        for (HashMap<String,String> m: map) {
+            String hash=m.get("hashcode");
+            String isin=m.get("isin");
+            String type=m.get("type");
+            SimpleEntry<UDate, HashMap<String,String>> e;
+            if (type.equalsIgnoreCase("STOCK")) e=fetchDatiCompletiMLSE(isin, secType.STOCK);
+            else if (type.equalsIgnoreCase("ETF")) e=fetchDatiCompletiMLSE(isin, secType.ETF);
+            else if (type.equalsIgnoreCase("ETCETN")) fetchDatiCompletiMLSE(isin, secType.ETCETN);
+            
+        }
+        String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";    
+        Connection conn = null;
+        java.sql.PreparedStatement stmt = null;
+        java.sql.PreparedStatement ustmt = null;
+        
+    }
     
     public static void fetchSharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
@@ -955,7 +677,6 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                 + "     unique (hashcode,market));";//,\n" */
 
         Connection conn = null;
-
         java.sql.PreparedStatement stmt = null;
         java.sql.PreparedStatement ustmt = null;
         //java.sql.Statement qstmt = null;        
@@ -1192,7 +913,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             map.keySet().forEach((x) -> {
                 LOG.debug(x + "\t" + map.get(x));
             });
-            String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
+            String hash = computeHashcode(map.get("isin"), map.get("market"));// Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
             if (!all.containsKey(hash)) {
                 all.put(hash, map);
             }
@@ -1271,7 +992,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
                     map.put("name", name);
                     if (!symbol.isEmpty()) {
 
-                        String hash = Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
+                        String hash = computeHashcode(map.get("isin"), map.get("market")) ;//Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
                         if (!all.containsKey(hash)) {
                             all.put(hash, map);
                         }

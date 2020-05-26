@@ -29,7 +29,7 @@ public class ListSecurities {
         ArrayList<HashMap<String, String>> indicizzati_azionario_map  = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 2 IND AZIONARIO%'"));
         ArrayList<HashMap<String, String>> indicizzati_obbligazionario_map  =Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI;CLASSE=CLASSE 1 IND OBBLIGAZIONARIO%'"));
         ArrayList<HashMap<String,String>> tutti=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.empty(), Optional.empty(), Optional.empty());
-            for ( HashMap<String,String> v : attivi_map){
+            for ( HashMap<String,String> v : indicizzati_obbligazionario_map){
                 logger.info("-------------");
                 for (String k : v.keySet()) logger.info(k+"\t"+v.get(k));            
             }
