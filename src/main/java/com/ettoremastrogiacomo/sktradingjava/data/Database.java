@@ -86,16 +86,20 @@ public class Database {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Database.class);
     static final java.util.List<String> MONTHS = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
+    
     public static enum Providers {
-        BORSAITALIANA(1),INVESTING(2),YAHOO(3),GOOGLE(4);
+        BORSAITALIANA(1),EURONEXT(2),XETRA(3),NYSE(4),INVESTING(5),YAHOO(6),GOOGLE(7);
         private final int priority;                
         Providers(int priority) {this.priority=priority;}
         int getPriority() {return priority;}   
         String getNote() {
-            if (this.name().equals("BORSAITALIANA")) return "borsa italiana";
-            if (this.name().equals("INVESTING")) return "investing";
+            if (this.name().equals("BORSAITALIANA")) return "borsa italiana quotes";
+            if (this.name().equals("INVESTING")) return "investing quotes";
             if (this.name().equals("YAHOO")) return "yahoo quotes";
             if (this.name().equals("GOOGLE")) return "google quotes";
+            if (this.name().equals("EURONEXT")) return "euronext quotes";
+            if (this.name().equals("XETRA")) return "xetra quotes";
+            if (this.name().equals("NYSE")) return "nyse quotes";
             return "";
         }
     };
@@ -172,8 +176,9 @@ public class Database {
                 + "	close real not null,\n"
                 + "	volume real not null,\n"
                 + "	oi real not null,\n"
+                + "     note text,\n"
                 + "     provider text not null,\n"
-                + "     FOREIGN KEY(provider) REFERENCES providerseod(name),\n"                   
+                + "     FOREIGN KEY(provider) REFERENCES providerseod(name) on update cascade on delete restrict,\n"                   
                 + "     PRIMARY KEY (hashcode,date,provider));";
         String providers ="CREATE TABLE IF NOT EXISTS providerseod (\n"
                 + "     name not null,\n"

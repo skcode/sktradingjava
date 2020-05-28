@@ -200,7 +200,7 @@ public final class FetchData {
 
     static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
         //https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0010877643&lang=it        
-        HashMap<String,String> m= new HashMap<>();
+        
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
@@ -219,6 +219,7 @@ public final class FetchData {
                 Element table1= doc.select("table[class=\"m-table -clear-m\"]").get(0);
                 Element table2= doc.select("table[class=\"m-table -clear-m\"]").get(1);
                 Elements rows = table1.select("tr");
+                HashMap<String,String> m= new HashMap<>();                
                 for (int i = 0; i < rows.size(); i++) { //first row is the col names so skip it.
                     Element row = rows.get(i);
                     Elements cols = row.select("td");
@@ -611,7 +612,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         return all;
     }
-    
+   /* 
     public static void fetchMLSEEOD() throws Exception {
         ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         for (HashMap<String,String> m: map) {
@@ -630,7 +631,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         java.sql.PreparedStatement ustmt = null;
         
     }
-    
+    */
     public static void fetchSharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
