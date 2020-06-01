@@ -31,9 +31,8 @@ public class FetchQuotes {
             try {Database.deleteSharesTable(); } catch (Exception e){LOG.warn(e);}   
             try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
             try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}       
-            try {MLSE_DataFech.main(args); }    catch (Exception e) {LOG.warn(e);}       
-            
-        }              
+        }   
+       try {MLSE_DataFech.main(args); }    catch (Exception e) {LOG.warn(e);}             
        try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
