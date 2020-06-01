@@ -7,6 +7,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
+import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFech;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.Calendar;
@@ -30,6 +31,8 @@ public class FetchQuotes {
             try {Database.deleteSharesTable(); } catch (Exception e){LOG.warn(e);}   
             try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
             try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}       
+            try {MLSE_DataFech.main(args); }    catch (Exception e) {LOG.warn(e);}       
+            
         }              
        try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
