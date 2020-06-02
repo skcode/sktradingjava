@@ -9,6 +9,7 @@ import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.LOG;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -207,8 +208,8 @@ public class MLSE_DataFech {
                                 map.put("low", m.get("Min Oggi"));
                                 map.put("open", m.get("Apertura Odierna:")); 
                                 map.put("oi", "0");
-                                if (m.get("Apertura Odierna:")==null) map.put("open", m.get("Pre-Apertura:"));                                 
-                                if (m.get("Quantità Totale").isBlank()) map.put("volume", "0"); else map.put("volume", m.get("Quantità Totale"));                                                                
+                                if (Misc.isBlank(m.get("Apertura Odierna:"))) map.put("open", m.get("Pre-Apertura:"));                                 
+                                if (Misc.isBlank(m.get("Quantità Totale"))) map.put("volume", "0"); else map.put("volume", m.get("Quantità Totale"));                                                                
                             } else if (type.equalsIgnoreCase("ETF") || type.equalsIgnoreCase("ETCETN")) {
                                 String pdr = m.get("Prezzo di riferimento");
                                 int idxd = pdr.indexOf("-");
@@ -221,7 +222,7 @@ public class MLSE_DataFech {
                                 map.put("low", m.get("Min oggi"));
                                 map.put("date", ultimacontr.toYYYYMMDD());
                                 map.put("open", m.get("Apertura"));
-                                if (m.get("Volume totale").isBlank()) map.put("volume", "0"); else map.put("volume", m.get("Volume totale"));                                
+                                if (Misc.isBlank(m.get("Volume totale"))) map.put("volume", "0"); else map.put("volume", m.get("Volume totale"));                                
                                 map.put("close", m.get("Prezzo asta di chiusura odierna"));                                
                                 map.put("oi", "0");
                                 if (m.get("Data - Ora Ultimo Contratto").length()>=8) map.put("date", StrBIT2UDate(m.get("Data - Ora Ultimo Contratto")).toYYYYMMDD());                                
@@ -266,7 +267,7 @@ public class MLSE_DataFech {
         return all;
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void fetchAndLoadMLSEEOD() throws Exception {
         
         java.util.HashMap<String, java.util.HashMap<String, String>> m=fetchMLSEList(secType.FUTURE);
         m.putAll(fetchMLSEList(secType.ETCETN));
@@ -292,12 +293,12 @@ public class MLSE_DataFech {
                 ps3.addBatch();                
                 ps.setString(1, s);
                 ps.setString(2, m.get(s).get("date"));
-                if (m.get(s).get("open").isBlank()) ps.setNull(3, java.sql.Types.REAL);else ps.setFloat(3, nf.parse(m.get(s).get("open")).floatValue());
-                if (m.get(s).get("high").isBlank()) ps.setNull(4, java.sql.Types.REAL);else ps.setFloat(4, nf.parse(m.get(s).get("high")).floatValue());
-                if (m.get(s).get("low").isBlank()) ps.setNull(5, java.sql.Types.REAL);else ps.setFloat(5, nf.parse(m.get(s).get("low")).floatValue());
-                if (m.get(s).get("close").isBlank()) ps.setFloat(6, nf.parse(m.get(s).get("refclose")).floatValue());else ps.setFloat(6, nf.parse(m.get(s).get("close")).floatValue());
-                if (m.get(s).get("volume").isBlank()) ps.setFloat(7, 0);else ps.setFloat(7, nf.parse(m.get(s).get("volume")).floatValue());  
-                if (m.get(s).get("oi").isBlank()) ps.setFloat(8, 0);else ps.setFloat(8, nf.parse(m.get(s).get("oi")).floatValue());                  
+                if (Misc.isBlank(m.get(s).get("open")) ) ps.setNull(3, java.sql.Types.REAL);else ps.setFloat(3, nf.parse(m.get(s).get("open")).floatValue());
+                if (Misc.isBlank(m.get(s).get("high"))) ps.setNull(4, java.sql.Types.REAL);else ps.setFloat(4, nf.parse(m.get(s).get("high")).floatValue());
+                if (Misc.isBlank(m.get(s).get("low"))) ps.setNull(5, java.sql.Types.REAL);else ps.setFloat(5, nf.parse(m.get(s).get("low")).floatValue());
+                if (Misc.isBlank(m.get(s).get("close"))) ps.setFloat(6, nf.parse(m.get(s).get("refclose")).floatValue());else ps.setFloat(6, nf.parse(m.get(s).get("close")).floatValue());
+                if (Misc.isBlank(m.get(s).get("volume"))) ps.setFloat(7, 0);else ps.setFloat(7, nf.parse(m.get(s).get("volume")).floatValue());  
+                if (Misc.isBlank(m.get(s).get("oi"))) ps.setFloat(8, 0);else ps.setFloat(8, nf.parse(m.get(s).get("oi")).floatValue());                  
                 ps.setString(9,"BORSAITALIANA");
                 ps.addBatch();
                 if (m.get(s).get("type").equalsIgnoreCase("ETF") || m.get(s).get("type").equalsIgnoreCase("ETCETN")) {

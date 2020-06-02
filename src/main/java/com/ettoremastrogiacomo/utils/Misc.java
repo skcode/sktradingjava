@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -440,6 +441,14 @@ public class Misc {
             logger.warn(e);
         }
         return parsed;
+    }
+    /**
+     * controlla se una stringa è composta di soli spazi o è nulla
+     * @param s
+     * @return 
+     */
+    public static boolean isBlank(String s){
+         return (s==null || s.trim().equals(""));    
     }
     
 }
