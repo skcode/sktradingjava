@@ -313,7 +313,7 @@ public class MLSE_DataFech {
             LOG.debug(Arrays.toString(ps2.executeBatch()));                        
             LOG.debug(Arrays.toString(ps3.executeBatch()));                        
            } catch (SQLException e) {
-               LOG.error(e);
+               LOG.warn(e);
            }        
        //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
