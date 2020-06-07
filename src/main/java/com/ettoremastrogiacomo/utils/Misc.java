@@ -18,7 +18,9 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.io.StringWriter;
+import java.nio.channels.FileLock;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
@@ -450,5 +452,38 @@ public class Misc {
     public static boolean isBlank(String s){
          return (s==null || s.trim().equals(""));    
     }
+    /**
+     * 
+     * @param c class  obj e.g. FetchQuotes.class
+     * @return true if instance is new, false if instance already running
+     */
+    public static boolean lockInstance(Class c) {                
+        final String lockFile=Misc.getTempDir()+File.separatorChar+"." + c.getProtectionDomain().getCodeSource().getLocation().getPath()
+                .replaceAll("[^a-zA-Z0-9_]", "_")     ;
+        logger.debug(lockFile);
+        try {
+            final File file = new File(lockFile);
+            final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+            final FileLock fileLock = randomAccessFile.getChannel().tryLock();
+            if (fileLock != null) {
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            fileLock.release();
+                            randomAccessFile.close();
+                            file.delete();
+                        } catch (IOException e) {
+                            logger.error("Unable to remove lock file: " + lockFile, e);
+                        }
+                    }
+                });
+                return true;
+            }
+        } catch (IOException e) {
+            logger.error("Unable to create and/or lock file: " + lockFile, e);
+        }
+        return false;
+    }        
     
 }

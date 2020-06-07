@@ -433,6 +433,16 @@ public class Portfolio {
         return list;
     }
 
+    public ArrayList<String> list2hashes(ArrayList<Integer> set) {
+        ArrayList<String> list = new java.util.ArrayList<>();
+        //TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
+        set.forEach((x) -> {
+            list.add(this.tmp_hashcodes.get(x));
+        });
+        return list;
+    }
+    
+    
     public static Portfolio createStockEURPortfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         ArrayList<String> markets = Database.getMarkets();
 
@@ -619,6 +629,24 @@ public class Portfolio {
         return c[0][1];
     }
 
+    public Fints getWeightedtEquity(double[] weights) throws Exception {
+        
+        double[][] cer=this.close.getMatrixCopy();
+        double[][] meq=new double[cer.length][1];
+        meq[0][0]=1.0;
+        if (weights.length!= cer[0].length) throw new RuntimeException(" wrong weights len ");
+        double sw=DoubleArray.sum(weights);
+        for (int i=0;i<weights.length;i++) weights[i]/=sw;
+        for (int i=1;i<cer.length;i++){
+            double cv=0;
+            for (int j=0;j<cer[i].length;j++){
+                cv+=(cer[i][j]-cer[i-1][j])*weights[j]/cer[i-1][j];                
+            }
+            meq[i][0]=meq[i-1][0]*(1+cv);        
+        }
+        return new Fints(dates, Arrays.asList("Weighted Equity"), freq, meq);
+    }
+    
     public static double equityEfficiency(Fints alleq, int idxeq, int idxbh) throws Exception {
         return ((alleq.getLastValueInCol(idxeq) - alleq.getLastValueInCol(idxbh)) / alleq.getLastValueInCol(idxbh)) * (alleq.getMaxDD(idxbh) / alleq.getMaxDD(idxeq)) / Math.log(alleq.getLength());
     }

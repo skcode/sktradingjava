@@ -17,10 +17,12 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -105,17 +107,20 @@ public class OptimizeLastWindow {
         
         boolean duplicates = false;
         
-        int popsize = 50000;
-        int ngens = 1000;
+        int popsize = 10000;
+        int ngens = 500;
         //int trainwin=750;
-        int minoptset = 15, maxoptset = 25;
+        int minoptset = 10, maxoptset = 25;
         //int minlen = trainwin+100;
-        int minvol = 100000;
+        int minvol = 10000;
         List<Integer> windows= Arrays.asList(250,500,750,1000);
         List<Integer> minlens= new ArrayList<>();//Arrays.asList(250,500,750,1000);
         windows.forEach((x)->minlens.add(windows.indexOf(x),x+100));
-        optMethod opt = optMethod.MAXSLOPE;
-        TreeSet<String> all= new TreeSet<>();
+        optMethod opt = optMethod.MINDD;
+        HashMap<String,Integer> finalmap= new HashMap<>();
+        HashMap<String,Integer> finalhashmap= new HashMap<>();
+        
+        //TreeSet<String> all= new TreeSet<>();
         for (int i=0;i<windows.size();i++){
             
             //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
@@ -130,11 +135,15 @@ public class OptimizeLastWindow {
             logger.info("portfolio length "+ptf.getLength());            
             Entry<Double,ArrayList<Integer>> res=ptf.opttrain(startDate, endDate, minoptset, maxoptset, opt, duplicates, popsize, ngens);
             logger.info("BEST VAL = "+res.getKey());
-            logger.info("window = "+windows.get(i));
-            all.addAll(ptf.list2names(res.getValue()));
+            logger.info("window = "+windows.get(i));   
+            
+            ptf.list2names(res.getValue()).forEach((x)->{ if (finalmap.containsKey(x)) finalmap.replace(x, finalmap.get(x)+1);else finalmap.put(x, 1); });
+            ptf.list2hashes(res.getValue()).forEach((x)->{ if (finalhashmap.containsKey(x)) finalhashmap.replace(x, finalhashmap.get(x)+1);else finalhashmap.put(x, 1); });
             ptf.list2names(res.getValue()).forEach((x)->logger.info(x));                                
         }
         logger.info("FINAL");
-        all.forEach((x)->logger.info(x));
+        finalmap.keySet().forEach((x)->logger.info(x + "\t"+finalmap.get(x)));
+        Portfolio wp= new Portfolio(new ArrayList<>(finalhashmap.keySet()) , Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        wp.getWeightedtEquity(finalhashmap.values().stream().mapToDouble(i->i).toArray()).plot("equity", "val"); ;
     }
 }
