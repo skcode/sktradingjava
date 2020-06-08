@@ -158,24 +158,56 @@ public final class UDate
     public double diffseconds(UDate d) {return (this.time-d.time)/1000;}
     
     public double diffdays(UDate d) {return (this.time-d.time-0.0)/(1000.0*60.0*60.0*24.0);}
+    
+    /**
+     * 
+     * @param days
+     * @return return new date of n days after or before (negative days) 
+     */
+    public UDate getDayOffset(int days){
+        return new UDate(this.time+days*(1000*60*60*24));        
+    }
+    
+    
     @Override
     public int compareTo(UDate o) {
         if (this.time<o.time) return -1;
         if (this.time==o.time) return 0;
         return 1;        
     }  
+    /**
+     * 
+     * @return date in format YYYYMMDD
+     */
+    
     public String toYYYYMMDD() {
         SimpleDateFormat sdf = new SimpleDateFormat();
         sdf.applyPattern("yyyyMMdd");             
         return sdf.format(this.getDate());        
     }
+    /**
+     * 
+     * @return date in format DD/MM/YYYY
+     */
 
     public String toDDbMMbYY() {
         SimpleDateFormat sdf = new SimpleDateFormat();
         sdf.applyPattern("dd/MM/yy");             
         return sdf.format(this.getDate());        
     }
-    
+    /**
+     * 
+     * @return date in format YYYY-MM-DD
+     */
+    public String toYYYYmMMmDD() {
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.applyPattern("yyyy-MM-dd");             
+        return sdf.format(this.getDate());        
+    }
+    /**
+     * 
+     * @return current year , e.g. 2020
+     */
     public int getYear() {
         Calendar c=Calendar.getInstance();
         c.setTimeInMillis(time);

@@ -5,6 +5,7 @@
 
 package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFech;
 import com.ettoremastrogiacomo.utils.HttpFetch;
@@ -35,6 +36,7 @@ public class FetchQuotes {
             try {FetchData.fetchSharesDetails();}    catch (Exception e) {LOG.warn(e);}       
         }   
        try {MLSE_DataFech.fetchAndLoadMLSEEOD(); }    catch (Exception e) {LOG.warn(e);}             
+       try {EURONEXT_DataFetch.fetchAndLoadEURONEXTEOD(); }    catch (Exception e) {LOG.warn(e);}                    
        try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();

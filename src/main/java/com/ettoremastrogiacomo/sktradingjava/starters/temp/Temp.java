@@ -51,6 +51,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.fetchNYSE;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  *
@@ -297,15 +299,8 @@ public class Temp {
         return true;
     }
     public static void main(String[] args) throws Exception {
-        String s=Database.getYahooQuotes("FTS100.MI");
-        LOG.info(s);
-                if (true) return;
-        String hash=Database.getHashcode("ENEL", "MLSE");
-        Fints f=Database.getIntradayFintsQuotes(hash, Database.getIntradayDates(hash).last()).getSerieCopy(3);
-        Fints k=Fints.KAMA(f, 10, 2, 30);
-        Fints.merge(f, k).plot("cross", "price");
-        LOG.debug(f);
-        LOG.debug(k.toStringL());
-        k.plot("kama", "price");
+        LOG.debug((new UDate()).toYYYYmMMmDD());
+        SimpleDateFormat sdf=new SimpleDateFormat("dd/MM/yyyy", Locale.ITALY);
+        LOG.debug(sdf.parse("05/06/2020"));;
     }
 }

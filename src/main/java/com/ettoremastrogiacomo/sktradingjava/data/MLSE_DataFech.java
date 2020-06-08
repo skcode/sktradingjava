@@ -7,18 +7,13 @@ package com.ettoremastrogiacomo.sktradingjava.data;
 
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
-import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.LOG;
-import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
 import java.text.NumberFormat;
-import java.text.spi.NumberFormatProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,14 +38,6 @@ public class MLSE_DataFech {
         int y = pdr.length()>=8? Integer.parseInt(pdr.substring(6, 8)):Integer.parseInt(pdr.substring(6));
         int M = Integer.parseInt(pdr.substring(3, 5));
         int day = Integer.parseInt(pdr.substring(0, 2));
-        /*if (pdr.length() > 8) {
-            int h = Integer.parseInt(pdr.substring(11, 13));
-            int min = Integer.parseInt(pdr.substring(14, 16));
-            int sec = Integer.parseInt(pdr.substring(17));
-            d = UDate.genDate(y + 2000, M - 1, day, h, min, sec);
-        } else {
-            d = UDate.genDate(y + 2000, M - 1, day, 22, 0, 0);
-        }*/
         d = UDate.genDate(y + 2000, M - 1, day, 22, 0, 0);
         return d;
     }
@@ -281,6 +268,7 @@ public class MLSE_DataFech {
             PreparedStatement ps = conn.prepareStatement(sql);PreparedStatement ps2 = conn.prepareStatement(sql2);
                 PreparedStatement ps3 = conn.prepareStatement(sql3);
                 ) {
+            conn.setAutoCommit(false);
             for (String s:m.keySet()){                
                 ps3.setString(1, s);
                 ps3.setString(2, m.get(s).get("isin"));
@@ -311,7 +299,8 @@ public class MLSE_DataFech {
             }
             LOG.debug(Arrays.toString(ps.executeBatch()) );            
             LOG.debug(Arrays.toString(ps2.executeBatch()));                        
-            LOG.debug(Arrays.toString(ps3.executeBatch()));                        
+            LOG.debug(Arrays.toString(ps3.executeBatch()));   
+            conn.commit();
            } catch (SQLException e) {
                LOG.warn(e);
            }        

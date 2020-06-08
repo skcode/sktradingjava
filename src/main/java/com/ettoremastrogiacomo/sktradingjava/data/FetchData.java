@@ -198,7 +198,7 @@ public final class FetchData {
         return Encoding.base64encode(getSHA1(String2Byte((isin + market))));
     }
 
-    static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
+    /*static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
         //https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0010877643&lang=it        
         
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
@@ -253,7 +253,7 @@ public final class FetchData {
                 UDate d=UDate.genDate(y+2000 , M-1, day, h, min, sec);
                 LOG.debug(d);
                 return new java.util.AbstractMap.SimpleEntry<>(d,m);        
-    }
+    }*/
     
     static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
@@ -836,9 +836,11 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
             }
         };
         String u0 = "https://live.euronext.com/en/products/equities/list";
+        //https://live.euronext.com/en/product/equities/FR0013341781-XPAR/2crsi/2crsi/quotes#historical-price
         //String u0 = "https://www.euronext.com/en/equities/directory";
         //String det = "https://www.euronext.com/en/products/equities/BE0003849669-MLXB/market-information";
         //String det = "https://www.euronext.com/en/products/equities/#/market-information";
+        //https://live.euronext.com/en/product/equities/BE0003849669-MLXB#historical-price
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -1011,7 +1013,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
     public static void main(String[] args) throws Exception {
 
         //fetchMLSEList(secType.FUTURE);
-        fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
+       // fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
     }
 
