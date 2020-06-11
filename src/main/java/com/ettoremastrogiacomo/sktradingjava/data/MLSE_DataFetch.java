@@ -174,57 +174,15 @@ public class MLSE_DataFetch {
                                     Elements cols = row.select("td");
                                     if (cols.size() == 2) {
                                         m.put(cols.get(0).text(), cols.get(1).text());
+                                        if (cols.get(0).text().equalsIgnoreCase("Codice Alfanumerico")) map.put("code", cols.get(1).text());
                                     }
                                 }
                             }
-                            UDate d;
-                            if (type.equalsIgnoreCase("FUTURE")) {
-                                String pdr = m.get("Data - Ora Ultimo Contratto");                                
-                                map.put("date", StrBIT2UDate(pdr).toYYYYMMDD());
-                                map.put("code", "FTSEMIB");                                
-                                map.put("high", m.get("Max oggi"));
-                                map.put("low", m.get("Min oggi"));
-                                map.put("open", m.get("Prezzo Apertura:"));
-                                map.put("volume", m.get("Volume Totale Contratti"));                                
-                                map.put("close", m.get("Prezzo Ultimo Contratto"));
-                                map.put("oi", m.get("Open Interest Oggi:"));
-                            } else if (type.equalsIgnoreCase("STOCK")) {
-                                String pdr = m.get("Prezzo di riferimento");
-                                int idxd = pdr.indexOf("-");
-                                String price = pdr.substring(0, idxd - 1);
-                                map.put("close", price);
-                                pdr = pdr.substring(idxd + 2);
-                                map.put("date", StrBIT2UDate(pdr).toYYYYMMDD());                                
-                                map.put("code", m.get("Codice Alfanumerico"));
-                                map.put("high", m.get("Max Oggi"));
-                                map.put("low", m.get("Min Oggi"));
-                                map.put("open", m.get("Apertura Odierna:")); 
-                                map.put("oi", "0");
-                                if (Misc.isBlank(m.get("Apertura Odierna:"))) map.put("open", m.get("Pre-Apertura:"));                                 
-                                if (Misc.isBlank(m.get("Quantità Totale"))) map.put("volume", "0"); else map.put("volume", m.get("Quantità Totale"));                                                                
-                            } else if (type.equalsIgnoreCase("ETF") || type.equalsIgnoreCase("ETCETN")) {
-                                String pdr = m.get("Prezzo di riferimento");
-                                int idxd = pdr.indexOf("-");
-                                String price = pdr.substring(0, idxd - 1);
-                                map.put("refclose", price);
-                                pdr = pdr.substring(idxd + 2);
-                                map.put("refdate", StrBIT2UDate(pdr).toYYYYMMDD());                                
-                                map.put("code", m.get("Codice Alfanumerico"));
-                                map.put("high", m.get("Max oggi"));
-                                map.put("low", m.get("Min oggi"));
-                                map.put("date", ultimacontr.toYYYYMMDD());
-                                map.put("open", m.get("Apertura"));
-                                if (Misc.isBlank(m.get("Volume totale"))) map.put("volume", "0"); else map.put("volume", m.get("Volume totale"));                                
-                                map.put("close", m.get("Prezzo asta di chiusura odierna"));                                
-                                map.put("oi", "0");
-                                if (m.get("Data - Ora Ultimo Contratto").length()>=8) map.put("date", StrBIT2UDate(m.get("Data - Ora Ultimo Contratto")).toYYYYMMDD());                                
-                            }
 
-                            map.put("fase", m.get("Fase di Mercato"));
-                            if (!(m.get("Fase di Mercato").equalsIgnoreCase("Chiusura") || m.get("Fase di Mercato").equalsIgnoreCase("Fine Servizio"))) {
-                                LOG.warn("mercato non chiuso per " + map.get("isin"));
-                                return;
-                            }
+                            //if (!(m.get("Fase di Mercato").equalsIgnoreCase("Chiusura") || m.get("Fase di Mercato").equalsIgnoreCase("Fine Servizio"))) {
+                             //   LOG.warn("mercato non chiuso per " + map.get("isin"));
+                              //  return;
+                            //}
                             map.put("sector", m.toString());
                             map.keySet().forEach((xx) -> {
                                 LOG.debug(xx + "\t" + map.get(xx));
@@ -285,7 +243,11 @@ public class MLSE_DataFetch {
         for (int i=0;i<arr.length();i++){            
             UDate d=new UDate(arr.getJSONArray(i).getLong(0));
             d=UDate.getNewDate(d, 0, 0, 0);
-            map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),arr.getJSONArray(i).getDouble(6))));
+            if (!arr.getJSONArray(i).isEmpty()){
+                if (!arr.getJSONArray(i).isNull(6)) map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),(double)arr.getJSONArray(i).getInt(6))));
+                else map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),0.0)));
+            }
+             
         }
         return map;
     }
@@ -293,9 +255,9 @@ public class MLSE_DataFetch {
     
     public static void fetchAndLoadMLSEEOD() throws Exception {        
         java.util.HashMap<String, java.util.HashMap<String, String>> m=new HashMap<>();
-        m.putAll(fetchMLSEList(secType.ETCETN));
+        //m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
-        m.putAll(fetchMLSEList(secType.ETF));
+        //m.putAll(fetchMLSEList(secType.ETF));
         
         HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
         for (String x : m.keySet()) {

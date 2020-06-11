@@ -36,10 +36,11 @@ public class FetchQuotes {
             try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
             
         }   
-       try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}       
        try {MLSE_DataFetch.fetchAndLoadMLSEEOD(); }    catch (Exception e) {LOG.warn(e);}             
+       try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}       
        try {EURONEXT_DataFetch.fetchAndLoadEURONEXTEOD(); }    catch (Exception e) {LOG.warn(e);}                    
        try {XETRA_DataFetch.fetchAndLoadXETRAEOD();}    catch (Exception e) {LOG.warn(e);}                    
+       
        //try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
