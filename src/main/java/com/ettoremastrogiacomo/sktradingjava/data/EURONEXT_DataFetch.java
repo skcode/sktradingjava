@@ -33,6 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.TreeMap;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -90,7 +93,7 @@ public class EURONEXT_DataFetch {
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
         List<HttpCookie> ck = httpf.getCookies();
@@ -170,60 +173,38 @@ public class EURONEXT_DataFetch {
         }
         return all;
     }
+    
+ static public TreeMap<UDate,ArrayList<Double>> fetchEURONEXTEOD(String isin, String market) throws Exception {
+        String val=market.contains("EURONEXT")? isin+market.substring(market.indexOf("-")):isin+"-"+market;        
+        //https://live.euronext.com/intraday_chart/getChartData/FR0010242511-XPAR/max
+        String url="https://live.euronext.com/intraday_chart/getChartData/"+val+"/max";
+        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+        }
+    TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
+        String res= new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
+        JSONArray arr = new JSONArray(res);
+        for(int i=0;i<arr.length();i++){                           
+            JSONObject e = arr.getJSONObject(i);
+            String[] dateel=e.getString("time").substring(0, 10).split("-");
+            UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);            
+            double close=e.getDouble("price");
+            double volume=e.getLong("volume");
+            values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
+        }        
+            return values;
+    }    
 
     static public void fetchAndLoadEURONEXTEOD() throws Exception {
         java.util.HashMap<String, java.util.HashMap<String, String>> m = fetchEuroNext();
-        m.keySet().forEach((x) -> {
-            LOG.debug(x);
-            m.get(x).keySet().forEach((y) -> {
-                LOG.debug(y + "\t" + m.get(x).get(y));
-            });            
-        });
-        //https://live.euronext.com/en/product/equities/FR0013176526-XPAR#historical-price
-        com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }
-        NumberFormat nf= NumberFormat.getInstance(Locale.US);  
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.ITALY);
-        HashMap<String, HashMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();
+            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
         for (String x : m.keySet()) {
             String isin = m.get(x).get("isin");
-            String market = m.get(x).get("market").split("-")[1];            
-            String url = "https://live.euronext.com/en/ajax/getHistoricalPricePopup/" + isin.toUpperCase() + "-" + market.toUpperCase() + "/";
-            HashMap<String, String> params = new HashMap<>();            
-            UDate now = new UDate();
-            params.put("enddate", now.toYYYYmMMmDD());
-            params.put("startdate", now.getDayOffset(-10).toYYYYmMMmDD());//10 days table
-            params.put("nbSession", "10");
-            HttpURLConnection urlconn = httpf.sendPostRequest(url, params);            
-            StringBuffer response;
-            try (BufferedReader in = new BufferedReader(
-                    new InputStreamReader(urlconn.getInputStream()))) {
-                String inputLine;
-                response = new StringBuffer();
-                while ((inputLine = in.readLine()) != null) {
-                    response.append("\n").append(inputLine);
-                }
-            }
-            String res = response.toString();
-            Document doc = Jsoup.parse(res);            
-            Element table = doc.select("table[id='AwlHistoricalPriceTable']").first();            
-            HashMap<UDate, ArrayList<Double>> data = new HashMap<>();
-            Elements rows = table.select("tr");
-            for (int i = 0; i < rows.size(); i++) {
-                ArrayList<Double> datarow = new ArrayList<>();
-                Element row = rows.get(i);
-                Elements cols = row.select("td");                
-                if (cols.size() == 7) {//date open high low close volume turnover                    
-                    for (int i1 = 1; i1 < 6; i1++) {
-                        datarow.add(Misc.string2double(cols.get(i1).text(), Locale.US));
-                    }
-                    data.put(new UDate(sdf.parse(cols.get(0).text()).getTime()), datarow);                    
-                }
-            }
+            data=fetchEURONEXTEOD(isin, m.get(x).get("market"));
             datamap.put(x, data);
-            LOG.debug("fetched data from " + url);
+            LOG.debug("fetched data from " + m.get(x).get("name"));
         }
 
         String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
@@ -242,7 +223,7 @@ public class EURONEXT_DataFetch {
                 ps2.setString(7, m.get(s).get("currency"));
                 ps2.setString(8, m.get(s).get("sector"));
                 ps2.addBatch();                
-                HashMap<UDate, ArrayList<Double>> data=datamap.get(s);                
+                data=datamap.get(s);                
                 for (UDate d : data.keySet()){
                     ps.setString(1, s);
                     ps.setString(2, d.toYYYYMMDD());

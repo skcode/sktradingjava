@@ -616,7 +616,7 @@ public class Database {
 
         HttpFetch http = new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }        
         String res = new String(http.HttpGetUrl(url.toString(), Optional.empty(), Optional.empty()));
         int k0 = res.indexOf("action=\"/consent\"");
@@ -664,7 +664,7 @@ public class Database {
         //https://finance.google.com/finance/historical?startdate=Jan+01%2C+2000&enddate=Jan+01%2C+2099&cid=668641&num=200&start=0
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         int k = 0;
         String ret = "Date;Open;High;Low;Close;Volume\n";

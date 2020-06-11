@@ -51,7 +51,12 @@
             <groupId>io.jenetics</groupId>
             <artifactId>jenetics</artifactId>
             <version>5.1.0</version>
-        </dependency>             
+        </dependency>    
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20200518</version>
+        </dependency>                 
     </dependencies>
     <build>
         <resources>

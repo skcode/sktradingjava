@@ -4,7 +4,9 @@
  */
 
 package com.ettoremastrogiacomo.sktradingjava;
+import com.ettoremastrogiacomo.utils.Misc;
 import java.io.*;
+import java.net.Proxy;
 import java.util.*;
 /**
  *
@@ -13,6 +15,7 @@ import java.util.*;
 public class Init {
     public static String db_driver,db_url,db_user,db_password,symbol_table,data_table,mapping_table;
     public static String use_http_proxy,http_proxy_host,http_proxy_port,http_proxy_user,http_proxy_password;
+    public static Proxy.Type http_proxy_type;
     public static String csvtickersfile;
     static  {
             //PropertyConfigurator.configure("src/log4j.properties");
@@ -39,7 +42,9 @@ public class Init {
                 http_proxy_user=properties.getProperty("jsktrading.http_proxy_user");
                 http_proxy_password=properties.getProperty("jsktrading.http_proxy_password");
                 csvtickersfile= properties.getProperty("jsktrading.db.csvtickersfile");
+                http_proxy_type= Misc.isBlank(properties.getProperty("jsktrading.http_proxy_type"))?Proxy.Type.HTTP:Proxy.Type.valueOf(properties.getProperty("jsktrading.http_proxy_type")) ;
                 //System.out.println(db_driver);
+                
          
             }
             catch (Exception e) {e.printStackTrace(); }

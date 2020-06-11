@@ -6,7 +6,9 @@
 package com.ettoremastrogiacomo.sktradingjava.data;
 
 import com.ettoremastrogiacomo.sktradingjava.Init;
+import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
+import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.sql.Connection;
@@ -19,6 +21,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.TreeMap;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -28,7 +33,7 @@ import org.jsoup.select.Elements;
  *
  * @author sk
  */
-public class MLSE_DataFech {
+public class MLSE_DataFetch {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(FetchData.class);
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
@@ -45,7 +50,7 @@ public class MLSE_DataFech {
     static UDate ultimoGiornoContrattazioni() throws Exception{
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }        
         
         String s = new String(http.HttpGetUrl("https://www.borsaitaliana.it/borsa/indici/indici-in-continua/dettaglio.html?indexCode=FTSEMIB&lang=it", Optional.of(20), Optional.empty()));
@@ -62,7 +67,7 @@ public class MLSE_DataFech {
         String url, urldet, type, currency, market;
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
         final String FUTURES_URL = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
         final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
@@ -253,58 +258,97 @@ public class MLSE_DataFech {
         LOG.debug("#" + all.size());
         return all;
     }
+    public static TreeMap<UDate,ArrayList<Double>> fetchMLSEEOD(String symbol,Security.secType sec)throws Exception{
+        String market="";
+        if (null==sec) throw new Exception(sec+" non gestito");
+        else switch (sec) {
+            case STOCK:
+                market="MTA";
+                break;
+            case ETF:
+            case ETCETN:
+                market="ETF";
+                break;
+            default:
+                throw new Exception(sec+" non gestito");
+        }
+        String url="https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";        
+        String jsonstr="{\"request\":{\"SampleTime\":\"1d\",\"TimeFrame\":\"5y\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+"\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        HttpFetch http= new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res=http.sendjsonPostRequest(url, jsonstr);
+        JSONObject o= new JSONObject(res);
+        JSONArray arr= o.getJSONArray("d");
+        TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()                ;
+        for (int i=0;i<arr.length();i++){            
+            UDate d=new UDate(arr.getJSONArray(i).getLong(0));
+            d=UDate.getNewDate(d, 0, 0, 0);
+            map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),arr.getJSONArray(i).getDouble(6))));
+        }
+        return map;
+    }
 
-    public static void fetchAndLoadMLSEEOD() throws Exception {
-        
-        java.util.HashMap<String, java.util.HashMap<String, String>> m=fetchMLSEList(secType.FUTURE);
+    
+    public static void fetchAndLoadMLSEEOD() throws Exception {        
+        java.util.HashMap<String, java.util.HashMap<String, String>> m=new HashMap<>();
         m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
-        String url = Init.db_url;
-        String sql="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";
-        String sql2="update eoddatav2 set close=? where hashcode=? and date=? and provider=?";
-        String sql3="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        NumberFormat nf= NumberFormat.getInstance(Locale.ITALY);        
-        try (Connection conn = DriverManager.getConnection(url);                
-            PreparedStatement ps = conn.prepareStatement(sql);PreparedStatement ps2 = conn.prepareStatement(sql2);
-                PreparedStatement ps3 = conn.prepareStatement(sql3);
+        m.putAll(fetchMLSEList(secType.ETF));
+        
+        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
+        for (String x : m.keySet()) {
+            String isin = m.get(x).get("isin");
+            String code = m.get(x).get("code");
+            String type = m.get(x).get("type");
+            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+            if (type.equalsIgnoreCase("STOCK")) data=fetchMLSEEOD(code, secType.STOCK);
+            else if (type.equalsIgnoreCase("ETF")) data=fetchMLSEEOD(code, secType.ETF);
+            else if (type.equalsIgnoreCase("ETCETN")) data=fetchMLSEEOD(code, secType.ETCETN);
+            else throw new Exception(type +" not allowed");
+            datamap.put(x, data);
+            LOG.debug("fetched data from " + m.get(x).get("name"));
+        }
+
+        String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
+        String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
+        try (Connection conn = DriverManager.getConnection(Init.db_url);                
+            PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
                 ) {
             conn.setAutoCommit(false);
             for (String s:m.keySet()){                
-                ps3.setString(1, s);
-                ps3.setString(2, m.get(s).get("isin"));
-                ps3.setString(3, m.get(s).get("name"));
-                ps3.setString(4, m.get(s).get("code"));
-                ps3.setString(5, m.get(s).get("type"));
-                ps3.setString(6, m.get(s).get("market"));
-                ps3.setString(7, m.get(s).get("currency"));
-                ps3.setString(8, m.get(s).get("sector"));
-                ps3.addBatch();                
-                ps.setString(1, s);
-                ps.setString(2, m.get(s).get("date"));
-                if (Misc.isBlank(m.get(s).get("open")) ) ps.setNull(3, java.sql.Types.REAL);else ps.setFloat(3, nf.parse(m.get(s).get("open")).floatValue());
-                if (Misc.isBlank(m.get(s).get("high"))) ps.setNull(4, java.sql.Types.REAL);else ps.setFloat(4, nf.parse(m.get(s).get("high")).floatValue());
-                if (Misc.isBlank(m.get(s).get("low"))) ps.setNull(5, java.sql.Types.REAL);else ps.setFloat(5, nf.parse(m.get(s).get("low")).floatValue());
-                if (Misc.isBlank(m.get(s).get("close"))) ps.setFloat(6, nf.parse(m.get(s).get("refclose")).floatValue());else ps.setFloat(6, nf.parse(m.get(s).get("close")).floatValue());
-                if (Misc.isBlank(m.get(s).get("volume"))) ps.setFloat(7, 0);else ps.setFloat(7, nf.parse(m.get(s).get("volume")).floatValue());  
-                if (Misc.isBlank(m.get(s).get("oi"))) ps.setFloat(8, 0);else ps.setFloat(8, nf.parse(m.get(s).get("oi")).floatValue());                  
-                ps.setString(9,"BORSAITALIANA");
-                ps.addBatch();
-                if (m.get(s).get("type").equalsIgnoreCase("ETF") || m.get(s).get("type").equalsIgnoreCase("ETCETN")) {
-                    ps2.setFloat(1,nf.parse(m.get(s).get("refclose")).floatValue());
-                    ps2.setString(2, s);
-                    ps2.setString(3, m.get(s).get("refdate"));
-                    ps2.setString(4, "BORSAITALIANA");
-                    ps2.addBatch();
-                }                
+                ps2.setString(1, s);
+                ps2.setString(2, m.get(s).get("isin"));
+                ps2.setString(3, m.get(s).get("name"));
+                ps2.setString(4, m.get(s).get("code"));
+                ps2.setString(5, m.get(s).get("type"));
+                ps2.setString(6, m.get(s).get("market"));
+                ps2.setString(7, m.get(s).get("currency"));
+                ps2.setString(8, m.get(s).get("sector"));
+                ps2.addBatch();                
+                TreeMap<UDate, ArrayList<Double>> data=datamap.get(s);                
+                for (UDate d : data.keySet()){
+                    ps.setString(1, s);
+                    ps.setString(2, d.toYYYYMMDD());
+                    ps.setFloat(3, data.get(d).get(0).floatValue());
+                    ps.setFloat(4, data.get(d).get(1).floatValue());
+                    ps.setFloat(5, data.get(d).get(2).floatValue());
+                    ps.setFloat(6, data.get(d).get(3).floatValue());
+                    ps.setFloat(7, data.get(d).get(4).floatValue());
+                    ps.setFloat(8, 0.0f);
+                    ps.setString(9,"BORSAITALIANA");                    
+                    ps.addBatch();                    
+                }
             }
             LOG.debug(Arrays.toString(ps.executeBatch()) );            
             LOG.debug(Arrays.toString(ps2.executeBatch()));                        
-            LOG.debug(Arrays.toString(ps3.executeBatch()));   
             conn.commit();
            } catch (SQLException e) {
                LOG.warn(e);
            }        
-       //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
+
+        //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
     }
 }

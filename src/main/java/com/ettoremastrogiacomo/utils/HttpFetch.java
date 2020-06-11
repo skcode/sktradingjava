@@ -1,8 +1,8 @@
 package com.ettoremastrogiacomo.utils;
 
+import com.ettoremastrogiacomo.sktradingjava.Init;
 import java.net.*;
 import java.io.*;
-import java.security.cert.CertificateException;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -29,6 +29,14 @@ public class HttpFetch {
     List<HttpCookie> cookieList;
     Map<String, List<String>> headers;
     final int TIMEOUT=60000;
+
+    public static String myIP() throws Exception {        
+        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+        }
+        return new String(http.HttpGetUrl("http://checkip.amazonaws.com", Optional.empty(), Optional.empty()));        
+    }
     
     public static void disableSSLcheck() throws Exception {
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
@@ -60,17 +68,18 @@ public class HttpFetch {
     public Map<String,List<String>> getHeaders() {
         return Collections.unmodifiableMap(headers);
     }
-    public void setProxy(String http_proxy, int http_proxy_port, final String user_name, final String password) {
-        useproxy = true;
-        proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(http_proxy, http_proxy_port));
-        Authenticator.setDefault(
-                new Authenticator() {
-
-                    @Override
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(user_name, password.toCharArray());
-                    }
-                });
+    public void setProxy(String http_proxy, int http_proxy_port, Proxy.Type proxyType,final String user_name, final String password) {
+        useproxy = true;        
+        proxy = new Proxy(proxyType, new InetSocketAddress(http_proxy, http_proxy_port));
+        if (!Misc.isBlank(user_name)){
+            Authenticator.setDefault(
+                    new Authenticator() {
+                        @Override
+                        protected PasswordAuthentication getPasswordAuthentication() {
+                            return new PasswordAuthentication(user_name, password.toCharArray());
+                        }
+                    });        
+        }
     }
 
     public void unsetProxy() {
@@ -264,5 +273,42 @@ public class HttpFetch {
  
         return httpConn;
     }
+
+    /**
+     * 
+     * @param requestURL url to post json query
+     * @param jsonstr json format input string 
+     * @return response
+     * @throws IOException 
+     */
+    public String sendjsonPostRequest(String requestURL,
+            String jsonstr) throws IOException {
+            URL url = new URL(requestURL);       
+            HttpURLConnection httpConn = useproxy ? (HttpURLConnection) url.openConnection(proxy): (HttpURLConnection) url.openConnection();       
+            httpConn.setConnectTimeout(TIMEOUT);
+            httpConn.setReadTimeout(TIMEOUT);
+            httpConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
+            httpConn.setRequestProperty("Content-Type", "application/json");            
+            httpConn.setRequestMethod("POST");            
+            httpConn.setUseCaches(false);            
+            httpConn.setDoInput(true); // true indicates the server returns response
+            httpConn.setDoOutput(true);
+            try(OutputStream os= httpConn.getOutputStream()){
+                byte[] input=jsonstr.getBytes("utf-8");
+                os.write(input,0,input.length);
+            }
+            StringBuilder response = new StringBuilder();
+            try(BufferedReader br= new BufferedReader(new InputStreamReader(httpConn.getInputStream(),"utf-8"))) {
+                
+                String responseLine=null;
+                while( (responseLine=br.readLine())!=null) {
+                    response.append(responseLine.trim());
+                }
+                logger.debug(response.toString());
+            }             
+        return response.toString();
+    }
+
+
     
 }

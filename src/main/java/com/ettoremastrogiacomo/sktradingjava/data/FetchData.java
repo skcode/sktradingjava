@@ -87,7 +87,7 @@ class Tintradaydata implements Runnable {
         try {
             HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
             if (Init.use_http_proxy.equals("true")) {
-                http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+                http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
             }
             while (true) {
 
@@ -261,7 +261,7 @@ public final class FetchData {
         String url, urldet, type, currency, market;
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         final String FUTURES_URL = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
         final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
@@ -462,7 +462,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
     static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         int cnt = 1;
         //http://www.borsaitaliana.it/borsa/quotazioni/azioni/elenco-completo-dividendi.html?hashcode=IT0003128367&lang=it&page=1
@@ -558,7 +558,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
     public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSE() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         //Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size
@@ -632,38 +632,18 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         
     }
     */
-    public static void fetchSharesDetails() throws Exception {
+    public static void fetchNYSESharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
 
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        LOG.info("fetching Euronext");
-        try {
-            all.putAll(fetchEuroNext());
-        } catch (Exception e) {
-            LOG.warn(e.getMessage());
-        }
-        LOG.info("fetching XETRA");
-        try {
-            all.putAll(fetchListDE());
-        } catch (Exception e) {
-            LOG.warn(e.getMessage());
-        }
-        LOG.info("fetching NYSE");
+       LOG.info("fetching NYSE");
         try {
             all.putAll(fetchNYSE());
         } catch (Exception e) {
             LOG.warn(e.getMessage());
         }        
-        LOG.info("fetching MLSE");
-        try {
-            all.putAll(fetchMLSEList(secType.ETCETN));
-            all.putAll(fetchMLSEList(secType.ETF));
-            all.putAll(fetchMLSEList(secType.STOCK));
-            all.putAll(fetchMLSEList(secType.FUTURE));
-        } catch (Exception e) {
-            LOG.warn(e.getMessage());
-        }
+ 
         String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
         /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
                 + "	hashcode text not null,\n"
@@ -844,7 +824,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
         List<HttpCookie> ck=httpf.getCookies();
@@ -935,7 +915,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         String url, type = "STOCK", currency = "EUR", market = "XETRA";
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
 
         String s = new String(http.HttpGetUrl(XetraURL, Optional.empty(), Optional.empty()));
