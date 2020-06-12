@@ -144,70 +144,10 @@ public class XETRA_DataFetch {
             double close=e.getDouble("close");
             double volume=e.getLong("turnoverPieces");
             values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
-        }                
+        }             
+        LOG.debug("samples fetched for "+isin+" = "+values.size());
         return values;
     }
     
-    static public void fetchAndLoadXETRAEOD() throws Exception {
-        java.util.HashMap<String, java.util.HashMap<String, String>> m = fetchListDE();
-        m.keySet().forEach((x) -> {
-            LOG.debug(x);
-            m.get(x).keySet().forEach((y) -> {
-                LOG.debug(y + "\t" + m.get(x).get(y));
-            });            
-        });        
-        com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }        
-        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
-        for (String x : m.keySet()) {
-            String isin = m.get(x).get("isin");
-            UDate maxdate= new UDate();
-            UDate mindate=maxdate.getDayOffset(-365*10);//10 y ago
-            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
-            fetchXETRAEOD(isin, true, mindate, maxdate);
-            datamap.put(x, data);
-            LOG.debug("fetched data from " + m.get(x).get("name"));
-        }
-
-        String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
-        String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        try (Connection conn = DriverManager.getConnection(Init.db_url);                
-            PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
-                ) {
-            conn.setAutoCommit(false);
-            for (String s:m.keySet()){                
-                ps2.setString(1, s);
-                ps2.setString(2, m.get(s).get("isin"));
-                ps2.setString(3, m.get(s).get("name"));
-                ps2.setString(4, m.get(s).get("code"));
-                ps2.setString(5, m.get(s).get("type"));
-                ps2.setString(6, m.get(s).get("market"));
-                ps2.setString(7, m.get(s).get("currency"));
-                ps2.setString(8, m.get(s).get("sector"));
-                ps2.addBatch();                
-                TreeMap<UDate, ArrayList<Double>> data=datamap.get(s);                
-                for (UDate d : data.keySet()){
-                    ps.setString(1, s);
-                    ps.setString(2, d.toYYYYMMDD());
-                    ps.setFloat(3, data.get(d).get(0).floatValue());
-                    ps.setFloat(4, data.get(d).get(1).floatValue());
-                    ps.setFloat(5, data.get(d).get(2).floatValue());
-                    ps.setFloat(6, data.get(d).get(3).floatValue());
-                    ps.setFloat(7, data.get(d).get(4).floatValue());
-                    ps.setFloat(8, 0.0f);
-                    ps.setString(9,"XETRA");                    
-                    ps.addBatch();                    
-                }
-            }
-            LOG.debug(Arrays.toString(ps.executeBatch()) );            
-            LOG.debug(Arrays.toString(ps2.executeBatch()));                        
-            conn.commit();
-           } catch (SQLException e) {
-               LOG.warn(e);
-           }        
-        
-    }        
     
 }

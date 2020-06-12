@@ -29,10 +29,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.jsoup.nodes.Element;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
+import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEURONEXTEOD;
+import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEuroNext;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEOD;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
+import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchListDE;
+import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD;
 import com.ettoremastrogiacomo.utils.UDate;
+import java.sql.PreparedStatement;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 
 class Tintradaydata implements Runnable {
@@ -196,250 +204,6 @@ public final class FetchData {
     //final com.ettoremastrogiacomo.utils.HttpFetch http;
     static public String computeHashcode(String isin, String market) throws Exception{
         return Encoding.base64encode(getSHA1(String2Byte((isin + market))));
-    }
-
-    /*static public java.util.AbstractMap.SimpleEntry<UDate,HashMap<String,String>> fetchDatiCompletiMLSE(String isin, com.ettoremastrogiacomo.sktradingjava.Security.secType type) throws Exception{
-        //https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=NL0010877643&lang=it        
-        
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }        
-        String urletf="https://www.borsaitaliana.it/borsa/etf/dettaglio.html?isin=#&lang=it";
-        String urlstock="https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?isin=#&lang=it";
-        String urletcetn="https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#&lang=it";
-        //
-        String url="";
-        if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.STOCK) url = urlstock.replace("#", isin);
-        else if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.ETF) url = urletf.replace("#", isin);
-        else if (type==com.ettoremastrogiacomo.sktradingjava.Security.secType.ETCETN) url = urletcetn.replace("#", isin);
-        else throw new RuntimeException("type not implemented :"+type.toString());
-                LOG.debug(url);
-                Document doc = Jsoup.parse(new String(http.HttpGetUrl(url, Optional.of(20), Optional.empty())));
-                Element table1= doc.select("table[class=\"m-table -clear-m\"]").get(0);
-                Element table2= doc.select("table[class=\"m-table -clear-m\"]").get(1);
-                Elements rows = table1.select("tr");
-                HashMap<String,String> m= new HashMap<>();                
-                for (int i = 0; i < rows.size(); i++) { //first row is the col names so skip it.
-                    Element row = rows.get(i);
-                    Elements cols = row.select("td");
-                    if (cols.size()==2){
-                        for (int j=0;j<cols.size();j++){
-                            LOG.debug("ROW "+i+"\t"+cols.get(j).text());                        
-                        }
-                    m.put(cols.get(0).text(), cols.get(1).text());
-                    }
-                }         
-                rows = table2.select("tr");
-                for (int i = 0; i < rows.size(); i++) { //first row is the col names so skip it.
-                    Element row = rows.get(i);
-                    Elements cols = row.select("td");
-                    if (cols.size()==2){
-                        for (int j=0;j<cols.size();j++){
-                            LOG.debug("ROW "+i+"\t"+cols.get(j).text());
-                        }
-                        m.put(cols.get(0).text(), cols.get(1).text());                    
-                    }
-                }         
-                String pdr=m.get("Prezzo di riferimento");
-                int idx=pdr.indexOf("-");
-                pdr=pdr.substring(idx+2);                
-                int y=Integer.parseInt(pdr.substring(6, 8));
-                int M=Integer.parseInt(pdr.substring(3, 5));
-                int day=Integer.parseInt(pdr.substring(0, 2));
-                int h=Integer.parseInt(pdr.substring(9, 11));
-                int min=Integer.parseInt(pdr.substring(12, 14));
-                int sec=Integer.parseInt(pdr.substring(15));                
-                UDate d=UDate.genDate(y+2000 , M-1, day, h, min, sec);
-                LOG.debug(d);
-                return new java.util.AbstractMap.SimpleEntry<>(d,m);        
-    }*/
-    
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
-        int cnt = 1;
-        java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        String url, urldet, type, currency, market;
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }
-        final String FUTURES_URL = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
-        final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
-        final String ALLSHARE_URL_DETAILS = "https://www.borsaitaliana.it/borsa/azioni/dati-completi.html?&isin=#";
-        final String ETF_DETAILS = "https://www.borsaitaliana.it/borsa/etf/dettaglio.html?isin=#";
-        final String ETCETN_DETAILS = "https://www.borsaitaliana.it/borsa/etc-etn/dettaglio.html?isin=#";
-        final String ALLSHARE_URL = "https://www.borsaitaliana.it/borsa/azioni/all-share/lista.html?&page=#";
-        final String ETF_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETF&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&page=#";
-        final String ETCETN_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETC&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&page=#";
-
-        switch (st) {
-            case STOCK:
-                url = ALLSHARE_URL;
-                urldet = ALLSHARE_URL_DETAILS;
-                type = "STOCK";
-                currency = "EUR";
-                market = "MLSE";
-                break;
-            case ETF:
-                url = ETF_URL;
-                urldet = ETF_DETAILS;
-                type = "ETF";
-                currency = "EUR";
-                market = "MLSE";
-                break;
-            case ETCETN:
-                url = ETCETN_URL;
-                urldet = ETCETN_DETAILS;
-                type = "ETCETN";
-                currency = "EUR";
-                market = "MLSE";
-                break;
-            case FUTURE:
-                url = FUTURES_URL;
-                urldet = FUTURES_URL_DETAILS;
-                type = "FUTURE";
-                currency = "EUR";
-                market = "MLSE";
-                break;
-            default:
-                throw new Exception(st + " not yet implemented");
-        }
-        while (true) {
-            try {
-                String s = url.replace("#", Integer.toString(cnt));
-                LOG.debug(s);
-
-                s = new String(http.HttpGetUrl(s, Optional.of(20), Optional.empty()));
-
-                Document doc = Jsoup.parse(s);
-                Elements links = doc.select("a");
-                Elements span;
-                if (null == st) {
-                    throw new Exception("not yet implemented");
-                } else {
-                    switch (st) {
-                        case STOCK:
-                            span = doc.select("span[class=\"m-icon -pagination-dright\"]");
-                            break;
-                        case ETF:
-                        case ETCETN:
-                            span = doc.select("a[title=\"Successiva\"]");
-                            break;
-                        case FUTURE:
-                            span = doc.select("a[class=\"u-hidden -xs\"]");
-                            break;
-                        default:
-                            throw new Exception("not yet implemented");
-                    }
-                }
-                links.forEach((x) -> {
-                    if (x.attr("href").contains("/scheda/")) {
-                        //if (st==secType.FUTURE && !x.attr("href").contains("/mini-ftse-mib/")) return;
-                        int idx = x.attr("href").indexOf("/scheda/");
-                        String isin = x.attr("href").substring(idx + 8, idx + 8 + 12);
-                        //LOG.debug(hashcode + "\t" + x.text().toUpperCase());
-                        java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                        map.put("isin", isin);
-                        if (st != secType.FUTURE) {
-                            map.put("name", x.text().toUpperCase());
-                        } else {
-                            map.put("name", "MINIFTSEMIB-" + x.text().toUpperCase());
-                        }
-                        map.put("type", type);
-                        map.put("currency", currency);
-                        map.put("market", market);
-
-                        String sd = urldet.replace("#", isin);
-                        try {
-                            sd = new String(http.HttpGetUrl(sd, Optional.of(30), Optional.empty()));
-                            Document docd = Jsoup.parse(sd);
-                            Elements elements = docd.select("span[class='t-text -size-xs'] > strong");
-                            Elements elements2 = docd.select("span[class*='t-text -right ']");
-                            int min = elements.size() < elements2.size() ? elements.size() : elements2.size();
-                            LOG.debug("**********" + isin + "**********");
-                            LOG.debug(isin + "\t" + x.text().toUpperCase() + "\t" + type + "\t" + currency + "\t" + market);
-                            String sector = "";
-                            for (int i = 0; i < min; i++) {
-                                //map.put(elements.get(i).text(), elements2.get(i).text());
-                                LOG.debug(elements.get(i).text() + "\t" + elements2.get(i).text());
-                                if (elements.get(i).text().contains("Codice Alfanumerico")) {
-                                    map.put("code", elements2.get(i).text());
-                                }
-                                if (st == secType.STOCK && elements.get(i).text().contains("Super Sector")) {
-                                    sector = elements2.get(i).text();
-                                }
-                                //map.put("sector", elements2.get(i).text());
-                                if (elements.get(i).text().contains("Capitalizzazione")) {
-                                    map.put("capitalization", elements2.get(i).text().replace(".", ""));
-                                }
-                                if ((st == secType.ETF || st == secType.ETCETN) && (elements.get(i).text().contains("Benchmark")
-                                        || elements.get(i).text().contains("Area Benchmark")
-                                        || elements.get(i).text().contains("Emittente")
-                                        || elements.get(i).text().contains("Segmento")
-                                        || elements.get(i).text().contains("Classe")
-                                        || elements.get(i).text().contains("Commissioni totali annue")
-                                        || elements.get(i).text().contains("Tipo strumento")
-                                        || elements.get(i).text().contains("Sottostante")
-                                        || elements.get(i).text().contains("Dividendi")
-                                        || elements.get(i).text().contains("Tipo sottostante")
-                                        || elements.get(i).text().contains("Commissioni entrata uscita Performance"))) {
-                                    sector = sector.length() == 0 ? sector = elements.get(i).text() + "=" + elements2.get(i).text() : sector + ";" + elements.get(i).text() + "=" + elements2.get(i).text();
-                                }
-                                if (st == secType.FUTURE) {
-                                    sector = "NA";
-                                    map.put("code", map.get("name"));
-                                }
-
-                            }
-                            map.put("sector", sector);
-                            map.keySet().forEach((y) -> {
-                                LOG.debug(y + "\t" + map.get(y));
-                            });
-                            LOG.debug("********************");
-                            String hash = computeHashcode(map.get("isin"), market);//Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + market))));
-                            if (!all.containsKey(hash)) {
-                                all.put(hash, map);
-                            }
-
-                        } catch (Exception e) {
-                            LOG.warn(e);
-                        }
-                    }
-                });
-                if (span.isEmpty() || st == secType.FUTURE) {
-                    break;
-                }
-                cnt++;
-            } catch (Exception e) {
-                LOG.error(e, e);
-                break;
-            }
-        }
-        LOG.debug("#" + all.size());
-
-        /*
-        *(all|financial|healthcare|services|utilities|industrial_goods|basic_materials|conglomerates|consumer_goods|technology)
-        data.FetchData lambda$fetchMLSEList$3 - ALIMENTARI  consumer_goods
-data.FetchData lambda$fetchMLSEList$3 - ASSICURAZIONI financial
-data.FetchData lambda$fetchMLSEList$3 - AUTOMOBILI E COMPONENTISTICA industrial_goods
-data.FetchData lambda$fetchMLSEList$3 - BANCHE financial
-data.FetchData lambda$fetchMLSEList$3 - BENI IMMOBILI 
-data.FetchData lambda$fetchMLSEList$3 - CHIMICA
-data.FetchData lambda$fetchMLSEList$3 - COMMERCIO
-data.FetchData lambda$fetchMLSEList$3 - EDILIZIA E MATERIALI
-data.FetchData lambda$fetchMLSEList$3 - MATERIE PRIME
-data.FetchData lambda$fetchMLSEList$3 - MEDIA
-data.FetchData lambda$fetchMLSEList$3 - PETROLIO E GAS NATURALE
-data.FetchData lambda$fetchMLSEList$3 - PRODOTTI E SERVIZI INDUSTRIALI
-data.FetchData lambda$fetchMLSEList$3 - PRODOTTI PER LA CASA, PER LA PERSONA, MODA
-data.FetchData lambda$fetchMLSEList$3 - SALUTE
-data.FetchData lambda$fetchMLSEList$3 - SERVIZI FINANZIARI
-data.FetchData lambda$fetchMLSEList$3 - SERVIZI PUBBLICI
-data.FetchData lambda$fetchMLSEList$3 - TECNOLOGIA
-data.FetchData lambda$fetchMLSEList$3 - TELECOMUNICAZIONI
-data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
-         */
-        return all;
     }
 
     public static void fetchIntraday() throws Exception {
@@ -612,26 +376,7 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
         }
         return all;
     }
-   /* 
-    public static void fetchMLSEEOD() throws Exception {
-        ArrayList<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
-        for (HashMap<String,String> m: map) {
-            String hash=m.get("hashcode");
-            String isin=m.get("isin");
-            String type=m.get("type");
-            SimpleEntry<UDate, HashMap<String,String>> e;
-            if (type.equalsIgnoreCase("STOCK")) e=fetchDatiCompletiMLSE(isin, secType.STOCK);
-            else if (type.equalsIgnoreCase("ETF")) e=fetchDatiCompletiMLSE(isin, secType.ETF);
-            else if (type.equalsIgnoreCase("ETCETN")) fetchDatiCompletiMLSE(isin, secType.ETCETN);
-            
-        }
-        String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";    
-        Connection conn = null;
-        java.sql.PreparedStatement stmt = null;
-        java.sql.PreparedStatement ustmt = null;
-        
-    }
-    */
+    
     public static void fetchNYSESharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
@@ -715,279 +460,101 @@ data.FetchData lambda$fetchMLSEList$3 - VIAGGI E TEMPO LIBERO
 
     }
 
-    /*static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListSole24Ore() throws Exception {
-        java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        String allShare = "http://finanza-mercati.ilsole24ore.com/quotazioni.php?QUOTE=Mibtel&cstdet=IndItaPan";
-        String euroTLX = "http://finanza-mercati.ilsole24ore.com/azioni/eurotlx/azioni-estere/main.php?TA_START=#";
-        String details = "http://finanza-mercati.ilsole24ore.com/quotazioni.php?QUOTE=!#";
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_user, Init.http_proxy_password);
-        }
-
-//        <td class="tdDefualtS1 first"><a href="&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;/quotazioni.php?QUOTE=!BET.MI">Be</a></td>
-        String s = new String(http.HttpGetUrl(allShare, Optional.empty(), Optional.empty()));
-        Document doc = Jsoup.parse(s);
-        Elements links = doc.select("td[class=\"tdDefualtS1 first\"] a");
-        for (Element x : links) {
-            
-            int k1 = x.outerHtml().indexOf("QUOTE");
-            int k2 = x.outerHtml().indexOf("\"", k1);
-            if (x.outerHtml().indexOf("quotazioni.php?QUOTE") > 0) {
-                java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                map.put("name", x.text());
-                map.put("code", x.outerHtml().substring(k1 + 7, k2));
-                map.put("type", "STOCK");
-                map.put("market", "MLSE");
-                map.put("currency", "EUR");
-                //String det=details.replace("#", map.get("code"));
-                //map.put("sector", sector);map.put("hashcode", hashcode);                
-                LOG.debug(map.get("name") + "\t" + map.get("code"));
-            }
-        }
+    
+        public static void loadEODdata() throws Exception {        
+        java.util.HashMap<String, java.util.HashMap<String, String>> m=new HashMap<>();
+        m.putAll(fetchMLSEList(secType.ETCETN));  
+        m.putAll(fetchMLSEList(secType.STOCK));
+        m.putAll(fetchMLSEList(secType.ETF));
         
-        boolean succ = false;
-        int ta_start = 0;
-        do {
-            s = new String(http.HttpGetUrl(euroTLX.replace("#", Integer.toString(ta_start)), Optional.empty(), Optional.empty()));
-            doc = Jsoup.parse(s);            
-            links = doc.select("td[class=\"tdDefualtS1\"] a");
-            Elements btn = doc.select("div[class=\"btnDirezione\"] a");
-            for (Element x : links) {
-                int k1 = x.outerHtml().indexOf("QUOTE");
-                int k2 = x.outerHtml().indexOf("\"", k1);
-                if (x.outerHtml().indexOf("quotazioni.php?QUOTE") > 0) {
-                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                    map.put("name", x.text());
-                    map.put("code", x.outerHtml().substring(k1 + 7, k2));
-                    map.put("type", "STOCK");
-                    map.put("market", "TLX");
-                    map.put("currency", "EUR");
-                    //String det=details.replace("#", map.get("code"));
-                    //map.put("sector", sector);map.put("hashcode", hashcode);                
-                    LOG.debug(map.get("name") + "\t" + map.get("code"));
-                }
-            }            
-            succ = false;
-            for (Element x : btn) {                
-                if (x.text().toLowerCase().contains("successivo")) {
-                    succ = true;
-                }
-            }
-            ta_start += 30;
-            LOG.debug(succ);
-        } while (succ);
-        return all;
-    }
-     */
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchEuroNext() throws Exception {
-        /**
-         *
-         * Euronext Access Brussels Euronext Access Lisbon
-         */
-        java.util.HashMap<String, String> marketMap = new java.util.HashMap<String, String>() {
-            {
-                put("Traded not listed Brussels", "TNLB");
-                put("Euronext Paris, London", "XPAR");
-                put("Euronext Paris, Brussels", "XPAR");
-                put("Euronext Paris, Amsterdam, Brussels", "XPAR");
-                put("Euronext Paris, Amsterdam", "XPAR");
-                put("Euronext Paris", "XPAR");
-                put("Euronext Lisbon", "XLIS");
-                put("Euronext Growth Paris", "ALXP");
-                put("Euronext Growth Lisbon", "ALXL");
-                put("Euronext Growth Brussels, Paris", "ALXB");
-                put("Euronext Growth Brussels", "ALXB");
-                put("Euronext Brussels, Paris", "XBRU");
-                put("Euronext Brussels", "XBRU");
-                put("Euronext Brussels, Amsterdam", "XBRU");
-                put("Euronext Expert Market","VPXB"); 
-                put("Euronext Amsterdam, Paris", "XAMS");
-                put("Euronext Amsterdam, London", "XAMS");
-                put("Euronext Amsterdam, Brussels, Paris", "XAMS");
-                put("Euronext Amsterdam, Brussels", "XAMS");
-                put("Euronext Amsterdam", "XAMS");
-                put("Euronext Growth Dublin", "AYP");
-                put("Euronext Dublin", "A5G");
-                put("Euronext Growth Paris, Brussels", "ALXP");
-                put("Euronext Access Paris", "XMLI");
-                put("Euronext Access Lisbon", "ENXL");
-                put("Euronext Access Brussels", "MLXB");
-            }
-        };
-        String u0 = "https://live.euronext.com/en/products/equities/list";
-        //https://live.euronext.com/en/product/equities/FR0013341781-XPAR/2crsi/2crsi/quotes#historical-price
-        //String u0 = "https://www.euronext.com/en/equities/directory";
-        //String det = "https://www.euronext.com/en/products/equities/BE0003849669-MLXB/market-information";
-        //String det = "https://www.euronext.com/en/products/equities/#/market-information";
-        //https://live.euronext.com/en/product/equities/BE0003849669-MLXB#historical-price
-        java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-        com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }
-        String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
-        List<HttpCookie> ck=httpf.getCookies();
-        //\/pd\/data\/stocks\/download
-        //int k1 = s.indexOf("\\/en\\/popup\\/data\\/download?");
-        int k1 = s.indexOf("\\/pd\\/data\\/stocks\\/download?");
-        int k2 = s.indexOf("\"", k1);
-        String u1 = s.substring(k1, k2 - 1);
-        //LOG.debug(u1);
-        u1 = u1.replace("\\u0026", "&");
+        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
         
-        u1 = "https://live.euronext.com" + u1.replace("/", "");
-        u1 = u1.replace("\\", "/");//"+"&display_datapoints=dp_stocks&display_filters=df_stocks";
+        for (String x : m.keySet()) {
+            try {
+            String isin = m.get(x).get("isin");
+            String code = m.get(x).get("code");
+            String type = m.get(x).get("type");            
+            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+            if (type.equalsIgnoreCase("STOCK")) data=fetchMLSEEOD(code, secType.STOCK);
+            else if (type.equalsIgnoreCase("ETF")) data=fetchMLSEEOD(code, secType.ETF);
+            else if (type.equalsIgnoreCase("ETCETN")) data=fetchMLSEEOD(code, secType.ETCETN);
+            else throw new Exception(type +" not allowed");
+            datamap.put(x, data);
+            LOG.debug("fetched data from BORSAITALIANA " + m.get(x).get("name"));
+            } catch (Exception e) {
+                LOG.warn("cannot fetch BORSAITALIANA data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+            }
+        }
+         m=fetchEuroNext();
+         for (String x : m.keySet()) {
+             try {
+            String isin = m.get(x).get("isin");            
+            TreeMap<UDate, ArrayList<Double>> data=fetchEURONEXTEOD(isin, m.get(x).get("market"));            
+            datamap.put(x, data);
+            LOG.debug("fetched data from EURONEXT " + m.get(x).get("name"));
+             }catch (Exception e) {
+                LOG.warn("cannot fetch EURONEXT data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+            }
+        }
+        m = fetchListDE();
+        for (String x : m.keySet()) {
+            try {
+            String isin = m.get(x).get("isin");
+            UDate maxdate= new UDate();
+            UDate mindate=maxdate.getDayOffset(-365*10);//10 y ago
+            TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true, mindate, maxdate);
+            datamap.put(x, data);
+            LOG.debug("fetched data from XETRA " + m.get(x).get("name"));
+             }catch (Exception e) {
+                LOG.warn("cannot fetch XETRA data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+            }
+        }         
+         
+        String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
+        String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
         
-        LOG.debug(u1);
-        java.util.HashMap<String, String> vmap = new java.util.HashMap<>();
-        vmap.put("args[fe_date_format]", "d/m/y");
-        vmap.put("args[fe_decimal_separator]", ".");
-        vmap.put("decimal_separator", "1");
-        vmap.put("args[fe_layout]", "ver");
-        vmap.put("args[fe_type]", "excel");
-        vmap.put("args[initialLetter]", "");
-        vmap.put("iDisplayLength", "20");        
-        vmap.put("iDisplayStart", "0");
-        HttpURLConnection post = httpf.sendPostRequest(u1, vmap);
-        StringBuffer response;
-        try ( BufferedReader in = new BufferedReader(
-                new InputStreamReader(post.getInputStream()))) {
-            String inputLine;
-            response = new StringBuffer();
-            while ((inputLine = in.readLine()) != null) {
-                response.append("\n").append(inputLine);
-            }
-        }
-        String res = response.toString();
-        String[] lines = res.split("\n");
-        for (String line : lines) {
-            String[] row = line.split("\t");
-            if (row.length != 13) {
-                continue;
-            }
-            if (row[0].equalsIgnoreCase("Name")) {
-                LOG.debug(line);
-                continue;//first row
-            }
-            if (row[0].isEmpty()) {
-                continue;
-            }
-            String mkt = row[3].replace("\"", "");
-            if (!marketMap.keySet().contains(mkt)) {
-                LOG.warn("market not found : " + row[3]+"\t"+line);
-                continue;
-            }
-            LOG.debug(line);
-            String isin = row[1].replace("\"", "");
-            String market = "EURONEXT-" + marketMap.get(mkt);//+"\t"+row[3].toUpperCase();
-            String sector = "NA";
-            if (sector.isEmpty() || market.isEmpty()) {
-                continue;
-            }
-            java.util.HashMap<String, String> map = new java.util.HashMap<>();
-            map.put("type", "STOCK");
-            map.put("market", market.toUpperCase());
-            map.put("currency", row[4].replace("\"", "").toUpperCase());
-            map.put("sector", sector);
-            map.put("isin", isin);
-            map.put("code", row[2].replace("\"", ""));
-            map.put("name", row[0].replace("\"", ""));
-            map.keySet().forEach((x) -> {
-                LOG.debug(x + "\t" + map.get(x));
-            });
-            String hash = computeHashcode(map.get("isin"), map.get("market"));// Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
-            if (!all.containsKey(hash)) {
-                all.put(hash, map);
-            }
-
-        }
-        return all;
-    }
-
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListDE() throws Exception {
-        //String XetraSuffix="ETR";
-        String XetraURL = "http://www.xetra.com/xetra-en/instruments/shares/list-of-tradable-shares";
-
-        String det = "https://www.boerse-berlin.com/index.php/Shares?isin=#";//   "http://www.boerse-berlin.com/index.php/Shares?isin=#";
-        java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-
-        String url, type = "STOCK", currency = "EUR", market = "XETRA";
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }
-
-        String s = new String(http.HttpGetUrl(XetraURL, Optional.empty(), Optional.empty()));
-        Document doc = Jsoup.parse(s);
-        Elements buttons = doc.select("button[name='PageNum'");
-        Elements forms = doc.select("form[class='pagination pagination-top']");
-        Elements state = doc.select("input[name='state']");
-
-        int maxpg = 0;
-        for (Element x : buttons) {
-            if (x.text().matches("\\d*")) {
-
-                if (Integer.parseInt(x.text()) > maxpg) {
-                    maxpg = Integer.parseInt(x.text());
+        try (Connection conn = DriverManager.getConnection(Init.db_url);                
+            PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
+                ) {
+            conn.setAutoCommit(false);
+            for (String s:m.keySet()){                                
+                try {
+                ps2.setString(1, s);
+                ps2.setString(2, m.get(s).get("isin"));
+                ps2.setString(3, m.get(s).get("name"));
+                ps2.setString(4, m.get(s).get("code"));
+                ps2.setString(5, m.get(s).get("type"));
+                ps2.setString(6, m.get(s).get("market"));
+                ps2.setString(7, m.get(s).get("currency"));
+                ps2.setString(8, m.get(s).get("sector"));
+                ps2.addBatch();                
+                TreeMap<UDate, ArrayList<Double>> data=datamap.get(s);                
+                for (UDate d : data.keySet()){
+                    ps.setString(1, s);
+                    ps.setString(2, d.toYYYYMMDD());
+                    ps.setFloat(3, data.get(d).get(0).floatValue());
+                    ps.setFloat(4, data.get(d).get(1).floatValue());
+                    ps.setFloat(5, data.get(d).get(2).floatValue());
+                    ps.setFloat(6, data.get(d).get(3).floatValue());
+                    ps.setFloat(7, data.get(d).get(4).floatValue());
+                    ps.setFloat(8, 0.0f);
+                    ps.setString(9,"BORSAITALIANA");                    
+                    ps.addBatch();                    
+                }
+                LOG.debug(Arrays.toString(ps.executeBatch()) );            
+                LOG.debug(Arrays.toString(ps2.executeBatch()));                        
+                conn.commit();                
+                } catch (Exception e) {
+                    LOG.warn("cannot load "+ m.get(s).get("name"));
                 }
             }
-        }
-        //for (Element x : ll) {LOG.debug(x.text());}
-        XetraURL = "http://www.xetra.com" + forms.attr("action") + "?state=" + state.attr("value") + "&sort=sTitle+asc&hitsPerPage=10&pageNum=#";
 
-        java.util.ArrayList<String> list = new java.util.ArrayList<>();
-        for (int i = 0; i < maxpg; i++) {
-            url = XetraURL.replace("#", Integer.toString(i));
+           } catch (SQLException e) {
+               LOG.warn(e);
+           }        
 
-            s = new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
-
-            doc = Jsoup.parse(s);
-            Elements ll = doc.select("ol[class='list search-results '] p:containsOwn(ISIN:)");
-            Elements names = doc.select("ol[class='list search-results ']  li  h4  a");
-            //Elements links = doc.select("ol[class='list search-results ']  li  h4  a[href]");
-            if (ll.size() != names.size()) {
-                throw new Exception("xml mismatch");
-            }
-            for (int j = 0; j < ll.size(); j++) {
-                Element x = ll.get(j);
-                Element y = names.get(j);
-                if (!list.contains(x.text().replace("ISIN: ", ""))) {
-                    String isin = x.text().replace("ISIN: ", "").trim();
-                    String tolink = names.get(j).attr("href");
-                    String name = names.get(j).text();
-                    list.add(isin);
-                    //LOG.info(det.replace("#", isin));
-                    String isindet = new String(http.HttpGetUrl("https://www.xetra.com" + tolink, Optional.empty(), Optional.empty()));
-
-                    String symbol = Jsoup.parse(isindet).select("dt:containsOwn(Mnemonic) + dd").text();
-                    //String isindet = new String(http.HttpGetUrl(det.replace("#", isin), Optional.empty(), Optional.empty()));
-                    //String symbol = Jsoup.parse(isindet).select("div[class='ln_symbol line']  span").text();
-                    //String sector = Jsoup.parse(isindet).select("div[class='ln_sector line']  span").text();
-                    //String market= Jsoup.parse(isindet).select("div[class='ln_homemarket line']  span").text();
-                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                    map.put("type", "STOCK");
-                    map.put("market", "XETRA");
-                    map.put("currency", "EUR");
-                    map.put("sector", "NA");
-                    map.put("isin", isin);
-                    map.put("code", symbol);
-                    map.put("name", name);
-                    if (!symbol.isEmpty()) {
-
-                        String hash = computeHashcode(map.get("isin"), map.get("market")) ;//Encoding.base64encode(getSHA1(String2Byte((map.get("isin") + map.get("market")))));
-                        if (!all.containsKey(hash)) {
-                            all.put(hash, map);
-                        }
-                        LOG.debug(isin + "\t" + symbol + "\t" + y.text());
-                    }
-                }
-
-            }
-
-        }
-        LOG.debug("all = " + list.size());
-        return all;
+        //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
+        //};
     }
 
     public static void main(String[] args) throws Exception {

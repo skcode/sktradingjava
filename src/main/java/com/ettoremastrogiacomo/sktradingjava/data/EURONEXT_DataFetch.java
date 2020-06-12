@@ -193,57 +193,9 @@ public class EURONEXT_DataFetch {
             double volume=e.getLong("volume");
             values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
         }        
+        LOG.debug("samples fetched for "+isin+" = "+values.size());
             return values;
     }    
 
-    static public void fetchAndLoadEURONEXTEOD() throws Exception {
-        java.util.HashMap<String, java.util.HashMap<String, String>> m = fetchEuroNext();
-            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
-        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
-        for (String x : m.keySet()) {
-            String isin = m.get(x).get("isin");
-            data=fetchEURONEXTEOD(isin, m.get(x).get("market"));
-            datamap.put(x, data);
-            LOG.debug("fetched data from " + m.get(x).get("name"));
-        }
-
-        String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
-        String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        try (Connection conn = DriverManager.getConnection(Init.db_url);                
-            PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
-                ) {
-            conn.setAutoCommit(false);
-            for (String s:m.keySet()){                
-                ps2.setString(1, s);
-                ps2.setString(2, m.get(s).get("isin"));
-                ps2.setString(3, m.get(s).get("name"));
-                ps2.setString(4, m.get(s).get("code"));
-                ps2.setString(5, m.get(s).get("type"));
-                ps2.setString(6, m.get(s).get("market"));
-                ps2.setString(7, m.get(s).get("currency"));
-                ps2.setString(8, m.get(s).get("sector"));
-                ps2.addBatch();                
-                data=datamap.get(s);                
-                for (UDate d : data.keySet()){
-                    ps.setString(1, s);
-                    ps.setString(2, d.toYYYYMMDD());
-                    ps.setFloat(3, data.get(d).get(0).floatValue());
-                    ps.setFloat(4, data.get(d).get(1).floatValue());
-                    ps.setFloat(5, data.get(d).get(2).floatValue());
-                    ps.setFloat(6, data.get(d).get(3).floatValue());
-                    ps.setFloat(7, data.get(d).get(4).floatValue());
-                    ps.setFloat(8, 0.0f);
-                    ps.setString(9,"EURONEXT");                    
-                    ps.addBatch();                    
-                }
-            }
-            LOG.debug(Arrays.toString(ps.executeBatch()) );            
-            LOG.debug(Arrays.toString(ps2.executeBatch()));                        
-            conn.commit();
-           } catch (SQLException e) {
-               LOG.warn(e);
-           }        
-        
-    }
     
 }

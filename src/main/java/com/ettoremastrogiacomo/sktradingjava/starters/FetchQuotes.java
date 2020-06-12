@@ -7,6 +7,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
+import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.loadEODdata;
 import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch;
 import com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch;
 import com.ettoremastrogiacomo.utils.HttpFetch;
@@ -33,15 +34,11 @@ public class FetchQuotes {
         if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || 
             c1.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)        {
             try {Database.deleteSharesTable(); } catch (Exception e){LOG.warn(e);}   
-            try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
-            
+            try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}               
         }   
-       try {MLSE_DataFetch.fetchAndLoadMLSEEOD(); }    catch (Exception e) {LOG.warn(e);}             
+       try {loadEODdata(); }    catch (Exception e) {LOG.warn(e);}             
        try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}       
-       try {EURONEXT_DataFetch.fetchAndLoadEURONEXTEOD(); }    catch (Exception e) {LOG.warn(e);}                    
-       try {XETRA_DataFetch.fetchAndLoadXETRAEOD();}    catch (Exception e) {LOG.warn(e);}                    
-       
-       //try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
+       try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
        LOG.debug("end at "+t2);
