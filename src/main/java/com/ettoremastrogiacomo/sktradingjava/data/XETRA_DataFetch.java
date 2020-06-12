@@ -122,11 +122,12 @@ public class XETRA_DataFetch {
         return all;
     }
     
-    static public TreeMap<UDate,ArrayList<Double>> fetchXETRAEOD(String isin,boolean xetra,UDate mindate,UDate maxdate)throws Exception{
+    static public TreeMap<UDate,ArrayList<Double>> fetchXETRAEOD(String isin,boolean xetra)throws Exception{
         //NB utilizzare mic=XFRA per dati eod altri mercati europei altrimenti XETR
         String market=xetra?"XETR":"XFRA";
         HttpFetch http = new HttpFetch();
-        String url= "https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic="+market+"&minDate="+mindate.toYYYYmMMmDD()+"&maxDate="+maxdate.toYYYYmMMmDD()+"&isin="+isin;
+        //https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic=XETR&minDate=2010-01-01&maxDate=2099-01-01&isin=NL0000226223        
+        String url= "https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic="+market+"&minDate=2010-01-01&maxDate=2099-01-01&isin="+isin;
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }

@@ -462,11 +462,12 @@ public final class FetchData {
 
     
         public static void loadEODdata() throws Exception {        
+        java.util.HashMap<String, java.util.HashMap<String, String>> allm=new HashMap<>();
         java.util.HashMap<String, java.util.HashMap<String, String>> m=new HashMap<>();
         m.putAll(fetchMLSEList(secType.ETCETN));  
         m.putAll(fetchMLSEList(secType.STOCK));
         m.putAll(fetchMLSEList(secType.ETF));
-        
+        allm.putAll(m);
         HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
         
         for (String x : m.keySet()) {
@@ -486,6 +487,7 @@ public final class FetchData {
             }
         }
          m=fetchEuroNext();
+         allm.putAll(m);
          for (String x : m.keySet()) {
              try {
             String isin = m.get(x).get("isin");            
@@ -497,18 +499,18 @@ public final class FetchData {
             }
         }
         m = fetchListDE();
+        allm.putAll(m);
         for (String x : m.keySet()) {
             try {
             String isin = m.get(x).get("isin");
-            UDate maxdate= new UDate();
-            UDate mindate=maxdate.getDayOffset(-365*10);//10 y ago
-            TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true, mindate, maxdate);
+            TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true);
             datamap.put(x, data);
             LOG.debug("fetched data from XETRA " + m.get(x).get("name"));
              }catch (Exception e) {
                 LOG.warn("cannot fetch XETRA data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
             }
-        }         
+        }
+        
          
         String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
         String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
@@ -517,16 +519,16 @@ public final class FetchData {
             PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
                 ) {
             conn.setAutoCommit(false);
-            for (String s:m.keySet()){                                
+            for (String s:allm.keySet()){                                
                 try {
                 ps2.setString(1, s);
-                ps2.setString(2, m.get(s).get("isin"));
-                ps2.setString(3, m.get(s).get("name"));
-                ps2.setString(4, m.get(s).get("code"));
-                ps2.setString(5, m.get(s).get("type"));
-                ps2.setString(6, m.get(s).get("market"));
-                ps2.setString(7, m.get(s).get("currency"));
-                ps2.setString(8, m.get(s).get("sector"));
+                ps2.setString(2, allm.get(s).get("isin"));
+                ps2.setString(3, allm.get(s).get("name"));
+                ps2.setString(4, allm.get(s).get("code"));
+                ps2.setString(5, allm.get(s).get("type"));
+                ps2.setString(6, allm.get(s).get("market"));
+                ps2.setString(7, allm.get(s).get("currency"));
+                ps2.setString(8, allm.get(s).get("sector"));
                 ps2.addBatch();                
                 TreeMap<UDate, ArrayList<Double>> data=datamap.get(s);                
                 for (UDate d : data.keySet()){
@@ -545,7 +547,7 @@ public final class FetchData {
                 LOG.debug(Arrays.toString(ps2.executeBatch()));                        
                 conn.commit();                
                 } catch (Exception e) {
-                    LOG.warn("cannot load "+ m.get(s).get("name"));
+                    LOG.warn("cannot load "+ allm.get(s).get("name"));
                 }
             }
 
