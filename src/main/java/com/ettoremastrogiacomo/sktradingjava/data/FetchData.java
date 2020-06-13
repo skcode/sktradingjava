@@ -597,7 +597,7 @@ public final class FetchData {
                 String s = Database.getYahooQuotes(code);
                 String[] lines = s.split("\n");
                 TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
-                for (int i = 0; i < lines.length; i++) {
+                for (int i = 1; i < lines.length; i++) {//skip first header line
                     try {
                         String[] row = lines[i].split(",");
                         String[] date = row[0].split("-");

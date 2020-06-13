@@ -5,11 +5,8 @@
 
 package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.loadEODdata;
-import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch;
-import com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
