@@ -40,8 +40,8 @@ import java.sql.PreparedStatement;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.TreeMap;
-
 
 class Tintradaydata implements Runnable {
 
@@ -95,7 +95,7 @@ class Tintradaydata implements Runnable {
         try {
             HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
             if (Init.use_http_proxy.equals("true")) {
-                http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+                http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
             }
             while (true) {
 
@@ -164,7 +164,7 @@ class Tintradaydata implements Runnable {
             }
             LOG.debug("intraday data fetched for isin " + isin + "\thash " + hashcode + "\t" + data);
             synchronized (this) {
-                try ( Connection conn = DriverManager.getConnection(Init.db_url)) {
+                try (Connection conn = DriverManager.getConnection(Init.db_url)) {
                     try (java.sql.PreparedStatement stmt = conn.prepareStatement(sql)) {
                         if (!data.equals("") && !list.isEmpty()) {
                             try {
@@ -176,8 +176,8 @@ class Tintradaydata implements Runnable {
                                 LOG.warn(e);
                             }
                         }
-                    }                    
-                } 
+                    }
+                }
             }
         } catch (Exception e) {
             this.data = "";
@@ -202,7 +202,7 @@ public final class FetchData {
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
 
     //final com.ettoremastrogiacomo.utils.HttpFetch http;
-    static public String computeHashcode(String isin, String market) throws Exception{
+    static public String computeHashcode(String isin, String market) throws Exception {
         return Encoding.base64encode(getSHA1(String2Byte((isin + market))));
     }
 
@@ -214,7 +214,7 @@ public final class FetchData {
         List<HashMap<String, String>> records = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("MLSE")), Optional.empty(), Optional.empty());
         for (HashMap<String, String> s : records) {
             // LOG.debug("starting thread for "+s.get("hashcode")+"\t"+s.get("name"));
-            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secType.getEnum(s.get("type")) );
+            Tintradaydata t1 = new Tintradaydata(s.get("isin"), s.get("hashcode"), secType.getEnum(s.get("type")));
             //dataarr.put(s.get("hashcode"), t1);
             executor.execute(t1);
         }
@@ -226,7 +226,7 @@ public final class FetchData {
     static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
         int cnt = 1;
         //http://www.borsaitaliana.it/borsa/quotazioni/azioni/elenco-completo-dividendi.html?hashcode=IT0003128367&lang=it&page=1
@@ -245,7 +245,7 @@ public final class FetchData {
             while (true) {
                 String s = s_url + Integer.toString(cnt);
                 //String fase="",data="";
-                s = new String(http.HttpGetUrl(s,Optional.empty(),Optional.empty()));                
+                s = new String(http.HttpGetUrl(s, Optional.empty(), Optional.empty()));
                 Document doc = Jsoup.parse(s);//"m-table -responsive -clear-m"            
                 Elements b = doc.select("table[class='table_dati']  tr td");
                 Elements c = doc.select("a[title='Successiva']");
@@ -280,10 +280,10 @@ public final class FetchData {
                             } else if (j == (i + 7)) {
                                 m.put("AVVISO", b.get(j).text().trim());
                             }
-                        }                        
-                        list.add(m);                        
+                        }
+                        list.add(m);
                     }
-                    
+
                 } else {
                     for (int i = 0; i < b.size(); i = i + row_size_etf) {
                         java.util.HashMap<String, String> m = new java.util.HashMap<>();
@@ -300,7 +300,7 @@ public final class FetchData {
                                 m.put("TIPO_PAGAMENTO", b.get(j).text().trim());
                             }
                         }
-                        list.add(m);                        
+                        list.add(m);
                     }
                 }
                 //b.forEach((x)->{System.out.println(x.text());});
@@ -309,20 +309,20 @@ public final class FetchData {
                     break;
                 }
                 cnt++;
-                
+
             }
         } catch (Exception e) {
             LOG.warn("no dividends for " + hashcode);
-        }        
-        
+        }
+
         return list;
-        
-    } 
-    
+
+    }
+
     public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSE() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         //Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot Size
@@ -345,7 +345,7 @@ public final class FetchData {
                 }
                 LOG.info(s[0] + "\t" + name);
                 java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                long hc=Math.abs(9999999999L-Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
                 map.put("isin", "US" + Long.toString(hc));
                 map.put("name", name);
                 map.put("code", s[0]);
@@ -354,15 +354,14 @@ public final class FetchData {
                 map.put("market", "NYSE");
                 map.put("sector", "NA");
                 all.put(map.get("isin"), map);
-            } else
-            if (s[4].contains("Y")) {//ETF
+            } else if (s[4].contains("Y")) {//ETF
                 String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
                 if (name.equals("")) {
                     continue;
                 }
                 LOG.info(s[0] + "\t" + name);
                 java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                long hc=Math.abs(9999999999L-Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
                 map.put("isin", "US" + Long.toString(hc));
                 map.put("name", name);
                 map.put("code", s[0]);
@@ -372,23 +371,23 @@ public final class FetchData {
                 map.put("sector", "NA");
                 all.put(map.get("isin"), map);
             }
-            
+
         }
         return all;
     }
-    
+
     public static void fetchNYSESharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
 
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
-       LOG.info("fetching NYSE");
+        LOG.info("fetching NYSE");
         try {
             all.putAll(fetchNYSE());
         } catch (Exception e) {
             LOG.warn(e.getMessage());
-        }        
- 
+        }
+
         String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
         /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
                 + "	hashcode text not null,\n"
@@ -460,109 +459,213 @@ public final class FetchData {
 
     }
 
-    
-        public static void loadEODdata() throws Exception {        
-        java.util.HashMap<String, java.util.HashMap<String, String>> allm=new HashMap<>();
-        java.util.HashMap<String, java.util.HashMap<String, String>> m=new HashMap<>();
-        m.putAll(fetchMLSEList(secType.ETCETN));  
+    public static void loadEODdata() throws Exception {
+
+        String sql1 = "insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
+        String sql2 = "insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";
+        Connection conn = DriverManager.getConnection(Init.db_url);
+        java.sql.PreparedStatement stmt1 = conn.prepareStatement(sql1);
+        java.sql.PreparedStatement stmt2 = conn.prepareStatement(sql2);
+        conn.setAutoCommit(false);
+
+        java.util.HashMap<String, java.util.HashMap<String, String>> m = new HashMap<>();
+        //m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
-        m.putAll(fetchMLSEList(secType.ETF));
-        allm.putAll(m);
-        HashMap<String, TreeMap<UDate, ArrayList<Double>>> datamap = new HashMap<>();        
-        
+        //m.putAll(fetchMLSEList(secType.ETF));
+
         for (String x : m.keySet()) {
             try {
-            String isin = m.get(x).get("isin");
-            String code = m.get(x).get("code");
-            String type = m.get(x).get("type");            
-            TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
-            if (type.equalsIgnoreCase("STOCK")) data=fetchMLSEEOD(code, secType.STOCK);
-            else if (type.equalsIgnoreCase("ETF")) data=fetchMLSEEOD(code, secType.ETF);
-            else if (type.equalsIgnoreCase("ETCETN")) data=fetchMLSEEOD(code, secType.ETCETN);
-            else throw new Exception(type +" not allowed");
-            datamap.put(x, data);
-            LOG.debug("fetched data from BORSAITALIANA " + m.get(x).get("name"));
+                String isin = m.get(x).get("isin");
+                String code = m.get(x).get("code");
+                String type = m.get(x).get("type");
+                TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+                if (type.equalsIgnoreCase("STOCK")) {
+                    data = fetchMLSEEOD(code, secType.STOCK);
+                } else if (type.equalsIgnoreCase("ETF")) {
+                    data = fetchMLSEEOD(code, secType.ETF);
+                } else if (type.equalsIgnoreCase("ETCETN")) {
+                    data = fetchMLSEEOD(code, secType.ETCETN);
+                } else {
+                    throw new Exception(type + " not allowed");
+                }
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                stmt1.addBatch();
+                for (UDate d : data.keySet()) {
+                    stmt2.setString(1, x);
+                    stmt2.setString(2, d.toYYYYMMDD());
+                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
+                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
+                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
+                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
+                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
+                    stmt2.setFloat(8, 0.0f);
+                    stmt2.setString(9, "BORSAITALIANA");
+                    stmt2.addBatch();
+                }
+                stmt1.executeBatch();
+                stmt2.executeBatch();
+                conn.commit();
+                LOG.debug("fetched data from BORSAITALIANA " + m.get(x).get("name"));
             } catch (Exception e) {
-                LOG.warn("cannot fetch BORSAITALIANA data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+                LOG.warn("cannot fetch BORSAITALIANA data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
         }
-         m=fetchEuroNext();
-         allm.putAll(m);
-         for (String x : m.keySet()) {
-             try {
-            String isin = m.get(x).get("isin");            
-            TreeMap<UDate, ArrayList<Double>> data=fetchEURONEXTEOD(isin, m.get(x).get("market"));            
-            datamap.put(x, data);
-            LOG.debug("fetched data from EURONEXT " + m.get(x).get("name"));
-             }catch (Exception e) {
-                LOG.warn("cannot fetch EURONEXT data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+
+        m = fetchEuroNext();
+
+        for (String x : m.keySet()) {
+            try {
+                String isin = m.get(x).get("isin");
+                TreeMap<UDate, ArrayList<Double>> data = fetchEURONEXTEOD(isin, m.get(x).get("market"));
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                stmt1.addBatch();
+                for (UDate d : data.keySet()) {
+                    stmt2.setString(1, x);
+                    stmt2.setString(2, d.toYYYYMMDD());
+                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
+                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
+                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
+                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
+                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
+                    stmt2.setFloat(8, 0.0f);
+                    stmt2.setString(9, "EURONEXT");
+                    stmt2.addBatch();
+                }
+                stmt1.executeBatch();
+                stmt2.executeBatch();
+                conn.commit();
+                LOG.debug("fetched data from EURONEXT " + m.get(x).get("name"));
+            } catch (Exception e) {
+                LOG.warn("cannot fetch EURONEXT data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
         }
         m = fetchListDE();
-        allm.putAll(m);
+
         for (String x : m.keySet()) {
             try {
-            String isin = m.get(x).get("isin");
-            TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true);
-            datamap.put(x, data);
-            LOG.debug("fetched data from XETRA " + m.get(x).get("name"));
-             }catch (Exception e) {
-                LOG.warn("cannot fetch XETRA data for "+m.get(x).get("name")+"\t"+m.get(x).get("isin")+"\t"+m.get(x).get("code")+"\t"+e);
+                String isin = m.get(x).get("isin");
+                TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true);
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                stmt1.addBatch();
+                for (UDate d : data.keySet()) {
+                    stmt2.setString(1, x);
+                    stmt2.setString(2, d.toYYYYMMDD());
+                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
+                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
+                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
+                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
+                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
+                    stmt2.setFloat(8, 0.0f);
+                    stmt2.setString(9, "XETRA");
+                    stmt2.addBatch();
+                }
+                stmt1.executeBatch();
+                stmt2.executeBatch();
+                conn.commit();
+                LOG.debug("fetched data from XETRA " + m.get(x).get("name"));
+            } catch (Exception e) {
+                LOG.warn("cannot fetch XETRA data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
         }
-        
-         
-        String sql1="insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";        
-        String sql2="insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        
-        try (Connection conn = DriverManager.getConnection(Init.db_url);                
-            PreparedStatement ps = conn.prepareStatement(sql1);PreparedStatement ps2 = conn.prepareStatement(sql2);                
-                ) {
-            conn.setAutoCommit(false);
-            for (String s:allm.keySet()){                                
-                try {
-                ps2.setString(1, s);
-                ps2.setString(2, allm.get(s).get("isin"));
-                ps2.setString(3, allm.get(s).get("name"));
-                ps2.setString(4, allm.get(s).get("code"));
-                ps2.setString(5, allm.get(s).get("type"));
-                ps2.setString(6, allm.get(s).get("market"));
-                ps2.setString(7, allm.get(s).get("currency"));
-                ps2.setString(8, allm.get(s).get("sector"));
-                ps2.addBatch();                
-                TreeMap<UDate, ArrayList<Double>> data=datamap.get(s);                
-                for (UDate d : data.keySet()){
-                    ps.setString(1, s);
-                    ps.setString(2, d.toYYYYMMDD());
-                    ps.setFloat(3, data.get(d).get(0).floatValue());
-                    ps.setFloat(4, data.get(d).get(1).floatValue());
-                    ps.setFloat(5, data.get(d).get(2).floatValue());
-                    ps.setFloat(6, data.get(d).get(3).floatValue());
-                    ps.setFloat(7, data.get(d).get(4).floatValue());
-                    ps.setFloat(8, 0.0f);
-                    ps.setString(9,"BORSAITALIANA");                    
-                    ps.addBatch();                    
+
+        m = fetchNYSE();
+
+        for (String x : m.keySet()) {
+            try {
+                String code = m.get(x).get("code");
+                String s = Database.getYahooQuotes(code);
+                String[] lines = s.split("\n");
+                TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+                for (int i = 0; i < lines.length; i++) {
+                    try {
+                        String[] row = lines[i].split(",");
+                        String[] date = row[0].split("-");
+                        Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
+                        java.util.ArrayList<Double> drow = new java.util.ArrayList<>();
+                        double fact = Double.parseDouble(row[5]) / Double.parseDouble(row[4]);
+                        drow.add(Double.parseDouble(row[1]) * fact);
+                        drow.add(Double.parseDouble(row[2]) * fact);
+                        drow.add(Double.parseDouble(row[3]) * fact);
+                        drow.add(Double.parseDouble(row[4]) * fact);
+                        drow.add(Double.parseDouble(row[6]));
+                        data.put(new UDate(c.getTimeInMillis()), drow);
+                    } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
+                        LOG.warn(e);
+                    }
                 }
-                LOG.debug(Arrays.toString(ps.executeBatch()) );            
-                LOG.debug(Arrays.toString(ps2.executeBatch()));                        
-                conn.commit();                
-                } catch (Exception e) {
-                    LOG.warn("cannot load "+ allm.get(s).get("name"));
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                stmt1.addBatch();
+                for (UDate d : data.keySet()) {
+                    stmt2.setString(1, x);
+                    stmt2.setString(2, d.toYYYYMMDD());
+                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
+                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
+                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
+                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
+                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
+                    stmt2.setFloat(8, 0.0f);
+                    stmt2.setString(9, "YAHOO");
+                    stmt2.addBatch();
                 }
+                stmt1.executeBatch();
+                stmt2.executeBatch();
+                conn.commit();
+                LOG.debug("fetched data from NYSE " + m.get(x).get("name"));
+            } catch (Exception e) {
+                LOG.warn("cannot fetch NYSE data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
 
-           } catch (SQLException e) {
-               LOG.warn(e);
-           }        
+        }
+
+        try {
+            if (stmt1 != null) {
+                stmt1.close();
+            }
+        } catch (SQLException e) {
+        }
+        try {
+            if (stmt2 != null) {
+                stmt2.close();
+            }
+        } catch (SQLException e) {
+        }
+
+        try {
+            if (conn != null) {
+                conn.close();
+            }
+        } catch (SQLException e) {
+        }
 
         //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
-        //};
-    }
-
-    public static void main(String[] args) throws Exception {
-
-        //fetchMLSEList(secType.FUTURE);
-       // fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
     }
 

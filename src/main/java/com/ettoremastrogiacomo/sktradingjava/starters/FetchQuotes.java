@@ -38,7 +38,7 @@ public class FetchQuotes {
         }   
        try {loadEODdata(); }    catch (Exception e) {LOG.warn(e);}             
        try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}       
-       try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
+       //try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
        try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
        LOG.debug("end at "+t2);

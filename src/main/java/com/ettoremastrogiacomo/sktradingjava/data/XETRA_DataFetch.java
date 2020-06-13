@@ -139,12 +139,23 @@ public class XETRA_DataFetch {
             JSONObject e = arr.getJSONObject(i);
             String []dateel=e.getString("date").split("-");
             UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);            
-            double open=e.getDouble("open");
-            double high=e.getDouble("high");
-            double low=e.getDouble("low");
-            double close=e.getDouble("close");
-            double volume=e.getLong("turnoverPieces");
-            values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
+            try {
+                double open=e.getDouble("open");
+                double high=e.getDouble("high");
+                double low=e.getDouble("low");
+                double close=e.getDouble("close");
+                double volume=e.getLong("turnoverPieces");
+                values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
+            } catch (Exception ex) {
+                LOG.warn(e.toString());
+                double close=e.getDouble("close");
+                double open=close;
+                double high=close;
+                double low=close;
+                double volume=e.getLong("turnoverPieces");
+                 values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
+            }            
+            
         }             
         LOG.debug("samples fetched for "+isin+" = "+values.size());
         return values;
