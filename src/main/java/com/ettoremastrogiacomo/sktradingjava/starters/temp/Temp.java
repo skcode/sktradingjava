@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -50,7 +51,8 @@ public class Temp {
     }
 
     public static void main(String[] args) throws Exception {
-       
+       Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
+       enel.getSerieCopy(3).plot("enel", "price");
        // LOG.debug(Database.getYahooQuotes("MSFT"));
        
        

@@ -32,6 +32,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.text.DateFormatter;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -586,134 +588,7 @@ public class Database {
         return getRecords(Optional.of(where));
     }
 
-    /* public static java.util.ArrayList<String> getIsins(Optional<String> isin, Optional<String> name, Optional<String> code, Optional<String> type, Optional<String> market, Optional<String> currency, Optional<String> sector) throws Exception {
-        java.util.ArrayList< java.util.HashMap<String, String>> list = Database.getRecords(Optional.empty(),isin, name, code, type, market, currency, sector);
-        java.util.ArrayList<String> isins = new java.util.ArrayList<>();
-        list.forEach((x) -> {
-            isins.add(x.get("isin"));
-        });
-        return isins;
-    }*/
 
-    public static String getYahooQuotes(String symbol) throws Exception {
-        URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
-
-        HttpFetch http = new HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }        
-        String res = new String(http.HttpGetUrl(url.toString(), Optional.empty(), Optional.empty()));
-        int k0 = res.indexOf("action=\"/consent\"");
-
-        if (k0 > 0) {
-            java.util.HashMap<String, String> pmap = new java.util.HashMap<>();
-            Document dy = Jsoup.parse(res);
-            Elements els = dy.select("form[class='consent-form'] input[type='hidden']");
-            els.forEach((x) -> {
-                pmap.put(x.attr("name"), x.attr("value"));
-            });
-            HttpURLConnection huc = http.sendPostRequest("https://guce.oath.com/consent", pmap);
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    huc.getInputStream()));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-            res = response.toString();
-            //cookieList = cookieManager.getCookieStore().getCookies();
-
-        }
-        int k1 = res.indexOf("CrumbStore");
-        int k2 = res.indexOf("\"", k1 + 22);
-        String crumb = res.substring(k1 + 21, k2).replace("\"", "").replace("\\u00", "%");
-       // LOG.info("crumb=" + crumb);
-                   //https://query1.finance.yahoo.com/v7/finance/download/HFRN.MI?period1=0&period2=1578265200&interval=1d&events=history&crumb=hCd0SUv4Zf2
-        String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history&crumb=" + crumb;
-        res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.of(http.getCookies())));
-        LOG.debug("getting "+symbol+"\tURL=" + u2);
-        return res;
-}
-
-
-    /**
-     *
-     * @param symbol (e.g. BIT:ENEL)
-     * @return csv google quotes for symbol
-     * @throws Exception
-     */
-    public static String getGoogleQuotes(String symbol) throws Exception {
-        //https://finance.google.com/finance/historical?q=biT:ENEL
-        //https://finance.google.com/finance/historical?startdate=Jan+01%2C+2000&enddate=Jan+01%2C+2099&cid=668641&num=200&start=0
-        com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }
-        int k = 0;
-        String ret = "Date;Open;High;Low;Close;Volume\n";
-        String base_url = "https://finance.google.com/finance/historical?q=" + symbol;
-
-        String base = new String(http.HttpGetUrl(base_url, Optional.empty(), Optional.empty()));
-        LOG.debug("getting symbol " + symbol + "\t" + base_url);
-        List<HttpCookie> cookies = http.getCookies();
-        //cookies.forEach((x)->{LOG.debug("coockie\t"+x);});        
-        int k1 = base.indexOf("/finance/?ei=");
-        int k2 = base.indexOf("\"", k1);
-        int k3 = base.indexOf("cid");
-        int k4 = base.indexOf(">", k3 + 1);
-        if (k1 < 0 || k2 < 0 || k3 < 0 || k4 < 0) {
-            throw new Exception("cannot find ei or cid");
-        }
-        String ei = base.substring(k1 + 13, k2);
-        String cid = base.substring(k3 + 11, k4 - 1);
-        String s_url = "https://finance.google.com/finance/historical?startdate=Jan+01%2C+2000&enddate=Jan+01%2C+2099&cid=" + cid + "&num=200&start=#";
-        while (true) {
-            String s = s_url.replace("#", Integer.toString(k));//.concat("&cid="+cid+"&ei="+ei);
-            String data = new String(http.HttpGetUrl(s, Optional.empty(), Optional.of(cookies)));
-            //LOG.debug("getting " + s);
-            Document doc = Jsoup.parse(data);
-            Elements eld = doc.select("td[class=\"lm\"]");
-            Elements elo = doc.select("td.lm + td");
-            Elements elh = doc.select("td.lm + td + td");
-            Elements ell = doc.select("td.lm + td + td + td");
-            Elements elc = doc.select("td.lm + td + td + td + td");
-            Elements elv = doc.select("td.lm + td + td + td + td + td");
-            //Elements stop=doc.select("div[class=\"SP_arrow_last_off\"]");
-            if (eld.isEmpty() && k == 0) {
-                throw new Exception("symbol " + symbol + " not found");
-            }
-            if (eld.isEmpty()) {
-                break;
-            }
-            for (int i = 0; i < eld.size(); i++) {
-                String o = elo.get(i).text().trim(), h = elh.get(i).text().trim(), l = ell.get(i).text().trim(), c = elc.get(i).text().trim(), v = elv.get(i).text().trim();
-                if (o.contains("-")) {
-                    o = c;
-                }
-                if (h.contains("-")) {
-                    h = c;
-                }
-                if (l.contains("-")) {
-                    l = c;
-                }
-                if (c.contains("-")) {
-                    continue;
-                }
-                if (v.contains("-")) {
-                    v = "0";
-                }
-                String row = eld.get(i).text() + ";" + o + ";" + h + ";" + l + ";" + c + ";" + v + "\n";
-                //LOG.debug(row);
-                ret = ret + row;
-            }
-            k += 200;
-            //if (!stop.isEmpty()) break;
-            //<div class="SP_arrow_last_off"></div>
-        }
-        return ret;
-
-    }
 
     public static Fints getFintsQuotes(String hashcode) throws Exception {
         List<HashMap<String, String>> list = Database.getRecords(Optional.of(Arrays.asList(hashcode)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
@@ -724,7 +599,110 @@ public class Database {
 
     }
 
-    public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
+        public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
+        Connection conn = null;
+        Statement stmt = null;
+        java.sql.ResultSet res = null;
+        ArrayList<UDate> dates = new ArrayList<>();
+        ArrayList<String> names = new ArrayList<>();
+        double[][] matrix;
+        Fints ret = new Fints();
+        String codev, marketv;
+        try {
+            conn = DriverManager.getConnection(Init.db_url);
+            stmt = conn.createStatement();
+            String hashcode;
+            if (isin.isPresent() && market.isPresent()) {//str.replaceAll(“\””, “\\\\\””);
+                res = stmt.executeQuery("select hashcode,code,market from "+Init.db_sharestable+"where isin='" + isin.get() + "' and market='" + market.get().replaceAll("\"", "\\\\\"") + "'");
+                
+                if (res.next()) {
+                    hashcode = res.getString("hashcode");
+                    codev = res.getString("code");
+                    marketv = res.getString("market");
+                } else {
+                    throw new Exception("isin " + isin.get() + " not found");
+                }
+                res = stmt.executeQuery("select data,provider from "+Init.db_eoddatatable+" where hashcode='" + hashcode + "'");
+            } else if (code.isPresent() && market.isPresent()) {
+                String q = "select hashcode,code,market from "+Init.db_sharestable+" where code='" + code.get() + "' and market='" + market.get().replaceAll("\"", "\\\"") + "'";
+                res = stmt.executeQuery(q);
+                if (res.next()) {
+                    hashcode = res.getString("hashcode");
+                    codev = res.getString("code");
+                    marketv = res.getString("market");
+                } else {
+                    throw new Exception("code " + code.get() + " not found");
+                }
+
+                res = stmt.executeQuery("select data,provider from "+Init.db_eoddatatable+" where hashcode='" + hashcode + "'");
+
+            } else {
+                throw new Exception("isin+market or code+market must be present");
+            }
+            
+            if (res.next()) {
+                String data = res.getString("data");
+                String provider = res.getString("provider");                
+                    LOG.debug("LOADING data FOR " + codev + "." + marketv);
+                    JSONArray arr= new JSONArray(data);                    
+                    java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
+                    matrix=new double[arr.length()][6];
+                    for (int i=0;i<arr.length();i++) {
+                        JSONObject o=arr.getJSONObject(i);
+                        String date=o.getString("date");
+                        Double open=o.getDouble("open");
+                        Double high=o.getDouble("high");
+                        Double low=o.getDouble("low");
+                        Double close=o.getDouble("close");
+                        Double volume=o.getDouble("volume");
+                        Double oi=o.getDouble("oi");                    
+                        map.put(UDate.parseYYYYMMDD(date),new ArrayList<>( Arrays.asList(open,high,low,close,volume,oi)));
+                    }
+                    int j=0;
+                    for (UDate x: map.keySet()){
+                        dates.add(x);
+                        for (int i=0;i<6;i++) matrix[j][i]=map.get(x).get(i);
+                        j++;
+                    }
+                    names.add("OPEN(" + codev + "." + marketv + ")");
+                    names.add("HIGH(" + codev + "." + marketv + ")");
+                    names.add("LOW(" + codev + "." + marketv + ")");
+                    names.add("CLOSE(" + codev + "." + marketv + ")");
+                    names.add("VOLUME(" + codev + "." + marketv + ")");
+                    names.add("OI(" + codev + "." + marketv + ")");                    
+                    ret = new Fints(dates, names, Fints.frequency.DAILY, matrix);                
+            } else {
+                throw new SQLException(code + "." + market + " not found");
+            }
+        } catch (SQLException e) {
+            LOG.error("cannot fetch " + code + "." + market, e);
+            throw e;
+
+        } finally {
+            try {
+                if (res != null) {
+                    res.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }
+        return ret;
+    }
+
+    
+/*    public static Fints getFintsQuotes2(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -844,14 +822,6 @@ public class Database {
                                         drow.add(Double.parseDouble(row[j]));
                                     }
                                 }
-                            /*} catch (Exception e) {//fill 0volume rows with previous close
-                                double prev_close = map.lastEntry().getValue().get(3);
-                                drow.add(prev_close);
-                                drow.add(prev_close);
-                                drow.add(prev_close);
-                                drow.add(prev_close);
-                                drow.add(0.0);
-                            }*/
                             if (row.length != 7) {
                                 throw new Exception(" row size must be = 7\t" + lines[i]);
                             }
@@ -895,12 +865,7 @@ public class Database {
             } else {
                 ret = gdataret;
             }
-            /*if (ret == yahooret) {
-                LOG.debug("Yahoo choice for " + codev + "." + marketv);
-            } else {
-                LOG.debug("Google choice for " + codev + "." + marketv);
-            }*/
-
+  
         } catch (SQLException e) {
             LOG.error("cannot fetch " + code + "." + market, e);
             throw e;
@@ -927,7 +892,7 @@ public class Database {
         }
         return ret;
     }
-
+*/
     /**
      * @param hashcodes list      *
      * @param length e.g. 200 samples
@@ -1206,58 +1171,58 @@ public class Database {
                 try {
                     if (market.toUpperCase().contains("MLSE") && type.toUpperCase().contains("STOCK")) {
                         //   map.put("googlequotes", Database.getGoogleQuotes("BIT:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".MI"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".MI"));
                     } else if (market.toUpperCase().contains("MLSE")) {
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".MI"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".MI"));
                     } else if (market.toUpperCase().contains("NYSE")) {
-                        map.put("yahooquotes", Database.getYahooQuotes(code));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code));
                     } else if (market.toUpperCase().contains("XETRA") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("ETR:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".DE"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".DE"));
                     } else if (market.toUpperCase().contains("EURONEXT-XMLI") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".PA"));
                     } else if (market.toUpperCase().contains("EURONEXT-XBRU") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".BR"));
                     } else if (market.toUpperCase().contains("EURONEXT-XPAR") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".PA"));
                     } else if (market.toUpperCase().contains("EURONEXT-XLIS") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("ELI:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".LS"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".LS"));
                     } else if (market.toUpperCase().contains("EURONEXT-ALXP") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("EPA:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".PA"));
                     } else if (market.toUpperCase().contains("EURONEXT-VPXB") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".AS"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".AS"));
                     } 
                     
                     else if (market.toUpperCase().contains("EURONEXT-XAMS") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".AS"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".AS"));
                     } else if (market.toUpperCase().contains("EURONEXT-ENXL") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("ELI:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".LS"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".LS"));
                     } else if (market.toUpperCase().contains("EURONEXT-MLXB") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".BR"));
                     } else if (market.toUpperCase().contains("EURONEXT-ALXL") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("ELI:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".LS"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".LS"));
                     } else if (market.toUpperCase().contains("EURONEXT-TNLB") && type.toUpperCase().contains("STOCK")) {
                         //  map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".BR"));
                     } else if (market.toUpperCase().contains("EURONEXT-ALXB") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("EBR:"+code ));
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".BR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".BR"));
                     } else if (market.toUpperCase().contains("EURONEXT-AYP") && type.toUpperCase().contains("STOCK")) {
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".IR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".IR"));
                     } else if (market.toUpperCase().contains("EURONEXT-A5G") && type.toUpperCase().contains("STOCK")) {
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".IR"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".IR"));
                     } else if (market.toUpperCase().contains("EURONEXT-ALXP") && type.toUpperCase().contains("STOCK")) {
-                        map.put("yahooquotes", Database.getYahooQuotes(code + ".PA"));
+                        map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".PA"));
                     } else {
                         throw new Exception("unknown market/type " + market + "\t" + type);
                     }

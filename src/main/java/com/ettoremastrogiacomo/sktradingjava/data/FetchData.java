@@ -321,7 +321,7 @@ public final class FetchData {
 
     }
 
-    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSE() throws Exception {
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSEList() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
@@ -556,12 +556,12 @@ public final class FetchData {
             }
         }
 
-        m = fetchNYSE();
+        m = fetchNYSEList();
 
         for (String x : m.keySet()) {
             try {
                 String code = m.get(x).get("code");
-                String s = Database.getYahooQuotes(code);
+                String s = fetchYahooQuotes(code);
                 String[] lines = s.split("\n");
                 //TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
                 JSONArray data= new JSONArray();
@@ -631,6 +631,51 @@ public final class FetchData {
 
         //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
+    }
+
+    /* public static java.util.ArrayList<String> getIsins(Optional<String> isin, Optional<String> name, Optional<String> code, Optional<String> type, Optional<String> market, Optional<String> currency, Optional<String> sector) throws Exception {
+    java.util.ArrayList< java.util.HashMap<String, String>> list = Database.getRecords(Optional.empty(),isin, name, code, type, market, currency, sector);
+    java.util.ArrayList<String> isins = new java.util.ArrayList<>();
+    list.forEach((x) -> {
+    isins.add(x.get("isin"));
+    });
+    return isins;
+    }*/
+    public static String fetchYahooQuotes(String symbol) throws Exception {
+        URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res = new String(http.HttpGetUrl(url.toString(), Optional.empty(), Optional.empty()));
+        int k0 = res.indexOf("action=\"/consent\"");
+        if (k0 > 0) {
+            HashMap<String, String> pmap = new HashMap<>();
+            Document dy = Jsoup.parse(res);
+            Elements els = dy.select("form[class='consent-form'] input[type='hidden']");
+            els.forEach((x) -> {
+                pmap.put(x.attr("name"), x.attr("value"));
+            });
+            HttpURLConnection huc = http.sendPostRequest("https://guce.oath.com/consent", pmap);
+            BufferedReader in = new BufferedReader(new InputStreamReader(huc.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            res = response.toString();
+            //cookieList = cookieManager.getCookieStore().getCookies();
+        }
+        int k1 = res.indexOf("CrumbStore");
+        int k2 = res.indexOf("\"", k1 + 22);
+        String crumb = res.substring(k1 + 21, k2).replace("\"", "").replace("\\u00", "%");
+        // LOG.info("crumb=" + crumb);
+        //https://query1.finance.yahoo.com/v7/finance/download/HFRN.MI?period1=0&period2=1578265200&interval=1d&events=history&crumb=hCd0SUv4Zf2
+        String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history&crumb=" + crumb;
+        res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.of(http.getCookies())));
+        Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
+        return res;
     }
 
 }
