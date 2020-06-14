@@ -122,7 +122,7 @@ public class XETRA_DataFetch {
         return all;
     }
     
-    static public TreeMap<UDate,ArrayList<Double>> fetchXETRAEOD(String isin,boolean xetra)throws Exception{
+    static public JSONArray fetchXETRAEOD(String isin,boolean xetra)throws Exception{
         //NB utilizzare mic=XFRA per dati eod altri mercati europei altrimenti XETR
         String market=xetra?"XETR":"XFRA";
         HttpFetch http = new HttpFetch();
@@ -134,25 +134,34 @@ public class XETRA_DataFetch {
         String res= new String(http.HttpGetUrl(url,Optional.empty(),Optional.empty()));
         JSONObject    obj = new JSONObject(res);
         JSONArray arr= obj.getJSONArray("data");
-        TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
+        JSONArray totalarr= new JSONArray();
+        //TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();        
         for(int i=0;i<arr.length();i++){                           
             JSONObject e = arr.getJSONObject(i);
-            String []dateel=e.getString("date").split("-");
-            UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);  
-            
+            JSONObject sv= new JSONObject();                        
             try {
+                String []dateel=e.getString("date").split("-");
+                UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);                                              
                 double close=e.getDouble("close");
                 double volume=e.getLong("turnoverPieces");
                 double open=e.isNull("open") ? close:e.getDouble("open");
                 double high=e.isNull("high") ? close:e.getDouble("high");
                 double low=e.isNull("low") ? close:e.getDouble("low");
-                values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
+                sv.put("date", datev.toYYYYMMDD());
+                sv.put("open", open);
+                sv.put("high", high);
+                sv.put("low", low);
+                sv.put("close", close);
+                sv.put("volume", volume);
+                sv.put("oi", 0);                
+                totalarr.put(sv);
+        //        values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
             } catch (Exception ex) {
                 LOG.warn(e.toString()+"\t"+ex);
             }                        
         }             
-        LOG.debug("samples fetched for "+isin+" = "+values.size());
-        return values;
+        LOG.debug("samples fetched for "+isin+" = "+totalarr.length() );
+        return totalarr;
     }
     
     

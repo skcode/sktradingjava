@@ -34,9 +34,9 @@ public class FetchQuotes {
             try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}               
         }   
        try {loadEODdata(); }    catch (Exception e) {LOG.warn(e);}             
-       try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}       
+       //try {FetchData.fetchNYSESharesDetails();}    catch (Exception e) {LOG.warn(e);}              
        //try {FetchData.fetchIntraday();}catch (Exception e) {LOG.warn(e);}
-       try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
+       //try {Database.fetchEODquotesST();}catch (Exception e) {LOG.warn(e);}
        UDate t2=new UDate();
        LOG.debug("end at "+t2);
        double diff=(t2.time-t1.time)/(1000.0*60.0);

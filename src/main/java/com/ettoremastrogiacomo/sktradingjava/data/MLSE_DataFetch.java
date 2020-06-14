@@ -216,7 +216,7 @@ public class MLSE_DataFetch {
         LOG.debug("#" + all.size());
         return all;
     }
-    public static TreeMap<UDate,ArrayList<Double>> fetchMLSEEOD(String symbol,Security.secType sec)throws Exception{
+    public static JSONArray fetchMLSEEOD(String symbol,Security.secType sec)throws Exception{
         String market="";
         if (null==sec) throw new Exception(sec+" non gestito");
         else switch (sec) {
@@ -239,18 +239,31 @@ public class MLSE_DataFetch {
         String res=http.sendjsonPostRequest(url, jsonstr);
         JSONObject o= new JSONObject(res);
         JSONArray arr= o.getJSONArray("d");
-        TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()                ;
-        for (int i=0;i<arr.length();i++){            
+        //TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()  ;
+        JSONArray totalarr= new JSONArray();
+        for (int i=0;i<arr.length();i++){   
+            
+            JSONObject sv= new JSONObject();             
             UDate d=new UDate(arr.getJSONArray(i).getLong(0));
             d=UDate.getNewDate(d, 0, 0, 0);
-            if (!arr.getJSONArray(i).isEmpty()){
-                if (!arr.getJSONArray(i).isNull(6)) map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),(double)arr.getJSONArray(i).getInt(6))));
-                else map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),0.0)));
+            if (!arr.getJSONArray(i).isEmpty()){                
+                sv.put("date", d.toYYYYMMDD());
+                sv.put("close", arr.getJSONArray(i).getDouble(5));                
+                sv.put("open", arr.getJSONArray(i).isNull(2)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(2));
+                sv.put("high", arr.getJSONArray(i).isNull(3)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(3));
+                sv.put("low", arr.getJSONArray(i).isNull(4)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(4));                
+                sv.put("volume", arr.getJSONArray(i).isNull(6)?0.0: (double)arr.getJSONArray(i).getDouble(6));
+                sv.put("oi", 0);                
+                totalarr.put(sv);                 
+                
+                //if (!arr.getJSONArray(i).isNull(6)) map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),(double)arr.getJSONArray(i).getInt(6))));
+                //else map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),0.0)));
             }
+           
              
         }
-        LOG.debug("samples fetched for "+symbol+" = "+map.size());
-        return map;
+        LOG.debug("samples fetched for "+symbol+" = "+totalarr.length());
+        return totalarr;
     }
 
     

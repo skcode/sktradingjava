@@ -9,37 +9,18 @@ import com.ettoremastrogiacomo.sktradingjava.Init;
 
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.computeHashcode;
 
-import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.CookieHandler;
-import java.net.CookieManager;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /**
  *
@@ -174,7 +155,7 @@ public class EURONEXT_DataFetch {
         return all;
     }
     
- static public TreeMap<UDate,ArrayList<Double>> fetchEURONEXTEOD(String isin, String market) throws Exception {
+ static public JSONArray fetchEURONEXTEOD(String isin, String market) throws Exception {
         String val=market.contains("EURONEXT")? isin+market.substring(market.indexOf("-")):isin+"-"+market;        
         //https://live.euronext.com/intraday_chart/getChartData/FR0010242511-XPAR/max
         String url="https://live.euronext.com/intraday_chart/getChartData/"+val+"/max";
@@ -182,19 +163,30 @@ public class EURONEXT_DataFetch {
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
         }
-    TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
+    //TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
         String res= new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
         JSONArray arr = new JSONArray(res);
-        for(int i=0;i<arr.length();i++){                           
+        JSONArray totalarr= new JSONArray();
+        for(int i=0;i<arr.length();i++){      
+            JSONObject sv= new JSONObject();
             JSONObject e = arr.getJSONObject(i);
             String[] dateel=e.getString("time").substring(0, 10).split("-");
             UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);            
             double close=e.getDouble("price");
             double volume=e.getLong("volume");
-            values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
+            sv.put("date", datev.toYYYYMMDD());
+            sv.put("close", close);                
+            sv.put("open", close);
+            sv.put("high", close);
+            sv.put("low", close);                
+            sv.put("volume", volume);
+            sv.put("oi", 0);                
+            totalarr.put(sv);             
+            
+            //values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
         }        
-        LOG.debug("samples fetched for "+isin+" = "+values.size());
-            return values;
+        LOG.debug("samples fetched for "+isin+" = "+totalarr.length());
+            return totalarr;
     }    
 
     

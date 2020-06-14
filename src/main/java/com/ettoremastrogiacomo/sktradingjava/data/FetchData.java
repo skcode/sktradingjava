@@ -42,6 +42,8 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.TreeMap;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 class Tintradaydata implements Runnable {
 
@@ -376,7 +378,7 @@ public final class FetchData {
         return all;
     }
 
-    public static void fetchNYSESharesDetails() throws Exception {
+/*    public static void fetchNYSESharesDetails() throws Exception {
 //        String sql = "insert or replace into securities (hashcode,name,code,type,market,currency,sector,yahooquotes,bitquotes,googlequotes) values"
         //              + "(?,?,?,?,?,?,?,(select yahooquotes from securities where hashcode = ?),(select bitquotes from securities where hashcode = ?),(select googlequotes from securities where hashcode = ?));";
 
@@ -389,17 +391,6 @@ public final class FetchData {
         }
 
         String sql = "insert or replace into shares values (?,?,?,?,?,?,?,?);";
-        /*String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
-                + "	hashcode text not null,\n"
-                + "	hashcode text NOT NULL,\n"                
-                + "	name text not null,\n"
-                + "	code text NOT NULL,\n"
-                + "	type text not null,\n"
-                + "	market text not null,\n"
-                + "	currency text not null,\n"
-                + "	sector text not null,\n"
-                + "	primary key (hashcode) ,\n"
-                + "     unique (hashcode,market));";//,\n" */
 
         Connection conn = null;
         java.sql.PreparedStatement stmt = null;
@@ -458,27 +449,27 @@ public final class FetchData {
         }
 
     }
-
+*/
     public static void loadEODdata() throws Exception {
 
-        String sql1 = "insert or replace into shares(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        String sql2 = "insert or replace into eoddatav2(hashcode,date,open,high,low,close,volume,oi,provider) values(?,?,?,?,?,?,?,?,?)";
+        String sql1 = "insert or replace into "+Init.db_sharestable+"(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
+        String sql2 = "insert or replace into "+Init.db_eoddatatable+"(hashcode,data,provider) values(?,?,?)";
         Connection conn = DriverManager.getConnection(Init.db_url);
         java.sql.PreparedStatement stmt1 = conn.prepareStatement(sql1);
         java.sql.PreparedStatement stmt2 = conn.prepareStatement(sql2);
         conn.setAutoCommit(false);
 
         java.util.HashMap<String, java.util.HashMap<String, String>> m = new HashMap<>();
-        //m.putAll(fetchMLSEList(secType.ETCETN));
+        m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
-        //m.putAll(fetchMLSEList(secType.ETF));
+        m.putAll(fetchMLSEList(secType.ETF));
 
         for (String x : m.keySet()) {
             try {
                 String isin = m.get(x).get("isin");
                 String code = m.get(x).get("code");
                 String type = m.get(x).get("type");
-                TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+                JSONArray data = new JSONArray();
                 if (type.equalsIgnoreCase("STOCK")) {
                     data = fetchMLSEEOD(code, secType.STOCK);
                 } else if (type.equalsIgnoreCase("ETF")) {
@@ -497,18 +488,10 @@ public final class FetchData {
                 stmt1.setString(7, m.get(x).get("currency"));
                 stmt1.setString(8, m.get(x).get("sector"));
                 stmt1.addBatch();
-                for (UDate d : data.keySet()) {
-                    stmt2.setString(1, x);
-                    stmt2.setString(2, d.toYYYYMMDD());
-                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
-                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
-                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
-                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
-                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
-                    stmt2.setFloat(8, 0.0f);
-                    stmt2.setString(9, "BORSAITALIANA");
-                    stmt2.addBatch();
-                }
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, "BORSAITALIANA");                
+                stmt2.addBatch();
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();
@@ -523,7 +506,7 @@ public final class FetchData {
         for (String x : m.keySet()) {
             try {
                 String isin = m.get(x).get("isin");
-                TreeMap<UDate, ArrayList<Double>> data = fetchEURONEXTEOD(isin, m.get(x).get("market"));
+                JSONArray data = fetchEURONEXTEOD(isin, m.get(x).get("market"));
                 stmt1.setString(1, x);
                 stmt1.setString(2, m.get(x).get("isin"));
                 stmt1.setString(3, m.get(x).get("name"));
@@ -533,18 +516,10 @@ public final class FetchData {
                 stmt1.setString(7, m.get(x).get("currency"));
                 stmt1.setString(8, m.get(x).get("sector"));
                 stmt1.addBatch();
-                for (UDate d : data.keySet()) {
-                    stmt2.setString(1, x);
-                    stmt2.setString(2, d.toYYYYMMDD());
-                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
-                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
-                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
-                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
-                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
-                    stmt2.setFloat(8, 0.0f);
-                    stmt2.setString(9, "EURONEXT");
-                    stmt2.addBatch();
-                }
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, "EURONEXT");                
+                stmt2.addBatch();                
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();
@@ -558,7 +533,7 @@ public final class FetchData {
         for (String x : m.keySet()) {
             try {
                 String isin = m.get(x).get("isin");
-                TreeMap<UDate, ArrayList<Double>> data = fetchXETRAEOD(isin, true);
+                JSONArray data = fetchXETRAEOD(isin, true);
                 stmt1.setString(1, x);
                 stmt1.setString(2, m.get(x).get("isin"));
                 stmt1.setString(3, m.get(x).get("name"));
@@ -568,18 +543,10 @@ public final class FetchData {
                 stmt1.setString(7, m.get(x).get("currency"));
                 stmt1.setString(8, m.get(x).get("sector"));
                 stmt1.addBatch();
-                for (UDate d : data.keySet()) {
-                    stmt2.setString(1, x);
-                    stmt2.setString(2, d.toYYYYMMDD());
-                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
-                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
-                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
-                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
-                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
-                    stmt2.setFloat(8, 0.0f);
-                    stmt2.setString(9, "XETRA");
-                    stmt2.addBatch();
-                }
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, "XETRA");                
+                stmt2.addBatch();                
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();
@@ -596,20 +563,25 @@ public final class FetchData {
                 String code = m.get(x).get("code");
                 String s = Database.getYahooQuotes(code);
                 String[] lines = s.split("\n");
-                TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+                //TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
+                JSONArray data= new JSONArray();
                 for (int i = 1; i < lines.length; i++) {//skip first header line
                     try {
+                        JSONObject sv= new JSONObject();
                         String[] row = lines[i].split(",");
                         String[] date = row[0].split("-");
-                        Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
-                        java.util.ArrayList<Double> drow = new java.util.ArrayList<>();
+                        Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));                        
                         double fact = Double.parseDouble(row[5]) / Double.parseDouble(row[4]);
-                        drow.add(Double.parseDouble(row[1]) * fact);
-                        drow.add(Double.parseDouble(row[2]) * fact);
-                        drow.add(Double.parseDouble(row[3]) * fact);
-                        drow.add(Double.parseDouble(row[4]) * fact);
-                        drow.add(Double.parseDouble(row[6]));
-                        data.put(new UDate(c.getTimeInMillis()), drow);
+
+                        
+                        sv.put("date", (new UDate(c.getTimeInMillis())).toYYYYMMDD());
+                        sv.put("close", Double.parseDouble(row[4]) * fact);                
+                        sv.put("open", Double.parseDouble(row[1]) * fact);
+                        sv.put("high", Double.parseDouble(row[2]) * fact);
+                        sv.put("low", Double.parseDouble(row[3]) * fact);                
+                        sv.put("volume", Double.parseDouble(row[6]));
+                        sv.put("oi", 0);                
+                        data.put(sv);                         
                     } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
                         LOG.warn(e);
                     }
@@ -623,18 +595,10 @@ public final class FetchData {
                 stmt1.setString(7, m.get(x).get("currency"));
                 stmt1.setString(8, m.get(x).get("sector"));
                 stmt1.addBatch();
-                for (UDate d : data.keySet()) {
-                    stmt2.setString(1, x);
-                    stmt2.setString(2, d.toYYYYMMDD());
-                    stmt2.setFloat(3, data.get(d).get(0).floatValue());
-                    stmt2.setFloat(4, data.get(d).get(1).floatValue());
-                    stmt2.setFloat(5, data.get(d).get(2).floatValue());
-                    stmt2.setFloat(6, data.get(d).get(3).floatValue());
-                    stmt2.setFloat(7, data.get(d).get(4).floatValue());
-                    stmt2.setFloat(8, 0.0f);
-                    stmt2.setString(9, "YAHOO");
-                    stmt2.addBatch();
-                }
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, "YAHOO");                
+                stmt2.addBatch();                    
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();

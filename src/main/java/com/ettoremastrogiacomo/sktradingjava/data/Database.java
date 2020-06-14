@@ -111,7 +111,7 @@ public class Database {
         try {
             conn = DriverManager.getConnection(url);
             stmt = conn.createStatement();
-            stmt.execute("drop table  if exists shares");
+            stmt.execute("drop table  if exists "+Init.db_sharestable);
         } catch (SQLException e) {
             LOG.error(e, e);
         } finally {
@@ -139,12 +139,13 @@ public class Database {
         String url = Init.db_url;//"jdbc:sqlite:C://sqlite/db/tests.db";        
         // SQL statement for creating a new table
 
-        String sqldata = "CREATE TABLE IF NOT EXISTS intradayquotes (\n"
+        String sql_intraday = "CREATE TABLE IF NOT EXISTS "+Init.db_intradaytable+" (\n"
                 + "	hashcode text not null,\n"
                 + "	date text not null,\n"
                 + "	quotes text,\n"
                 + "     PRIMARY KEY (hashcode,date));";
-        String sqlnew = "CREATE TABLE IF NOT EXISTS shares (\n"
+        
+        String sql_shares = "CREATE TABLE IF NOT EXISTS "+Init.db_sharestable+" (\n"
                 + "	hashcode text not null,\n"
                 + "	isin text NOT NULL,\n"
                 + "	name text not null,\n"
@@ -156,29 +157,14 @@ public class Database {
                 + "	primary key (hashcode) ,\n"
                 + "     unique (isin,market));";//,\n" 
         
-        String sqleod = "CREATE TABLE IF NOT EXISTS eoddata (\n"
+        String sql_eod = "CREATE TABLE IF NOT EXISTS "+Init.db_eoddatatable+" (\n"
                 + "     hashcode not null,\n"
-                + "     yahooquotes text,\n"
-                + "     googlequotes text,\n"
-                + "     PRIMARY KEY (hashcode));";
-        String sqleodmlse = "CREATE TABLE IF NOT EXISTS eoddatamlse (\n"
-                + "     hashcode not null,\n"
-                + "     date text not null,\n"
-                + "     data text,\n"
-                + "     PRIMARY KEY (hashcode,date));";
-        
-        String sqleod2 = "CREATE TABLE IF NOT EXISTS eoddatav2 (\n"
-                + "     hashcode not null,\n"
-                + "	date text not null,\n"
-                + "	open real ,\n"
-                + "	high real ,\n"
-                + "	low real  ,\n"
-                + "	close real ,\n"
-                + "	volume real not null,\n"
-                + "	oi real not null,\n"
+                + "     data text not null,\n"
                 + "     provider text not null,\n"
-                + "     PRIMARY KEY (hashcode,date,provider));";  
-        String providers ="CREATE TABLE IF NOT EXISTS providerseod (\n"
+                + "     PRIMARY KEY (hashcode,provider),\n"
+                + "     FOREIGN KEY(provider) REFERENCES "+Init.db_providerstable+"(name));";
+        
+        String sql_providers ="CREATE TABLE IF NOT EXISTS "+Init.db_providerstable+" (\n"
                 + "     name not null,\n"
                 + "     priority integer not null,\n"
                 + "     notes text,\n"
@@ -189,15 +175,13 @@ public class Database {
         try {
             conn = DriverManager.getConnection(url);
             stmt = conn.createStatement();
-            stmt.execute(sqldata);
-            stmt.execute(sqlnew);
-            stmt.execute(sqleod);
-            stmt.execute(sqleodmlse);
-            stmt.execute(sqleod2);
-            stmt.execute(providers);
+            stmt.execute(sql_providers);
+            stmt.execute(sql_eod);
+            stmt.execute(sql_shares);
+            stmt.execute(sql_intraday);
             Providers[] p=Providers.values();
             for (Providers p1 : p) {
-                String s1 = "insert or replace into providerseod(name,priority,notes) values('" + p1.name() + "'," + p1.getPriority() + ",'" + p1.getNote() + "')";
+                String s1 = "insert or replace into "+Init.db_providerstable+"(name,priority,notes) values('" + p1.name() + "'," + p1.getPriority() + ",'" + p1.getNote() + "')";
                 stmt.execute(s1);
             }
         } catch (SQLException e) {
