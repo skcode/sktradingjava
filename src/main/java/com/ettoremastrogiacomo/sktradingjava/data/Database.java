@@ -640,17 +640,30 @@ public class Database {
                 throw new Exception("isin+market or code+market must be present");
             }
             
-            TreeMap<Integer,JSONArray> jsondata= new TreeMap<>();//scelgo il provider con più dati
-            
+            //TreeMap<Integer,JSONArray> jsondata= new TreeMap<>();//scelgo il provider con più dati se ultima data è uguale, altrimenti quello con ultima data
+            UDate bestdate=new UDate(0);
+            int bestlen=0;
+            JSONArray bestarr= new JSONArray();
             while (res.next()){
                 JSONArray ja1=new JSONArray(res.getString("data"));
-                jsondata.put(ja1.length(), ja1) ;            
+                UDate d1=UDate.parseYYYYMMDD(ja1.getJSONObject(ja1.length()-1).getString("date"));                
+                if (d1.after(bestdate)) {
+                    bestarr=ja1;
+                    bestlen=ja1.length();
+                    bestdate=d1;
+                } else if (d1.compareTo(bestdate)==0) {
+                    if (ja1.length()>bestlen) {
+                        bestarr=ja1;
+                        bestlen=ja1.length();
+                        bestdate=d1;
+                    }                    
+                }
                 //LOG.debug(ja1.length()+"\t"+res.getString("provider"));
             }
             
-            if (!jsondata.isEmpty()) {                
+            if (!bestarr.isEmpty()) {                
                     LOG.debug("LOADING data FOR " + codev + "." + marketv);
-                    JSONArray arr= jsondata.lastEntry().getValue();//new JSONArray(data);                    
+                    JSONArray arr= bestarr;
                     java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
                     matrix=new double[arr.length()][6];
                     for (int i=0;i<arr.length();i++) {

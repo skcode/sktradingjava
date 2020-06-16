@@ -95,7 +95,7 @@ public class OptimizeLastWindow {
     //140-90-maxslope best 
         
         int maxold = 30;
-        int maxdaygap = 10;
+        int maxdaygap = 5;
         double maxgap = .2;
         
         boolean duplicates = false;
@@ -108,7 +108,7 @@ public class OptimizeLastWindow {
         int minvol = 10000,minvoletf=0;
         List<Integer> windows= Arrays.asList(1900);//Arrays.asList(250,500,750,1000);
         List<Integer> minlens= new ArrayList<>();//Arrays.asList(250,500,750,1000);
-        windows.forEach((x)->minlens.add(windows.indexOf(x),x+10));
+        windows.forEach((x)->minlens.add(windows.indexOf(x),x+100));
         optMethod opt = optMethod.MINDD;
         HashMap<String,Integer> finalmap= new HashMap<>();
         HashMap<String,Integer> finalhashmap= new HashMap<>();
@@ -116,9 +116,10 @@ public class OptimizeLastWindow {
         //TreeSet<String> all= new TreeSet<>();
         for (int i=0;i<windows.size();i++){
             
-            //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            logger.debug(ptf.toString());
             //Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-            Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             UDate startDate=ptf.getDate(ptf.getLength()-windows.get(i));
             UDate endDate=ptf.getDate(ptf.getLength()-1);
             logger.info("start at "+startDate);
