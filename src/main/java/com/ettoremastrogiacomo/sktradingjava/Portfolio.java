@@ -318,6 +318,7 @@ public class Portfolio {
         });
         this.realnames = Collections.unmodifiableList(tmp_realNames);
         nosecurities = securities.size();
+        if (nosecurities==0) throw new Exception("empty portfolio");
         allfints = new Fints();
         for (Security s : securities) {
             Fints f;

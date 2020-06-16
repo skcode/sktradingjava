@@ -53,9 +53,11 @@ public class Temp {
     }
 
     public static void main(String[] args) throws Exception {
-       Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
+      // Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
        //enel.getSerieCopy(3).plot("enel", "price");
-       //LOG.debug(MLSE_DataFetch.fetchMLSEEODintraday("ENI",Security.secType.STOCK));
+       JSONArray arr=MLSE_DataFetch.fetchMLSEEODintraday("ENI",Security.secType.STOCK);
+       for (int i=0;i<arr.length();i++)LOG.debug(arr.getJSONObject(i));
+       
        //LU0779800910
        //LOG.debug(MLSE_DataFetch.fetchMLSEEODsole24ore("XCHA"));
        
