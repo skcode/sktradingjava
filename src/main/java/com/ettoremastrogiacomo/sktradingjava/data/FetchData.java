@@ -228,9 +228,9 @@ public final class FetchData {
         conn.setAutoCommit(false);
 
         java.util.HashMap<String, java.util.HashMap<String, String>> m = new HashMap<>();
-        //m.putAll(fetchMLSEList(secType.ETCETN));
+        m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
-        //m.putAll(fetchMLSEList(secType.ETF));
+        m.putAll(fetchMLSEList(secType.ETF));
 
         for (String x : m.keySet()) {
             try {
