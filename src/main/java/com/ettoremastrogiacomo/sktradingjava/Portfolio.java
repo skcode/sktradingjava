@@ -565,6 +565,18 @@ public class Portfolio {
         ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
+    public static Portfolio create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI%' and upper(sector) like '%CLASSE=CLASSE 2 IND AZIONARIO%' and not upper(sector) like '%COMMODITIES%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    
     public static Portfolio create_ETF_INDICIZZATI_OBBLIGAZIONARIO_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         //ArrayList<String> markets = Database.getMarkets();
         ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI%' and upper(sector) like '%CLASSE=CLASSE 1 IND OBBLIGAZIONARIO%'"));

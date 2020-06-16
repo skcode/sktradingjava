@@ -103,10 +103,10 @@ public class OptimizeLastWindow {
         int popsize = 20000;
         int ngens = 1000;
         //int trainwin=750;
-        int minoptset = 5, maxoptset = 25;
+        int minoptset = 10, maxoptset = 25;
         //int minlen = trainwin+100;
-        int minvol = 10000,minvoletf=10;
-        List<Integer> windows= Arrays.asList(1500);//Arrays.asList(250,500,750,1000);
+        int minvol = 10000,minvoletf=0;
+        List<Integer> windows= Arrays.asList(1900);//Arrays.asList(250,500,750,1000);
         List<Integer> minlens= new ArrayList<>();//Arrays.asList(250,500,750,1000);
         windows.forEach((x)->minlens.add(windows.indexOf(x),x+10));
         optMethod opt = optMethod.MINDD;
@@ -118,7 +118,7 @@ public class OptimizeLastWindow {
             
             //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-            Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             UDate startDate=ptf.getDate(ptf.getLength()-windows.get(i));
             UDate endDate=ptf.getDate(ptf.getLength()-1);
             logger.info("start at "+startDate);
