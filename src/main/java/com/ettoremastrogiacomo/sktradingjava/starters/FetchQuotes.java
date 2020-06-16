@@ -5,7 +5,6 @@
 
 package com.ettoremastrogiacomo.sktradingjava.starters;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.loadEODdata;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.Misc;

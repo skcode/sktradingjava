@@ -9,21 +9,14 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio.optMethod;
-import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  *
@@ -107,15 +100,15 @@ public class OptimizeLastWindow {
         
         boolean duplicates = false;
         
-        int popsize = 10000;
-        int ngens = 500;
+        int popsize = 20000;
+        int ngens = 1000;
         //int trainwin=750;
-        int minoptset = 10, maxoptset = 25;
+        int minoptset = 5, maxoptset = 25;
         //int minlen = trainwin+100;
-        int minvol = 10000;
-        List<Integer> windows= Arrays.asList(250,500,750,1000);
+        int minvol = 10000,minvoletf=10;
+        List<Integer> windows= Arrays.asList(1500);//Arrays.asList(250,500,750,1000);
         List<Integer> minlens= new ArrayList<>();//Arrays.asList(250,500,750,1000);
-        windows.forEach((x)->minlens.add(windows.indexOf(x),x+100));
+        windows.forEach((x)->minlens.add(windows.indexOf(x),x+10));
         optMethod opt = optMethod.MINDD;
         HashMap<String,Integer> finalmap= new HashMap<>();
         HashMap<String,Integer> finalhashmap= new HashMap<>();
@@ -124,8 +117,8 @@ public class OptimizeLastWindow {
         for (int i=0;i<windows.size();i++){
             
             //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-            Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-            //Portfolio ptf = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            //Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             UDate startDate=ptf.getDate(ptf.getLength()-windows.get(i));
             UDate endDate=ptf.getDate(ptf.getLength()-1);
             logger.info("start at "+startDate);

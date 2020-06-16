@@ -470,6 +470,7 @@ public final class FetchData {
                 String code = m.get(x).get("code");
                 String type = m.get(x).get("type");
                 JSONArray data = new JSONArray();
+                JSONArray data2=MLSE_DataFetch.fetchMLSEEODsole24ore(code);                
                 if (type.equalsIgnoreCase("STOCK")) {
                     data = fetchMLSEEOD(code, secType.STOCK);
                 } else if (type.equalsIgnoreCase("ETF")) {
@@ -491,6 +492,10 @@ public final class FetchData {
                 stmt2.setString(1, x);
                 stmt2.setString(2, data.toString());
                 stmt2.setString(3, "BORSAITALIANA");                
+                stmt2.addBatch();
+                stmt2.setString(1, x);
+                stmt2.setString(2, data2.toString());
+                stmt2.setString(3, "SOLE24ORE");                
                 stmt2.addBatch();
                 stmt1.executeBatch();
                 stmt2.executeBatch();

@@ -144,7 +144,7 @@ public class Database {
         String sql_intraday = "CREATE TABLE IF NOT EXISTS "+Init.db_intradaytable+" (\n"
                 + "	hashcode text not null,\n"
                 + "	date text not null,\n"
-                + "	quotes text,\n"
+                + "	quotes text not null,\n"
                 + "     PRIMARY KEY (hashcode,date));";
         
         String sql_shares = "CREATE TABLE IF NOT EXISTS "+Init.db_sharestable+" (\n"
@@ -640,11 +640,17 @@ public class Database {
                 throw new Exception("isin+market or code+market must be present");
             }
             
-            if (res.next()) {
-                String data = res.getString("data");
-                String provider = res.getString("provider");                
+            TreeMap<Integer,JSONArray> jsondata= new TreeMap<>();//scelgo il provider con più dati
+            
+            while (res.next()){
+                JSONArray ja1=new JSONArray(res.getString("data"));
+                jsondata.put(ja1.length(), ja1) ;            
+                //LOG.debug(ja1.length()+"\t"+res.getString("provider"));
+            }
+            
+            if (!jsondata.isEmpty()) {                
                     LOG.debug("LOADING data FOR " + codev + "." + marketv);
-                    JSONArray arr= new JSONArray(data);                    
+                    JSONArray arr= jsondata.lastEntry().getValue();//new JSONArray(data);                    
                     java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
                     matrix=new double[arr.length()][6];
                     for (int i=0;i<arr.length();i++) {
