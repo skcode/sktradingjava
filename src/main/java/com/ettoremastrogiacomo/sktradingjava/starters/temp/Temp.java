@@ -8,7 +8,9 @@
 package com.ettoremastrogiacomo.sktradingjava.starters.temp;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
+import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.UDate;
 
@@ -51,9 +53,9 @@ public class Temp {
     }
 
     public static void main(String[] args) throws Exception {
-       Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
-       enel.getSerieCopy(3).plot("enel", "price");
-       // LOG.debug(Database.getYahooQuotes("MSFT"));
+       //Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
+       //enel.getSerieCopy(3).plot("enel", "price");
+       LOG.debug(MLSE_DataFetch.fetchMLSEEODintraday("ENI",Security.secType.STOCK));
        
        
 

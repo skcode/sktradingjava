@@ -197,6 +197,19 @@ public final class UDate
         sdf.applyPattern("yyyyMMdd");             
         return new UDate(sdf.parse(s).getTime());        
     }
+
+/**
+ * 
+ * @param s string in format YYYY-MM-DD
+ * @return UDate obj
+ * @throws Exception 
+ */
+    static public UDate parseYYYYmMMmDD(String s) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.applyPattern("yyyy-MM-dd");             
+        return new UDate(sdf.parse(s).getTime());        
+    }
+
     
     /**
      * 

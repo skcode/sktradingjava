@@ -216,6 +216,7 @@ public class MLSE_DataFetch {
         LOG.debug("#" + all.size());
         return all;
     }
+    
     public static JSONArray fetchMLSEEOD(String symbol,Security.secType sec)throws Exception{
         String market="";
         if (null==sec) throw new Exception(sec+" non gestito");
@@ -231,7 +232,8 @@ public class MLSE_DataFetch {
                 throw new Exception(sec+" non gestito");
         }
         String url="https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";        
-        String jsonstr="{\"request\":{\"SampleTime\":\"1d\",\"TimeFrame\":\"5y\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+"\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        String jsonstriday="{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+ "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        String jsonstr="{\"request\":{\"SampleTime\":\"1d\",\"TimeFrame\":\"10y\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+"\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
         HttpFetch http= new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
@@ -265,6 +267,79 @@ public class MLSE_DataFetch {
         LOG.debug("samples fetched for "+symbol+" = "+totalarr.length());
         return totalarr;
     }
+    
 
+    public static JSONArray fetchMLSEEODintraday(String symbol,Security.secType sec)throws Exception{
+        String market="";
+        if (null==sec) throw new Exception(sec+" non gestito");
+        else switch (sec) {
+            case STOCK:
+                market="MTA";
+                break;
+            case ETF:
+            case ETCETN:
+                market="ETF";
+                break;
+            default:
+                throw new Exception(sec+" non gestito");
+        }
+        String url="https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";        
+        String jsonstr="{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+ "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";        
+        HttpFetch http= new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res=http.sendjsonPostRequest(url, jsonstr);
+        JSONObject o= new JSONObject(res);
+        JSONArray arr= o.getJSONArray("d");
+        //TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()  ;
+        JSONArray totalarr= new JSONArray();
+        UDate today=new UDate();
+        for (int i=0;i<arr.length();i++){               
+            JSONObject sv= new JSONObject();             
+            UDate d=new UDate(arr.getJSONArray(i).getLong(0)-1000*60*120);
+            today=UDate.getNewDate(d, 0, 0, 0);
+            if (!arr.getJSONArray(i).isEmpty()){                
+                sv.put("date", d.toString());
+                sv.put("close", arr.getJSONArray(i).getDouble(5));                
+                sv.put("open", arr.getJSONArray(i).isNull(2)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(2));
+                sv.put("high", arr.getJSONArray(i).isNull(3)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(3));
+                sv.put("low", arr.getJSONArray(i).isNull(4)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(4));                
+                sv.put("volume", arr.getJSONArray(i).isNull(6)?0.0: (double)arr.getJSONArray(i).getDouble(6));
+                sv.put("oi", 0);                
+                totalarr.put(sv);                 
+            }
+        }
+        LOG.debug("intraday samples fetched for "+symbol+" = "+totalarr.length());
+        return totalarr;
+    }
+    
+    public static JSONArray fetchMLSEEODsole24ore(String symbol)throws Exception{
+        String url="https://vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/"+symbol+".MI?timeWindow=TenYears";                
+        HttpFetch http= new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res=new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
+        JSONObject o= new JSONObject(res);
+        JSONArray arr= o.getJSONArray("series");                
+        JSONArray totalarr= new JSONArray();
+        for (int i=0;i<arr.length();i++){
+            JSONObject sv= new JSONObject();                         
+            sv.put ("open",arr.getJSONObject(i).getDouble("open") );
+            sv.put ("high",arr.getJSONObject(i).getDouble("high"));
+            sv.put ("low",arr.getJSONObject(i).getDouble("low"));
+            sv.put ("close",arr.getJSONObject(i).getDouble("close"));
+            sv.put ("volume",arr.getJSONObject(i).getDouble("volume"));
+            String timestamp=arr.getJSONObject(i).getString("timestamp").substring(0, 10);
+            sv.put ("date",UDate.parseYYYYmMMmDD(timestamp).toYYYYMMDD());            
+            sv.put("oi", 0);                
+            totalarr.put(sv);                             
+        }
+        LOG.debug("samples fetched for "+symbol+" = "+totalarr.length());
+        return totalarr;
+    }
+    
+//vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/4AIM.MI?timeWindow=TenYears	
     
 }
