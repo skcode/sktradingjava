@@ -188,6 +188,20 @@ public final class UDate
 
 /**
  * 
+ * @param s string in format "pattern"
+ * @param pattern e.g. yyyy-MM-dd
+ * @return UDate obj
+ * @throws Exception 
+ */
+    static public UDate parse(String s,String pattern) throws Exception {
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.applyPattern(pattern);             
+        return new UDate(sdf.parse(s).getTime());        
+    }
+
+    
+    /**
+ * 
  * @param s string in format YYYYMMDD
  * @return UDate obj
  * @throws Exception 

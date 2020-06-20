@@ -2,16 +2,11 @@ package com.ettoremastrogiacomo.sktradingjava.data;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
-import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpCookie;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.NumberFormat;
@@ -29,16 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.swing.text.DateFormatter;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-
 
 
 /*
@@ -88,32 +75,53 @@ public class Database {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Database.class);
     static final java.util.List<String> MONTHS = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
-    
+
     public static enum Providers {
-        BORSAITALIANA(1),EURONEXT(2),XETRA(3),NYSE(4),INVESTING(5),YAHOO(6),GOOGLE(7);
-        private final int priority;                
-        Providers(int priority) {this.priority=priority;}
-        int getPriority() {return priority;}   
+        BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7);
+        private final int priority;
+
+        Providers(int priority) {
+            this.priority = priority;
+        }
+
+        int getPriority() {
+            return priority;
+        }
+
         String getNote() {
-            if (this.name().equals("BORSAITALIANA")) return "borsa italiana quotes";
-            if (this.name().equals("INVESTING")) return "investing quotes";
-            if (this.name().equals("YAHOO")) return "yahoo quotes";
-            if (this.name().equals("GOOGLE")) return "google quotes";
-            if (this.name().equals("EURONEXT")) return "euronext quotes";
-            if (this.name().equals("XETRA")) return "xetra quotes";
-            if (this.name().equals("NYSE")) return "nyse quotes";
+            if (this.name().equals("BORSAITALIANA")) {
+                return "borsa italiana quotes";
+            }
+            if (this.name().equals("INVESTING")) {
+                return "investing quotes";
+            }
+            if (this.name().equals("YAHOO")) {
+                return "yahoo quotes";
+            }
+            if (this.name().equals("GOOGLE")) {
+                return "google quotes";
+            }
+            if (this.name().equals("EURONEXT")) {
+                return "euronext quotes";
+            }
+            if (this.name().equals("XETRA")) {
+                return "xetra quotes";
+            }
+            if (this.name().equals("NYSE")) {
+                return "nyse quotes";
+            }
             return "";
         }
     };
-    
+
     public static void deleteSharesTable() {
         String url = Init.db_url;
         Connection conn = null;
-        Statement stmt = null;       
+        Statement stmt = null;
         try {
             conn = DriverManager.getConnection(url);
             stmt = conn.createStatement();
-            stmt.execute("drop table  if exists "+Init.db_sharestable);
+            stmt.execute("drop table  if exists " + Init.db_sharestable);
         } catch (SQLException e) {
             LOG.error(e, e);
         } finally {
@@ -129,9 +137,9 @@ public class Database {
                 }
             } catch (SQLException e) {
             }
-        }        
+        }
     }
-    
+
     /**
      * create db with table securities
      * (isin,name,code,type,market,currency,sector,yahooquotes,bitquotes)
@@ -141,13 +149,13 @@ public class Database {
         String url = Init.db_url;//"jdbc:sqlite:C://sqlite/db/tests.db";        
         // SQL statement for creating a new table
 
-        String sql_intraday = "CREATE TABLE IF NOT EXISTS "+Init.db_intradaytable+" (\n"
+        String sql_intraday = "CREATE TABLE IF NOT EXISTS " + Init.db_intradaytable + " (\n"
                 + "	hashcode text not null,\n"
                 + "	date text not null,\n"
                 + "	quotes text not null,\n"
                 + "     PRIMARY KEY (hashcode,date));";
-        
-        String sql_shares = "CREATE TABLE IF NOT EXISTS "+Init.db_sharestable+" (\n"
+
+        String sql_shares = "CREATE TABLE IF NOT EXISTS " + Init.db_sharestable + " (\n"
                 + "	hashcode text not null,\n"
                 + "	isin text NOT NULL,\n"
                 + "	name text not null,\n"
@@ -158,20 +166,20 @@ public class Database {
                 + "	sector text not null,\n"
                 + "	primary key (hashcode) ,\n"
                 + "     unique (isin,market));";//,\n" 
-        
-        String sql_eod = "CREATE TABLE IF NOT EXISTS "+Init.db_eoddatatable+" (\n"
+
+        String sql_eod = "CREATE TABLE IF NOT EXISTS " + Init.db_eoddatatable + " (\n"
                 + "     hashcode not null,\n"
                 + "     data text not null,\n"
                 + "     provider text not null,\n"
                 + "     PRIMARY KEY (hashcode,provider),\n"
-                + "     FOREIGN KEY(provider) REFERENCES "+Init.db_providerstable+"(name));";
-        
-        String sql_providers ="CREATE TABLE IF NOT EXISTS "+Init.db_providerstable+" (\n"
+                + "     FOREIGN KEY(provider) REFERENCES " + Init.db_providerstable + "(name));";
+
+        String sql_providers = "CREATE TABLE IF NOT EXISTS " + Init.db_providerstable + " (\n"
                 + "     name not null,\n"
                 + "     priority integer not null,\n"
                 + "     notes text,\n"
                 + "     PRIMARY KEY (name));";
-        
+
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -181,9 +189,9 @@ public class Database {
             stmt.execute(sql_eod);
             stmt.execute(sql_shares);
             stmt.execute(sql_intraday);
-            Providers[] p=Providers.values();
+            Providers[] p = Providers.values();
             for (Providers p1 : p) {
-                String s1 = "insert or replace into "+Init.db_providerstable+"(name,priority,notes) values('" + p1.name() + "'," + p1.getPriority() + ",'" + p1.getNote() + "')";
+                String s1 = "insert or replace into " + Init.db_providerstable + "(name,priority,notes) values('" + p1.name() + "'," + p1.getPriority() + ",'" + p1.getNote() + "')";
                 stmt.execute(s1);
             }
         } catch (SQLException e) {
@@ -217,7 +225,7 @@ public class Database {
     }
 
     public static java.util.HashMap<String, TreeSet<UDate>> getIntradayDatesMap() throws Exception {
-        String sql = "select hashcode,date from intradayquotes";
+        String sql = "select hashcode,date from "+Init.db_intradaytable;
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -230,13 +238,8 @@ public class Database {
 
             while (res.next()) {
                 String hash = res.getString(1);
-                String date = res.getString(2);
-
-                LocalDateTime datetime = LocalDateTime.parse(date + " 0.00.00", DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
-                Calendar c = Calendar.getInstance();
-                c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
-                c.set(Calendar.MILLISECOND, 0);
-                UDate d = new UDate(c.getTimeInMillis());
+                UDate d = UDate.parseYYYYMMDD(res.getString(2));
+                
                 if (map.containsKey(hash)) {
                     map.get(hash).add(d);
                 } else {
@@ -271,14 +274,13 @@ public class Database {
         return map;
     }
 
-    
-    public static java.util.TreeMap<UDate,ArrayList<String>> getIntradayDatesReverseMap() throws Exception {
-        String sql = "select hashcode,date from intradayquotes";
+    public static java.util.TreeMap<UDate, ArrayList<String>> getIntradayDatesReverseMap() throws Exception {
+        String sql = "select hashcode,date from "+Init.db_intradaytable;
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
         //java.util.HashMap<String, TreeSet<UDate>> map = new java.util.HashMap<>();
-        java.util.TreeMap<UDate,ArrayList<String>> map= new TreeMap<>();
+        java.util.TreeMap<UDate, ArrayList<String>> map = new TreeMap<>();
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
@@ -287,14 +289,7 @@ public class Database {
 
             while (res.next()) {
                 String hash = res.getString(1);
-                String date = res.getString(2);
-
-                LocalDateTime datetime = LocalDateTime.parse(date + " 0.00.00", DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
-                Calendar c = Calendar.getInstance();
-                c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
-                c.set(Calendar.MILLISECOND, 0);
-                UDate d = new UDate(c.getTimeInMillis());
-                
+                UDate d = UDate.parseYYYYMMDD(res.getString(2));
                 if (map.containsKey(d)) {
                     map.get(d).add(hash);
                 } else {
@@ -327,17 +322,19 @@ public class Database {
         }
         return map;
     }
-    
-    
+
     /**
      *
      * @param wheresql filter sql with where , e.g. "where market='MLSE' and
      * type='STOCK'"
-     * @return array of hashmap (hashcode,isin,name,code,market,type,currency,sector)
+     * @return array of hashmap
+     * (hashcode,isin,name,code,market,type,currency,sector)
      */
     public static java.util.ArrayList<java.util.HashMap<String, String>> getRecords(Optional<String> wheresql) {
-        String wsql=wheresql.orElse("").trim();        
-        if (!wsql.toLowerCase().startsWith("where") && wsql.length()>0) wsql="where "+wsql;
+        String wsql = wheresql.orElse("").trim();
+        if (!wsql.toLowerCase().startsWith("where") && wsql.length() > 0) {
+            wsql = "where " + wsql;
+        }
         String sql = "select hashcode,isin,name,code,market,type,currency,sector from shares " + wsql;
         java.util.ArrayList<java.util.HashMap<String, String>> list = new java.util.ArrayList<>();
         //java.util.HashSet<String> set=java.util.HashSet<String>();
@@ -384,57 +381,71 @@ public class Database {
         return list;
     }
 
-    
+    /**
+     *
+     * @param code
+     * @param market
+     * @return hashcode from market+code
+     * @throws Exception
+     */
     public static String getHashcode(String code, String market) throws Exception {
-        List<HashMap<String,String>> map=Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList(code)), Optional.empty(), Optional.of(Arrays.asList(market)), Optional.empty(), Optional.empty());
-        if (map.size()<1) throw new Exception(code+"."+market+" not found");
+        List<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList(code)), Optional.empty(), Optional.of(Arrays.asList(market)), Optional.empty(), Optional.empty());
+        if (map.size() < 1) {
+            throw new Exception(code + "." + market + " not found");
+        }
         return map.get(0).get("hashcode");
     }
-    
-    public static HashMap<String,String> getCodeMarketName(List<String> hashcodes) throws Exception {
-        List<HashMap<String,String>> map=Database.getRecords(Optional.of(hashcodes), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        if (map.isEmpty()) throw new Exception("hashcodes not found");
-        HashMap<String,String> ret= new HashMap<>();
+
+    /**
+     *
+     * @param hashcodes list of hashcodes
+     * @return hashmap : hashcode, code.market.type.currency.isin.name
+     * @throws Exception
+     */
+    public static HashMap<String, String> getCodeMarketName(List<String> hashcodes) throws Exception {
+        List<HashMap<String, String>> map = Database.getRecords(Optional.of(hashcodes), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        if (map.isEmpty()) {
+            throw new Exception("hashcodes not found");
+        }
+        HashMap<String, String> ret = new HashMap<>();
         map.forEach((x) -> {
-            ret.put(x.get("hashcode"), x.get("code")+"."+x.get("market")+"."+x.get("type")+"."+x.get("currency")+"."+x.get("isin")+"."+x.get("name"));
+            ret.put(x.get("hashcode"), x.get("code") + "." + x.get("market") + "." + x.get("type") + "." + x.get("currency") + "." + x.get("isin") + "." + x.get("name"));
         });
         return ret;
         //return map.get(0).get("hashcode");
     }
 
-    
-    
     public static TreeSet<UDate> getIntradayDates(String hashcode) throws Exception {
-        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
+        HashMap<String, TreeSet<UDate>> m = getIntradayDatesMap();
         return m.get(hashcode);
     }
 
     public static TreeSet<UDate> getIntradayDates() throws Exception {
-        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
-        TreeSet<UDate> s=new TreeSet<>();
+        HashMap<String, TreeSet<UDate>> m = getIntradayDatesMap();
+        TreeSet<UDate> s = new TreeSet<>();
         m.keySet().forEach((x) -> {
             s.addAll(m.get(x));
         });
         return s;
     }
-    
-    
+
     public static Set<String> getIntradayHashCodes(Optional<UDate> d) throws Exception {
-        HashMap<String,TreeSet<UDate>> m=getIntradayDatesMap();
+        HashMap<String, TreeSet<UDate>> m = getIntradayDatesMap();
         if (d.isEmpty()) {
             return m.keySet();
-        }
-        else {
-            java.util.HashSet<String> s=new HashSet<>();
-            m.keySet().forEach((x)->{
-                if (m.get(x).contains(d.get()) ) s.add(x);
+        } else {
+            java.util.HashSet<String> s = new HashSet<>();
+            m.keySet().forEach((x) -> {
+                if (m.get(x).contains(d.get())) {
+                    s.add(x);
+                }
             });
             return s;
         }
-        
+
         //return m.get(hashcode);
-    }    
-    
+    }
+
     public static java.util.ArrayList< java.util.HashMap<String, String>> getRecords(Optional<List<String>> hashcode, Optional<List<String>> isin, Optional<List<String>> name, Optional<List<String>> code, Optional<List<String>> type, Optional<List<String>> market, Optional<List<String>> currency, Optional<List<String>> sector) throws Exception {
 
         StringBuilder hashcodesql = new StringBuilder();
@@ -588,8 +599,6 @@ public class Database {
         return getRecords(Optional.of(where));
     }
 
-
-
     public static Fints getFintsQuotes(String hashcode) throws Exception {
         List<HashMap<String, String>> list = Database.getRecords(Optional.of(Arrays.asList(hashcode)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         if (list.isEmpty()) {
@@ -599,7 +608,7 @@ public class Database {
 
     }
 
-        public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
+    public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -613,8 +622,8 @@ public class Database {
             stmt = conn.createStatement();
             String hashcode;
             if (isin.isPresent() && market.isPresent()) {//str.replaceAll(“\””, “\\\\\””);
-                res = stmt.executeQuery("select hashcode,code,market from "+Init.db_sharestable+"where isin='" + isin.get() + "' and market='" + market.get().replaceAll("\"", "\\\\\"") + "'");
-                
+                res = stmt.executeQuery("select hashcode,code,market from " + Init.db_sharestable + "where isin='" + isin.get() + "' and market='" + market.get().replaceAll("\"", "\\\\\"") + "'");
+
                 if (res.next()) {
                     hashcode = res.getString("hashcode");
                     codev = res.getString("code");
@@ -622,9 +631,9 @@ public class Database {
                 } else {
                     throw new Exception("isin " + isin.get() + " not found");
                 }
-                res = stmt.executeQuery("select data,provider from "+Init.db_eoddatatable+" where hashcode='" + hashcode + "'");
+                res = stmt.executeQuery("select data,provider from " + Init.db_eoddatatable + " where hashcode='" + hashcode + "'");
             } else if (code.isPresent() && market.isPresent()) {
-                String q = "select hashcode,code,market from "+Init.db_sharestable+" where code='" + code.get() + "' and market='" + market.get().replaceAll("\"", "\\\"") + "'";
+                String q = "select hashcode,code,market from " + Init.db_sharestable + " where code='" + code.get() + "' and market='" + market.get().replaceAll("\"", "\\\"") + "'";
                 res = stmt.executeQuery(q);
                 if (res.next()) {
                     hashcode = res.getString("hashcode");
@@ -634,62 +643,64 @@ public class Database {
                     throw new Exception("code " + code.get() + " not found");
                 }
 
-                res = stmt.executeQuery("select data,provider from "+Init.db_eoddatatable+" where hashcode='" + hashcode + "'");
+                res = stmt.executeQuery("select data,provider from " + Init.db_eoddatatable + " where hashcode='" + hashcode + "'");
 
             } else {
                 throw new Exception("isin+market or code+market must be present");
             }
-            
+
             //TreeMap<Integer,JSONArray> jsondata= new TreeMap<>();//scelgo il provider con più dati se ultima data è uguale, altrimenti quello con ultima data
-            UDate bestdate=new UDate(0);
-            int bestlen=0;
-            JSONArray bestarr= new JSONArray();
-            while (res.next()){
-                JSONArray ja1=new JSONArray(res.getString("data"));
-                UDate d1=UDate.parseYYYYMMDD(ja1.getJSONObject(ja1.length()-1).getString("date"));                
+            UDate bestdate = new UDate(0);
+            int bestlen = 0;
+            JSONArray bestarr = new JSONArray();
+            while (res.next()) {
+                JSONArray ja1 = new JSONArray(res.getString("data"));
+                UDate d1 = UDate.parseYYYYMMDD(ja1.getJSONObject(ja1.length() - 1).getString("date"));
                 if (d1.after(bestdate)) {
-                    bestarr=ja1;
-                    bestlen=ja1.length();
-                    bestdate=d1;
-                } else if (d1.compareTo(bestdate)==0) {
-                    if (ja1.length()>bestlen) {
-                        bestarr=ja1;
-                        bestlen=ja1.length();
-                        bestdate=d1;
-                    }                    
+                    bestarr = ja1;
+                    bestlen = ja1.length();
+                    bestdate = d1;
+                } else if (d1.compareTo(bestdate) == 0) {
+                    if (ja1.length() > bestlen) {
+                        bestarr = ja1;
+                        bestlen = ja1.length();
+                        bestdate = d1;
+                    }
                 }
                 //LOG.debug(ja1.length()+"\t"+res.getString("provider"));
             }
-            
-            if (!bestarr.isEmpty()) {                
-                    LOG.debug("LOADING data FOR " + codev + "." + marketv);
-                    JSONArray arr= bestarr;
-                    java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
-                    matrix=new double[arr.length()][6];
-                    for (int i=0;i<arr.length();i++) {
-                        JSONObject o=arr.getJSONObject(i);
-                        String date=o.getString("date");
-                        Double open=o.getDouble("open");
-                        Double high=o.getDouble("high");
-                        Double low=o.getDouble("low");
-                        Double close=o.getDouble("close");
-                        Double volume=o.getDouble("volume");
-                        Double oi=o.getDouble("oi");                    
-                        map.put(UDate.parseYYYYMMDD(date),new ArrayList<>( Arrays.asList(open,high,low,close,volume,oi)));
+
+            if (!bestarr.isEmpty()) {
+                LOG.debug("LOADING data FOR " + codev + "." + marketv);
+                JSONArray arr = bestarr;
+                java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
+                matrix = new double[arr.length()][6];
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.getJSONObject(i);
+                    String date = o.getString("date");
+                    Double open = o.getDouble("open");
+                    Double high = o.getDouble("high");
+                    Double low = o.getDouble("low");
+                    Double close = o.getDouble("close");
+                    Double volume = o.getDouble("volume");
+                    Double oi = o.getDouble("oi");
+                    map.put(UDate.parseYYYYMMDD(date), new ArrayList<>(Arrays.asList(open, high, low, close, volume, oi)));
+                }
+                int j = 0;
+                for (UDate x : map.keySet()) {
+                    dates.add(x);
+                    for (int i = 0; i < 6; i++) {
+                        matrix[j][i] = map.get(x).get(i);
                     }
-                    int j=0;
-                    for (UDate x: map.keySet()){
-                        dates.add(x);
-                        for (int i=0;i<6;i++) matrix[j][i]=map.get(x).get(i);
-                        j++;
-                    }
-                    names.add("OPEN(" + codev + "." + marketv + ")");
-                    names.add("HIGH(" + codev + "." + marketv + ")");
-                    names.add("LOW(" + codev + "." + marketv + ")");
-                    names.add("CLOSE(" + codev + "." + marketv + ")");
-                    names.add("VOLUME(" + codev + "." + marketv + ")");
-                    names.add("OI(" + codev + "." + marketv + ")");                    
-                    ret = new Fints(dates, names, Fints.frequency.DAILY, matrix);                
+                    j++;
+                }
+                names.add("OPEN(" + codev + "." + marketv + ")");
+                names.add("HIGH(" + codev + "." + marketv + ")");
+                names.add("LOW(" + codev + "." + marketv + ")");
+                names.add("CLOSE(" + codev + "." + marketv + ")");
+                names.add("VOLUME(" + codev + "." + marketv + ")");
+                names.add("OI(" + codev + "." + marketv + ")");
+                ret = new Fints(dates, names, Fints.frequency.DAILY, matrix);
             } else {
                 throw new SQLException(code + "." + market + " not found");
             }
@@ -720,8 +731,7 @@ public class Database {
         return ret;
     }
 
-    
-/*    public static Fints getFintsQuotes2(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
+    /*    public static Fints getFintsQuotes2(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -911,9 +921,10 @@ public class Database {
         }
         return ret;
     }
-*/
+     */
     /**
-     * @param hashcodes list      *
+     * @param hashcodes list
+     *
      * @param length e.g. 200 samples
      * @param maxpcgap e.g. .2 gap in stock prices
      * @param maxdaygap e.g. 4 gap in ydata days
@@ -1017,27 +1028,81 @@ public class Database {
         return retlist;
     }
 
+    public static Fints getIntradayFintsQuotes(String code, String market, UDate date) throws Exception {
+        String hash = Database.getHashcode(code, market);
+        return getIntradayFintsQuotes(hash, date);
+    }
 
+    public static Fints getIntradayFintsQuotes(String hashcode, UDate date) throws Exception {
+        String sql = "select quotes from " + Init.db_intradaytable + " where hashcode='" + hashcode + "' and date='" + date.toYYYYMMDD() + "'";
+        String sql2 = "select code, market from " + Init.db_sharestable + " where hashcode='" + hashcode + "'";
+        Fints ret = new Fints();
+        try (Connection conn = DriverManager.getConnection(Init.db_url); Statement stmt = conn.createStatement(); Statement stmt2 = conn.createStatement()) {
+            ResultSet res = stmt.executeQuery(sql);
+            ResultSet res2 = stmt2.executeQuery(sql2);
+            if (res.next() == false || res2.next() == false) {
+                throw new Exception("not found : " + hashcode + "\t" + date);
+            } else {
+                String market = res2.getString("market");
+                String code = res2.getString("code");
+                JSONArray arr = new JSONArray(res.getString("quotes"));
+                TreeMap<UDate, ArrayList<Double>> map = new TreeMap<>();
+                //{"date":"2020-06-16 09:06:00.00","volume":20,"high":14.336,"low":14.336,"oi":0,"close":14.336,"open":14.336}
+                for (int i = 0; i < arr.length(); i++) {
+                    ArrayList<Double> l = new ArrayList<>();
+                    JSONObject o = arr.getJSONObject(i);
+                    UDate d = UDate.parse(o.getString("date"), "yyyy-MM-dd HH:mm:ss.SS");
+                    l.add(o.getDouble("open"));
+                    l.add(o.getDouble("high"));
+                    l.add(o.getDouble("low"));
+                    l.add(o.getDouble("close"));
+                    l.add(o.getDouble("volume"));
+                    l.add(o.getDouble("oi"));
+                    map.put(d, l);
+                }
+                double[][] matrix = new double[map.size()][6];
+                int i = 0;
+                for (UDate d : map.keySet()) {
+                    for (int j = 0; j < matrix[i].length; j++) {
+                        matrix[i][j] = map.get(d).get(j);
+                    }
+                    i++;
+                }
+                ArrayList<String> names = new ArrayList<>();
+                names.add("OPEN(" + code + "." + market + ")");
+                names.add("HIGH(" + code + "." + market + ")");
+                names.add("LOW(" + code + "." + market + ")");
+                names.add("CLOSE(" + code + "." + market + ")");
+                names.add("VOLUME(" + code + "." + market + ")");
+                names.add("OI(" + code + "." + market + ")");
+                ret = new Fints(new ArrayList<>(map.keySet()), names, Fints.frequency.MINUTE, matrix);
 
-        public static Fints getIntradayFintsQuotes(String hashcode, UDate date) throws Exception {
+            }
+        } catch (Exception e) {
+            LOG.error("cannot fetch " + hashcode, e);
+        }
+        return ret;
+    }
+
+    /*public static Fints getIntradayFintsQuotes(String hashcode, UDate date) throws Exception {
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
         ArrayList<UDate> dates = new ArrayList<>();
         ArrayList<String> names = new ArrayList<>();
         double[][] matrix;
-        java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();        
+        java.util.TreeMap<UDate, Double> mapvolume = new java.util.TreeMap<>();
         java.util.TreeMap<UDate, Double> mapopen = new java.util.TreeMap<>();
         java.util.TreeMap<UDate, Double> maphigh = new java.util.TreeMap<>();
         java.util.TreeMap<UDate, Double> maplow = new java.util.TreeMap<>();
-        java.util.TreeMap<UDate, Double> mapclose = new java.util.TreeMap<>();        
+        java.util.TreeMap<UDate, Double> mapclose = new java.util.TreeMap<>();
         try {
             String month = (date.getMonth() + 1) < 10 ? "0" + Integer.toString(date.getMonth() + 1) : Integer.toString(date.getMonth() + 1);
             String day = (date.getDayofMonth()) < 10 ? "0" + Integer.toString(date.getDayofMonth()) : Integer.toString(date.getDayofMonth());
             String strdate = day + "/" + month + "/" + (date.getYear() - 2000);
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
-            String sql = "select quotes from intradayquotes where hashcode='" + hashcode + "' and date='" + strdate + "'";            
+            String sql = "select quotes from intradayquotes where hashcode='" + hashcode + "' and date='" + strdate + "'";
             NumberFormat nf = NumberFormat.getInstance(Locale.ITALY);
             res = stmt.executeQuery("select * from shares where hashcode='" + hashcode + "'");
             String code, market;
@@ -1069,42 +1134,39 @@ public class Database {
                     LocalDateTime datetime = LocalDateTime.parse(ora, DateTimeFormatter.ofPattern("dd/MM/yy H.m.s"));
                     Calendar c = Calendar.getInstance();
                     c.set(datetime.getYear(), datetime.getMonthValue() - 1, datetime.getDayOfMonth(), datetime.getHour(), datetime.getMinute(), datetime.getSecond());
-                    c.set(Calendar.MILLISECOND, 0);                    
+                    c.set(Calendar.MILLISECOND, 0);
                     UDate d = new UDate(c.getTimeInMillis());
-                    if (mapvolume.containsKey(d) )   mapvolume.replace(d, mapvolume.get(d) + nf.parse(volume).doubleValue());
-                    else mapvolume.put(d, nf.parse(volume).doubleValue());
-                    double t1=nf.parse(prezzo).doubleValue();
-                    if (maphigh.containsKey(d) ) {if (t1>maphigh.get(d)) maphigh.replace(d, t1);} else maphigh.put(d, t1);
-                    if (maplow.containsKey(d) ) {if (t1<maplow.get(d)) maplow.replace(d, t1);}else maplow.put(d, t1);
-                    if (!mapclose.containsKey(d) ) mapclose.put(d, t1);
-                    if (mapopen.containsKey(d) ) mapopen.replace(d, t1);else mapopen.put(d, t1);                    
+                    if (mapvolume.containsKey(d)) {
+                        mapvolume.replace(d, mapvolume.get(d) + nf.parse(volume).doubleValue());
+                    } else {
+                        mapvolume.put(d, nf.parse(volume).doubleValue());
+                    }
+                    double t1 = nf.parse(prezzo).doubleValue();
+                    if (maphigh.containsKey(d)) {
+                        if (t1 > maphigh.get(d)) {
+                            maphigh.replace(d, t1);
+                        }
+                    } else {
+                        maphigh.put(d, t1);
+                    }
+                    if (maplow.containsKey(d)) {
+                        if (t1 < maplow.get(d)) {
+                            maplow.replace(d, t1);
+                        }
+                    } else {
+                        maplow.put(d, t1);
+                    }
+                    if (!mapclose.containsKey(d)) {
+                        mapclose.put(d, t1);
+                    }
+                    if (mapopen.containsKey(d)) {
+                        mapopen.replace(d, t1);
+                    } else {
+                        mapopen.put(d, t1);
+                    }
                     k1 = k2;
                 }
-                
-                //per i gap
-                /*
-                UDate[] tempd=mapvolume.keySet().stream().map(i->i).toArray(UDate[]::new);
-                for (int i=1;i<tempd.length;i++){                    
-                    if (tempd[i].diffseconds(tempd[i-1])>1)                        
-                    {
-                        Calendar dt = Calendar.getInstance();
-                        dt.setTimeInMillis(tempd[i-1].time);
-                        dt.add(Calendar.SECOND, 1);
-                        while (!mapvolume.containsKey(new UDate(dt.getTimeInMillis()))){
-                            UDate dt1=new UDate(dt.getTimeInMillis());
-                            mapvolume.put(dt1, 0.);//no volume
-                            mapopen.put(dt1, mapclose.get(tempd[i-1]));
-                            maphigh.put(dt1, mapclose.get(tempd[i-1]));
-                            maplow.put(dt1, mapclose.get(tempd[i-1]));
-                            mapclose.put(dt1, mapclose.get(tempd[i-1]));                            
-                            dt.add(Calendar.SECOND, 1);
-                        }                                            
-                    }                
-                }
-                */
-                //                    
-                
-                
+
                 dates.addAll(mapvolume.keySet());
                 names.add("OPEN(" + code + "." + market + ")");
                 names.add("HIGH(" + code + "." + market + ")");
@@ -1149,8 +1211,7 @@ public class Database {
         }
         return new Fints(dates, names, Fints.frequency.SECOND, matrix);
     }
-        
-        
+*/
     public static void fetchEODquotesST() throws Exception {
         /*
                 /**
@@ -1216,9 +1277,7 @@ public class Database {
                     } else if (market.toUpperCase().contains("EURONEXT-VPXB") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
                         map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".AS"));
-                    } 
-                    
-                    else if (market.toUpperCase().contains("EURONEXT-XAMS") && type.toUpperCase().contains("STOCK")) {
+                    } else if (market.toUpperCase().contains("EURONEXT-XAMS") && type.toUpperCase().contains("STOCK")) {
                         // map.put("googlequotes", Database.getGoogleQuotes("AMS:"+code ));
                         map.put("yahooquotes", FetchData.fetchYahooQuotes(code + ".AS"));
                     } else if (market.toUpperCase().contains("EURONEXT-ENXL") && type.toUpperCase().contains("STOCK")) {
@@ -1252,7 +1311,9 @@ public class Database {
                         } else {
                             stmt.setString(2, map.get("yahooquotes"));
                         }
-                    } else stmt.setNull(2, java.sql.Types.VARCHAR);
+                    } else {
+                        stmt.setNull(2, java.sql.Types.VARCHAR);
+                    }
 
                     if (map.containsKey("googlequotes")) {
                         if (map.get("googlequotes").isEmpty()) {
@@ -1260,8 +1321,9 @@ public class Database {
                         } else {
                             stmt.setString(3, map.get("googlequotes"));
                         }
-                    } stmt.setNull(3, java.sql.Types.VARCHAR);
-                    
+                    }
+                    stmt.setNull(3, java.sql.Types.VARCHAR);
+
                     stmt.setString(1, hashcode);
                     stmt.executeUpdate();
 
