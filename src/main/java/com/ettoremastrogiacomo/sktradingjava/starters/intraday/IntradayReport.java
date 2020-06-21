@@ -115,34 +115,34 @@ public class IntradayReport {
             }
             if (rangemap.isEmpty()) continue;
             sb.append(name).append(delimiter).append(dates.size()).append(delimiter).append(lastdate.toYYYYMMDD()).append(delimiter);
-            Fints f1=new Fints(rangemap, Arrays.asList("rangemap"), Fints.frequency.DAILY);
+            Fints f1=new Fints(Misc.mapConvert(rangemap), Arrays.asList("rangemap"), Fints.frequency.DAILY);
             sb.append(f1.getMeans()[0]).append(delimiter).append(f1.getMin()[0]).append(delimiter).append(f1.getMax()[0]).append(delimiter).append(f1.getLastRow()[0]).append(delimiter);
-            Fints f2=new Fints(volumemap, Arrays.asList("volumemap"), Fints.frequency.DAILY);
+            Fints f2=new Fints(Misc.mapConvert(volumemap), Arrays.asList("volumemap"), Fints.frequency.DAILY);
             sb.append(f2.getMeans()[0]).append(delimiter).append(f2.getMin()[0]).append(delimiter).append(f2.getMax()[0]).append(delimiter).append(f2.getLastRow()[0]).append(delimiter);
-            Fints f3=new Fints(samplesmap, Arrays.asList("samplesmap"), Fints.frequency.DAILY);
+            Fints f3=new Fints(Misc.mapConvert(samplesmap), Arrays.asList("samplesmap"), Fints.frequency.DAILY);
             sb.append(f3.getMeans()[0]).append(delimiter).append(f3.getMin()[0]).append(delimiter).append(f3.getMax()[0]).append(delimiter).append(f3.getLastRow()[0]).append(delimiter);            
-            Fints f4=new Fints(zvalmap, Arrays.asList("zvalmap"), Fints.frequency.DAILY);
+            Fints f4=new Fints(Misc.mapConvert(zvalmap), Arrays.asList("zvalmap"), Fints.frequency.DAILY);
             sb.append(f4.getMeans()[0]).append(delimiter).append(f4.getMin()[0]).append(delimiter).append(f4.getMax()[0]).append(delimiter).append(f4.getLastRow()[0]).append(delimiter);            
-            Fints f5=new Fints(corrlagmap, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5=new Fints(Misc.mapConvert(corrlagmap), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5.getMeans()[0]).append(delimiter).append(f5.getMin()[0]).append(delimiter).append(f5.getMax()[0]).append(delimiter).append(f5.getLastRow()[0]).append(delimiter);            
 
-            Fints f5_1=new Fints(corrlagmap1, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5_1=new Fints(Misc.mapConvert(corrlagmap1), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5_1.getMeans()[0]).append(delimiter).append(f5_1.getMin()[0]).append(delimiter).append(f5_1.getMax()[0]).append(delimiter).append(f5_1.getLastRow()[0]).append(delimiter);            
-            Fints f5_3=new Fints(corrlagmap3, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5_3=new Fints(Misc.mapConvert(corrlagmap3), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5_3.getMeans()[0]).append(delimiter).append(f5_3.getMin()[0]).append(delimiter).append(f5_3.getMax()[0]).append(delimiter).append(f5_3.getLastRow()[0]).append(delimiter);            
-            Fints f5_5=new Fints(corrlagmap5, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5_5=new Fints(Misc.mapConvert(corrlagmap5), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5_5.getMeans()[0]).append(delimiter).append(f5_5.getMin()[0]).append(delimiter).append(f5_5.getMax()[0]).append(delimiter).append(f5_5.getLastRow()[0]).append(delimiter);            
-            Fints f5_10=new Fints(corrlagmap10, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5_10=new Fints(Misc.mapConvert(corrlagmap10), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5_10.getMeans()[0]).append(delimiter).append(f5_10.getMin()[0]).append(delimiter).append(f5_10.getMax()[0]).append(delimiter).append(f5_10.getLastRow()[0]).append(delimiter);            
-            Fints f5_15=new Fints(corrlagmap15, Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
+            Fints f5_15=new Fints(Misc.mapConvert(corrlagmap15), Arrays.asList("corrlagmap"), Fints.frequency.DAILY);
             sb.append(f5_15.getMeans()[0]).append(delimiter).append(f5_15.getMin()[0]).append(delimiter).append(f5_15.getMax()[0]).append(delimiter).append(f5_15.getLastRow()[0]).append(delimiter);            
 
             
-            Fints f6=new Fints(volatmap, Arrays.asList("volatmap"), Fints.frequency.DAILY);
+            Fints f6=new Fints(Misc.mapConvert(volatmap), Arrays.asList("volatmap"), Fints.frequency.DAILY);
             sb.append(f6.getMeans()[0]).append(delimiter).append(f6.getMin()[0]).append(delimiter).append(f6.getMax()[0]).append(delimiter).append(f6.getLastRow()[0]).append(delimiter);            
-            Fints f7=new Fints(maxddmap, Arrays.asList("maxddmap"), Fints.frequency.DAILY);
+            Fints f7=new Fints(Misc.mapConvert(maxddmap), Arrays.asList("maxddmap"), Fints.frequency.DAILY);
             sb.append(f7.getMeans()[0]).append(delimiter).append(f7.getMin()[0]).append(delimiter).append(f7.getMax()[0]).append(delimiter).append(f7.getLastRow()[0]).append(delimiter);            
-            Fints f8=new Fints(closeopen, Arrays.asList("maxddmap"), Fints.frequency.DAILY);
+            Fints f8=new Fints(Misc.mapConvert(closeopen), Arrays.asList("maxddmap"), Fints.frequency.DAILY);
             sb.append(f8.getMeans()[0]).append(delimiter).append(f8.getMin()[0]).append(delimiter).append(f8.getMax()[0]).append(delimiter).append(f8.getLastRow()[0]).append("\n");            
             LOG.debug(name);
             LOG.debug("SAMPLES DAYS "+dates.size());

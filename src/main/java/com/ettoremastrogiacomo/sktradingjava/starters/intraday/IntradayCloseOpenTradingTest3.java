@@ -166,7 +166,7 @@ public class IntradayCloseOpenTradingTest3 {
                 LASTEQ=LASTEQ*(1-spreadPEN);
                 equity.put(darr[i+1], LASTEQ);        
         }
-        Fints eq= new Fints(equity,Arrays.asList("equity"),Fints.frequency.DAILY);
+        Fints eq= new Fints(Misc.mapConvert(equity),Arrays.asList("equity"),Fints.frequency.DAILY);
         eq=eq.merge(eq.getLinReg(0));
         HashMap<String,Double> stats=DoubleArray.LinearRegression(eq.getCol(0));
         LOG.debug("*******");

@@ -198,7 +198,22 @@ public final class Security {
                         maplow.put(dt1, mapclose.get(tempd[i-1]));
                         mapclose.put(dt1, mapclose.get(tempd[i-1]));                            
                         mapoi.put(dt1, mapoi.get(tempd[i-1]));                            
-                        dt.add(Calendar.SECOND, 1);
+                        //dt.add(Calendar.SECOND, 1);
+                        switch (f.getFrequency()) {
+                            case DAILY:dt.add(Calendar.HOUR, 24);break;
+                            case MINUTE:dt.add(Calendar.MINUTE, 1);break;
+                            case HOUR:dt.add(Calendar.HOUR, 1);break;
+                            case MINUTES10:dt.add(Calendar.MINUTE, 10);break;
+                            case MINUTES15:dt.add(Calendar.MINUTE, 15);break;
+                            case MINUTES3:dt.add(Calendar.MINUTE, 3);break;
+                            case MINUTES30:dt.add(Calendar.MINUTE, 30);break;
+                            case MINUTES5:dt.add(Calendar.MINUTE, 5);break;
+                            case MONTHLY:dt.add(Calendar.MONTH, 1);break;
+                            case SECOND:dt.add(Calendar.SECOND, 1);break;
+                            case WEEKLY:dt.add(Calendar.HOUR, 24*7);break;
+                            case YEARLY:dt.add(Calendar.YEAR, 1);break;
+                            default: throw new Exception ("not yet implemented "+f.getFrequency());                    
+                        }                        
                     }              
                 //}                
             }

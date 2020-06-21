@@ -9,6 +9,7 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.UDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,9 +37,9 @@ public class CloseOpenStrategy {
         UDate []darr=closeOpen.getDate().toArray(new UDate[closeOpen.getLength()]);
         double[] profit=new double[darr.length-1];
 
-        TreeMap<UDate,Double> equity= new TreeMap<>();
+        TreeMap<UDate,ArrayList<Double>> equity= new TreeMap<>();
         
-        equity.put(darr[0], LASTEQ);
+        equity.put(darr[0],new ArrayList<>(Arrays.asList(LASTEQ)) );
         for (int i=0;i<(darr.length-1);i++) {
             TreeMap<Double,Integer> comap=new TreeMap<>();
             for (int j=0;j<closeOpen.getNoSeries();j++) {
@@ -74,7 +75,7 @@ public class CloseOpenStrategy {
             LASTEQ=LASTEQ*(1+profit[i]);
             LASTEQ=LASTEQ-FEE*POOLSIZE*4;
             LASTEQ=LASTEQ*(1-spreadPEN);
-            equity.put(darr[i+1], LASTEQ);        
+            equity.put(darr[i+1], new ArrayList<>(Arrays.asList(LASTEQ)));        
                         
         }
         

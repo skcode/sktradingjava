@@ -129,7 +129,11 @@ class CallableClass implements Callable<CallableClass> {
                 trades++;
                 eq.replace(eq.lastKey(), eq.lastEntry().getValue() - FIXEDFEE);//close trades        
             }
-            eqres = new Fints(eq, Arrays.asList("equity-" + f.getName(0) + "-" + tot.getFirstDate().toYYYYMMDD()), tot.getFrequency());
+            TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>();
+            for (UDate d: eq.keySet()) {
+                map.put(d, new ArrayList<Double>(Arrays.asList(eq.get(d))));
+            }
+            eqres = new Fints(map, Arrays.asList("equity-" + f.getName(0) + "-" + tot.getFirstDate().toYYYYMMDD()), tot.getFrequency());
         } catch (Exception e) {
             logger.warn(e);
         }

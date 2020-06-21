@@ -38,7 +38,7 @@ public class IntradayStats {
             v=d1>0? v*(1-d2):v*(1+d2);//inverse corr
             eq.put( fs.getDate(i+1),v);        
         }
-        Fints equity= new Fints(eq, Arrays.asList("equity"), freq);
+        Fints equity= new Fints(Misc.mapConvert(eq), Arrays.asList("equity"), freq);
         equity.plot("title", "val");
         fs.plot("stock", "price");
     }

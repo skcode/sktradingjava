@@ -25,6 +25,7 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
@@ -485,5 +487,11 @@ public class Misc {
         }
         return false;
     }        
-    
+    public static TreeMap<UDate,ArrayList<Double>> mapConvert(TreeMap<UDate,Double> m) {
+            TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>();
+            for (UDate d: m.keySet()) {
+                map.put(d, new ArrayList<>(Arrays.asList(m.get(d))));
+            }
+            return map;
+    }
 }

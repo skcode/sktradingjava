@@ -48,16 +48,30 @@ public final class Fints implements Serializable{
         matrix = new double[0][0];
         this.length=this.dates.size();
     }
-    public Fints(java.util.TreeMap<UDate,Double> map,List<String> names, frequency freq) throws Exception {
+    public Fints(java.util.TreeMap<UDate,ArrayList<Double>> map,List<String> names, frequency freq) throws Exception {
         this.freq=freq;
-        this.dates=Misc.set2list(map.keySet());
-        this.names=names;
-        double[][] m=new double[this.dates.size()][1];
-        Double[] d=map.values().toArray(new Double[this.dates.size()]);
-        for (int i=0;i<d.length;i++) m[i][0]=d[i];
-        matrix= m;
+        this.dates=Collections.unmodifiableList(Misc.set2list(map.keySet())) ;
+        this.names=Collections.unmodifiableList(names) ;
+        
+        int cols=names.size();
+        int rows=map.keySet().size();
+        if (rows==0 || cols==0) {
+            matrix = new double[0][0];
+            this.length=this.dates.size();
+            return;
+        }
+        matrix=new double[rows][cols];
+        int i=0;
+        for (UDate d: map.keySet()) {
+            if (map.get(d).size()!=cols) throw new Exception("size doesn't match");
+            for (int j=0;j<cols;j++) matrix[i][j]=map.get(d).get(j);
+            i++;
+        }
         this.length=this.dates.size();
     }
+    
+    
+    
     public Fints(List<UDate> dates, List<String> names, frequency freq, double[][] matrix) throws Exception {
         this.freq = freq;        
         //this.names = new ArrayList<>();
