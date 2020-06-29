@@ -2,6 +2,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 
 
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
@@ -319,6 +320,20 @@ public final class Security {
                 this.hashcode=hashcode;
                 infomap =Database.getRecords(Optional.of(Arrays.asList(hashcode)),Optional.empty(),Optional.empty() , Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()).get(0) ;                
 		daily=Database.getFintsQuotes(Optional.of(infomap.get("code")), Optional.of(infomap.get("market")),Optional.empty());
+                double[][] m=daily.getMatrixCopy();
+                
+                for (int i=0;i<m.length;i++){
+                    for (int j=0;j<(m[i].length);j++){
+                        if (!Double.isFinite(m[i][j]) ) throw new Exception("NAN or infinite value for "+infomap.toString());
+                    //    if (m[i][j]<=0 ) throw new Exception("<=0 value for "+infomap.toString());
+                    }                    
+                    if (m[i][Security.SERIE.OPEN.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.OPEN.getValue()]+"<=0 open value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.HIGH.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.HIGH.getValue()]+"<=0 high value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.LOW.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.LOW.getValue()]+"<=0 low value for "+infomap.toString());                                    
+                    if (m[i][Security.SERIE.CLOSE.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.CLOSE.getValue()]+"<=0 close value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.VOLUME.getValue()]<0 ) throw new Exception(m[i][Security.SERIE.VOLUME.getValue()]+"<0 volume value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.OI.getValue()]<0 ) throw new Exception(m[i][Security.SERIE.OI.getValue()]+"<0 oi value for "+infomap.toString());                
+                }
                 //weekly=Fints.changeFrequency(daily, Fints.frequency.DAILY);// .daily2weekly(daily);
                 weekly=changeFreq(daily,Fints.frequency.WEEKLY);
                 monthly=changeFreq(daily,Fints.frequency.MONTHLY);

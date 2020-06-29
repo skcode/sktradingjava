@@ -682,8 +682,13 @@ public class Database {
                     Double high = o.getDouble("high");
                     Double low = o.getDouble("low");
                     Double close = o.getDouble("close");
+                    if (open<=0) open=close;
+                    if (high<=0) high=close;
+                    if (low<=0) low=close;
                     Double volume = o.getDouble("volume");
                     Double oi = o.getDouble("oi");
+                    if (volume<0) volume=0.;
+                    if (oi<0) oi=0.;
                     map.put(UDate.parseYYYYMMDD(date), new ArrayList<>(Arrays.asList(open, high, low, close, volume, oi)));
                 }
                 int j = 0;

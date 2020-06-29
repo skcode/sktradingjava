@@ -315,7 +315,7 @@ public class Portfolio {
                 Fints ft1=t1.getDaily();
                 
                 if (DoubleDoubleArray.check_exists_le(ft1.getSerieCopy(Security.SERIE.CLOSE.getValue()).getMatrixCopy(), 0.)){
-                    throw new Exception ("zeros in close matrix for "+t1.getName()+"\t"+t1.getCode()+"\t"+t1.getMarket()+"\t"+t1.getIsin());                    
+                    throw new Exception ("<=0 in close matrix for "+t1.getName()+"\t"+t1.getCode()+"\t"+t1.getMarket()+"\t"+t1.getIsin());                    
                 }
                 if (!DoubleDoubleArray.isFinite(ft1.getMatrixCopy())) {
                     throw new Exception ("infinite matrix for "+t1.getName()+"\t"+t1.getCode());                    
