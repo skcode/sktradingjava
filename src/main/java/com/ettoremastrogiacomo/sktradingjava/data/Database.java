@@ -607,7 +607,14 @@ public class Database {
         return getFintsQuotes(Optional.of(list.get(0).get("code")), Optional.of(list.get(0).get("market")), Optional.of(list.get(0).get("isin")));
 
     }
-
+/**
+ * 
+ * @param code codice titolo
+ * @param market mercato
+ * @param isin 
+ * @return Fints con campi (open,high,low,close,volume,oi) se o,h,l non sono positivi, pongo uguale a close
+ * @throws Exception 
+ */
     public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
         Connection conn = null;
         Statement stmt = null;

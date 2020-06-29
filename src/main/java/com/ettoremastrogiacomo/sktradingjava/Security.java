@@ -327,12 +327,12 @@ public final class Security {
                         if (!Double.isFinite(m[i][j]) ) throw new Exception("NAN or infinite value for "+infomap.toString());
                     //    if (m[i][j]<=0 ) throw new Exception("<=0 value for "+infomap.toString());
                     }                    
-                    if (m[i][Security.SERIE.OPEN.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.OPEN.getValue()]+"<=0 open value for "+infomap.toString());                
-                    if (m[i][Security.SERIE.HIGH.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.HIGH.getValue()]+"<=0 high value for "+infomap.toString());                
-                    if (m[i][Security.SERIE.LOW.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.LOW.getValue()]+"<=0 low value for "+infomap.toString());                                    
                     if (m[i][Security.SERIE.CLOSE.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.CLOSE.getValue()]+"<=0 close value for "+infomap.toString());                
                     if (m[i][Security.SERIE.VOLUME.getValue()]<0 ) throw new Exception(m[i][Security.SERIE.VOLUME.getValue()]+"<0 volume value for "+infomap.toString());                
                     if (m[i][Security.SERIE.OI.getValue()]<0 ) throw new Exception(m[i][Security.SERIE.OI.getValue()]+"<0 oi value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.OPEN.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.OPEN.getValue()]+"<=0 open value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.HIGH.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.HIGH.getValue()]+"<=0 high value for "+infomap.toString());                
+                    if (m[i][Security.SERIE.LOW.getValue()]<=0 ) throw new Exception(m[i][Security.SERIE.LOW.getValue()]+"<=0 low value for "+infomap.toString());                                                        
                 }
                 //weekly=Fints.changeFrequency(daily, Fints.frequency.DAILY);// .daily2weekly(daily);
                 weekly=changeFreq(daily,Fints.frequency.WEEKLY);
