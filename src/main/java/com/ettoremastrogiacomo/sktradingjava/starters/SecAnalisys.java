@@ -22,9 +22,9 @@ public class SecAnalisys {
 static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
-            String symbol="SEML";//INA.EURONEXT-XLIS
+            String symbol="ENEL";//INA.EURONEXT-XLIS
             String market="MLSE";
-            int window=500;
+            int window=2500;
             String hashcode=Database.getHashcode(symbol, market);
             HashMap<String,String> info=Database.getRecords(Optional.of(Arrays.asList(hashcode)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()).get(0);
             info.keySet().forEach((x)->LOG.info(x+"\t"+info.get(x)));

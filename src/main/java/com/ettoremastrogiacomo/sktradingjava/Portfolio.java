@@ -40,17 +40,19 @@ class GeneticOpt {
     static double[] meanbycols;
     static boolean duplicates;
     static int popsize, generations;
-
+    static final Logger LOG = Logger.getLogger(GeneticOpt.class);
     GeneticOpt(double[][] m, int setmin, int setmax, Portfolio.optMethod met, Optional<Boolean> duplicates, Optional<Integer> popsize, Optional<Integer> generations) throws Exception {
         GeneticOpt.m = m;
-
+        if (!DoubleDoubleArray.isFinite(m)) throw new Exception("not finite er matrix");
         GeneticOpt.setmax = setmax;
         GeneticOpt.setmin = setmin;
         GeneticOpt.met = met;
         GeneticOpt.cov = DoubleDoubleArray.cov(m);
+        if (!DoubleDoubleArray.isFinite(cov)) throw new Exception("not finite cov matrix");
         GeneticOpt.poolsize = cov.length;
         GeneticOpt.samplelen = m.length;
         GeneticOpt.meanbycols = DoubleDoubleArray.mean(m);
+        if (!DoubleArray.isFinite(meanbycols)) throw new Exception("not finite means vector");
         GeneticOpt.duplicates = duplicates.orElse(false);
         GeneticOpt.popsize = popsize.orElse(10000);
         GeneticOpt.generations = generations.orElse(1000);
@@ -76,6 +78,7 @@ class GeneticOpt {
         if (setmin < 2) {
             throw new Exception("setmin too short " + setmin);
         }
+        
     }
 
     private static ArrayList<Integer> toArray(Genotype<IntegerGene> gt) {
@@ -130,6 +133,11 @@ class GeneticOpt {
             eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
         }
         HashMap<String, Double> lrmap = new HashMap<>();
+        if (Double.isNaN(eqt[0])){
+            LOG.debug("NAN equity, please check");
+            
+            
+        }
         try {
             lrmap = DoubleArray.LinearRegression(eqt);
         } catch (Exception e) {
@@ -148,7 +156,8 @@ class GeneticOpt {
                 try {
                     fitness = DoubleArray.maxDrowDownPerc(eqt);
                 } catch (Exception e) {
-                    System.err.print("errore " + e);
+                    LOG.warn("error MINDD "+e);
+                    
                 }
             }
             break;
@@ -168,7 +177,7 @@ class GeneticOpt {
                 try {
                     fitness = eqt[eqt.length - 1] / Math.abs(DoubleArray.maxDrowDownPerc(eqt));
                 } catch (Exception e) {
-                    System.err.print("errore " + e);
+                    LOG.warn("error PROFITMINDDRATIO "+e);
                 }
             }
             break;
@@ -294,7 +303,6 @@ public class Portfolio {
             throw new Exception("day must be specified if intraday freq :" + freq);
         }
         this.securities = new java.util.ArrayList<>();
-
         this.tmp_hashcodes = new java.util.ArrayList<>();
         for (String s : hashcodes) {
             if (this.tmp_hashcodes.contains(s)) {
@@ -303,7 +311,17 @@ public class Portfolio {
             }
             this.tmp_hashcodes.add(s);
             try {
-                this.securities.add(new com.ettoremastrogiacomo.sktradingjava.Security(s));
+                Security t1=new com.ettoremastrogiacomo.sktradingjava.Security(s);
+                Fints ft1=t1.getDaily();
+                
+                if (DoubleDoubleArray.check_exists_le(ft1.getSerieCopy(Security.SERIE.CLOSE.getValue()).getMatrixCopy(), 0.)){
+                    throw new Exception ("zeros in close matrix for "+t1.getName()+"\t"+t1.getCode()+"\t"+t1.getMarket()+"\t"+t1.getIsin());                    
+                }
+                if (!DoubleDoubleArray.isFinite(ft1.getMatrixCopy())) {
+                    throw new Exception ("infinite matrix for "+t1.getName()+"\t"+t1.getCode());                    
+                }
+                this.securities.add(t1);
+                
             } catch (Exception e) {
                 LOG.warn("cannot add security : " + e.getMessage());
             }

@@ -6,7 +6,6 @@
 package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
-import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 
 import com.ettoremastrogiacomo.utils.DoubleArray;

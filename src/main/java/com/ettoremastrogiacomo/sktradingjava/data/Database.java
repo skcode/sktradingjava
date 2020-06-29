@@ -344,7 +344,7 @@ public class Database {
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
-            LOG.debug(sql);
+           // LOG.debug(sql);
             res = stmt.executeQuery(sql);
             int ncol = res.getMetaData().getColumnCount();
 
@@ -667,11 +667,11 @@ public class Database {
                         bestdate = d1;
                     }
                 }
-                //LOG.debug(ja1.length()+"\t"+res.getString("provider"));
+                
             }
 
             if (!bestarr.isEmpty()) {
-                LOG.debug("LOADING data FOR " + codev + "." + marketv);
+                //LOG.debug("LOADING data FOR " + codev + "." + marketv);
                 JSONArray arr = bestarr;
                 java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
                 matrix = new double[arr.length()][6];

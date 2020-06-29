@@ -451,4 +451,14 @@ public class DoubleArray {
             System.out.println();
         }
     }
+    
+    static public boolean isFinite(double[] m) {
+        boolean res=true;
+        for (double m1 : m) {
+                if (!Double.isFinite(m1)) {
+                    res=false;
+                }
+        }
+        return res;
+    }    
 }
