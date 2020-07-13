@@ -662,6 +662,11 @@ public class Database {
             JSONArray bestarr = new JSONArray();
             while (res.next()) {
                 JSONArray ja1 = new JSONArray(res.getString("data"));
+                if (ja1.isEmpty()) continue;
+                /*try {
+                JSONObject jo1= ja1.getJSONObject(ja1.length() - 1);
+                }catch (Exception e) {LOG.error(e, e);LOG.debug(ja1);System.exit(1);}
+                */
                 UDate d1 = UDate.parseYYYYMMDD(ja1.getJSONObject(ja1.length() - 1).getString("date"));
                 if (d1.after(bestdate)) {
                     bestarr = ja1;
@@ -954,11 +959,11 @@ public class Database {
         long oneday = 1000 * 60 * 60 * 24;
         for (java.util.HashMap<String, String> map : list) {
             // if (map.get("type").equalsIgnoreCase(type.orElse("STOCK")) && map.get("market").equalsIgnoreCase(market.orElse("MTA"))) {
-            LOG.debug(map.get("name") + ";" + map.get("code") + ";" + map.get("type") + ";" + map.get("market") + ";" + map.get("sector"));
+            //LOG.debug(map.get("name") + ";" + map.get("code") + ";" + map.get("type") + ";" + map.get("market") + ";" + map.get("sector"));
             if (hashcodes.isPresent()) {
 
                 if (hashcodes.get().indexOf(map.get("hashcode")) < 0) {
-                    LOG.debug("hashcode " + map.get("hashcode") + " not in list");
+                   // LOG.debug("hashcode " + map.get("hashcode") + " not in list");
                     continue;
                 }
             }
@@ -969,23 +974,23 @@ public class Database {
                 //check length
                 if (length.isPresent()) {
                     if (t.getLength() < length.get()) {
-                        LOG.debug("length too short:" + t.getLength() + "<" + length.get());
+                     //   LOG.debug("length too short:" + t.getLength() + "<" + length.get());
                         continue;
                     }
                 }
-                LOG.debug("length=" + t.getLength());
+                //LOG.debug("length=" + t.getLength());
                 //check sharpe
                 if (sharpe_treshold.isPresent()) {
                     if (t.getLength() >= 250) {
                         Fints er = Fints.ER(t.getSerieCopy(3).head(250), 100, true);
                         Fints sma = Fints.SMA(Fints.Sharpe(er, 20), 200);
                         if (sma.get(sma.getLength() - 1, 0) <= sharpe_treshold.get()) {
-                            LOG.debug("sharpe below treshold: " + sma.get(sma.getLength() - 1, 0) + "<=" + sharpe_treshold.get());
+                       //     LOG.debug("sharpe below treshold: " + sma.get(sma.getLength() - 1, 0) + "<=" + sharpe_treshold.get());
                             continue;
                         }
-                        LOG.debug("sharpe=" + sma.get(sma.getLength() - 1, 0));
+                       // LOG.debug("sharpe=" + sma.get(sma.getLength() - 1, 0));
                     } else {
-                        LOG.warn("cannot check for sharpe (len<250)");
+                       // LOG.warn("cannot check for sharpe (len<250)");
                         continue;
                     }
                 }
@@ -996,44 +1001,44 @@ public class Database {
                 double volmean = t.getSerieCopy(4).head(win).getMeans()[0];
                 if (minvol.isPresent()) {
                     if (volmean < minvol.get()) {
-                        LOG.debug("too few volumes: " + volmean + "<" + minvol.get());
+                       // LOG.debug("too few volumes: " + volmean + "<" + minvol.get());
                         continue;
                     }
                 }
-                LOG.debug("volmean=" + volmean);
+                //LOG.debug("volmean=" + volmean);
                 //check lastdate
                 double dfn = t.getDaysFromNow();
                 if (maxold.isPresent()) {
                     if (dfn > maxold.get()) {
-                        LOG.debug("lasdate older " + dfn + " days from now");
+                  //      LOG.debug("lasdate older " + dfn + " days from now");
                         continue;
                     }
                 }
-                LOG.debug("lastdate=" + t.getLastDate());
+                //LOG.debug("lastdate=" + t.getLastDate());
                 //check maxvaluegap
                 t = t.getSerieCopy(3).head(win);//set to close
                 double mapvg = t.getMaxAbsPercentValueGap(0);
                 if (maxpcgap.isPresent()) {
                     if (mapvg > maxpcgap.get()) {
-                        LOG.debug("max gap " + mapvg + ">" + maxpcgap.get());
+                  //      LOG.debug("max gap " + mapvg + ">" + maxpcgap.get());
                         continue;
                     }
                 }
-                LOG.debug("maxpcvaluegap=" + t.getMaxAbsPercentValueGap(0));
+                //LOG.debug("maxpcvaluegap=" + t.getMaxAbsPercentValueGap(0));
                 //dategap
                 double mdg = t.getMaxDaysDateGap();
                 if (maxdaygap.isPresent()) {
                     if (mdg > maxdaygap.get()) {
-                        LOG.debug("dates gap " + mdg + ">" + maxdaygap.get());
+                  //      LOG.debug("dates gap " + mdg + ">" + maxdaygap.get());
                         continue;
                     }
                 }
-                LOG.debug("maxdategap=" + t.getMaxDateGap() / oneday);
+                //LOG.debug("maxdategap=" + t.getMaxDateGap() / oneday);
                 retlist.add(map.get("hashcode"));
                 //f = f == null ? t : f.merge(t);
                 LOG.info("added " + map.get("isin") + "\t" + map.get("name") + "." + map.get("market"));
             } catch (Exception e) {
-                LOG.warn(e);
+                LOG.warn(e,e);
             }
         }
 

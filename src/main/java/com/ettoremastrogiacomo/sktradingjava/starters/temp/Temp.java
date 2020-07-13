@@ -10,6 +10,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters.temp;
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
+import com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch;
 import com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.UDate;
@@ -53,8 +54,11 @@ public class Temp {
     }
 
     public static void main(String[] args) throws Exception {
-        Fints ret= Database.getIntradayFintsQuotes("ENEL", "MLSE", UDate.parseYYYYMMDD("20200618"));
-        ret.getSerieCopy(3).plot("enel", "price");
+        //Fints ret= Database.getIntradayFintsQuotes("ENEL", "MLSE", UDate.parseYYYYMMDD("20200618"));
+        
+        //ret.getSerieCopy(3).plot("enel", "price");
+       
+              
       // Fints enel=Database.getFintsQuotes(Optional.of("ENEL"), Optional.of("MLSE"), Optional.empty());
        //enel.getSerieCopy(3).plot("enel", "price");
        //JSONArray arr=MLSE_DataFetch.fetchMLSEEODintraday("ENI",Security.secType.STOCK);

@@ -30,7 +30,7 @@ public class FetchQuotes {
         try {Database.createSecTable();     } catch (Exception e){LOG.warn(e);}   
         if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || 
             c1.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)        {
-            try {Database.deleteSharesTable(); } catch (Exception e){LOG.warn(e);}   
+            try {Database.deleteSharesTable();Database.createSecTable(); } catch (Exception e){LOG.warn(e);}   
                         
         }   
        try {loadEODdata(); }    catch (Exception e) {LOG.warn(e);}             

@@ -24,16 +24,16 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=250,maxsamples=2000,stepsamples=250,maxdaygap=10,maxold=10,minvol=10000,minvoletf=100,setmin=5,setmax=50,popsize=20000,ngen=500;
-        double maxpcgap=.15;      
+        int minsamples=2500,maxsamples=2500,stepsamples=250,maxdaygap=10,maxold=10,minvol=10000,minvoletf=1000,setmin=5,setmax=50,popsize=20000,ngen=1500;
+        double maxpcgap=.2;      
         Portfolio.optMethod optm=Portfolio.optMethod.MINDD;
         boolean plot=false,plotlist=false;
         HashMap<String,Integer> list= new HashMap<>();
         HashMap<Integer,Double> meaneq= new HashMap<>();
         HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
-            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createEURStockEURPortfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());

@@ -142,6 +142,10 @@ public class EURONEXT_DataFetch {
             map.put("sector", sector);
             map.put("isin", isin);
             map.put("code", row[2].replace("\"", ""));
+            if (row[2].replace("\"", "").equalsIgnoreCase("-")) {
+                LOG.warn(row[2]+"\t"+line);
+                continue;
+            }
             map.put("name", row[0].replace("\"", ""));
             map.keySet().forEach((x) -> {
                 LOG.debug(x + "\t" + map.get(x));
@@ -188,6 +192,16 @@ public class EURONEXT_DataFetch {
         LOG.debug("samples fetched for "+isin+" = "+totalarr.length());
             return totalarr;
     }    
-
+ static public void main(String[] args) throws Exception {
+     java.util.HashMap<String, java.util.HashMap<String, String>>  map=fetchEuroNext();
+     fetchEURONEXTEOD("CH0043238366", "EURONEXT-A5G");
+     for (String x: map.keySet()) {
+         LOG.debug(map.get(x));
+         //{market=EURONEXT-A5G, code=YZA, name=ARYZTA AG, currency=EUR, type=STOCK, sector=NA, isin=CH0043238366}
+         JSONArray a=fetchEURONEXTEOD(map.get(x).get("isin"), map.get(x).get("market"));
+         if (a.isEmpty()) LOG.error("empty val");
+     }
+     
+ }
     
 }
