@@ -424,15 +424,8 @@ public final class FetchData {
         //};
     }
 
-    /* public static java.util.ArrayList<String> getIsins(Optional<String> isin, Optional<String> name, Optional<String> code, Optional<String> type, Optional<String> market, Optional<String> currency, Optional<String> sector) throws Exception {
-    java.util.ArrayList< java.util.HashMap<String, String>> list = Database.getRecords(Optional.empty(),isin, name, code, type, market, currency, sector);
-    java.util.ArrayList<String> isins = new java.util.ArrayList<>();
-    list.forEach((x) -> {
-    isins.add(x.get("isin"));
-    });
-    return isins;
-    }*/
-    public static String fetchYahooQuotes(String symbol) throws Exception {
+    
+    /*public static String fetchYahooQuotes(String symbol) throws Exception {
         URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
         HttpFetch http = new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -467,6 +460,17 @@ public final class FetchData {
         res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.of(http.getCookies())));
         Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
         return res;
+    }*/
+public static String fetchYahooQuotes(String symbol) throws Exception {
+        //URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        //https://query1.finance.yahoo.com/v7/finance/download/HFRN.MI?period1=0&period2=1578265200&interval=1d&events=history&crumb=hCd0SUv4Zf2
+        String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history";
+        String res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.empty()));
+        Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
+        return res;
     }
-
 }
