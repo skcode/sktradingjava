@@ -45,6 +45,7 @@
   </build>
   <properties>
     <maven.compiler.target>11</maven.compiler.target>
+    <dl4j.version>0.9.1</dl4j.version>
     <maven.compiler.source>11</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>

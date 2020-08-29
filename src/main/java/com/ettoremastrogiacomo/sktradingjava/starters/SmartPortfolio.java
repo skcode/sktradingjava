@@ -24,7 +24,7 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=2500,maxsamples=2500,stepsamples=250,maxdaygap=10,maxold=10,minvol=10000,minvoletf=1000,setmin=5,setmax=50,popsize=20000,ngen=1500;
+        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=10,maxold=10,minvol=10000,minvoletf=1,setmin=10,setmax=50,popsize=20000,ngen=1500;
         double maxpcgap=.2;      
         Portfolio.optMethod optm=Portfolio.optMethod.MINDD;
         boolean plot=false,plotlist=false;
@@ -33,7 +33,10 @@ public class SmartPortfolio {
         HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createEURStockEURPortfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_GLOBALI_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());
@@ -45,8 +48,7 @@ public class SmartPortfolio {
             UDate train_startdate=ptf.dates.get(ptf.dates.size()-SIZE);
             setmax=setmax>ptf.getNoSecurities()?ptf.getNoSecurities():setmax;
             
-            Map.Entry<Double,ArrayList<Integer>>winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, optm, plot, popsize, ngen);
-            
+            Map.Entry<Double,ArrayList<Integer>>winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, optm, plot, popsize, ngen);            
             logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
             logger.info("setmin "+setmin+"\tsetmax "+setmax);
             logger.info("BEST "+1.0/winner.getKey());

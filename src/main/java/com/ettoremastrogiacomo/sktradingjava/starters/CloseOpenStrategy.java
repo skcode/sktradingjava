@@ -22,10 +22,10 @@ import java.util.TreeMap;
  */
 public class CloseOpenStrategy {
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CloseOpenStrategy.class);   
-    static final int MINLEN=500,MAXOLD=45,MINVOL=5000,MAXDAYGAP=6;
+    static final int MINLEN=500,MAXOLD=45,MINVOL=500000,MAXDAYGAP=6;
     static final double MAXGAP=.15;
-            static final int POOLSIZE=1;
-        static  double LASTEQ=100000,FEE=7,spreadPEN=0.001;
+            static final int POOLSIZE=5;
+        static  double LASTEQ=100000,FEE=0,spreadPEN=0.001;
     public static void main(String[] args) throws Exception {
         Portfolio ptf=Portfolio.createMLSEStockEURPortfolio(Optional.of(MINLEN), Optional.of(MAXGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL));
         LOG.debug(ptf);        
