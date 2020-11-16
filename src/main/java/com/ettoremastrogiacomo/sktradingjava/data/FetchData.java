@@ -466,7 +466,7 @@ public final class FetchData {
         return res;
     }
 
-    static void loadintoDB(String x, java.util.HashMap<String, java.util.HashMap<String, String>> m, String provider, Optional<Boolean> intraday) throws Exception {
+    static void loadintoDB(String x, java.util.HashMap<String, java.util.HashMap<String, String>> m, Database.Providers provider, Optional<Boolean> intraday) throws Exception {
         String sql1 = "insert or replace into " + Init.db_sharestable + "(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
         String sql2 = "insert or replace into " + Init.db_eoddatatable + "(hashcode,data,provider) values(?,?,?)";
         String sql3 = "insert or replace into " + Init.db_intradaytable + "(hashcode,date,quotes) values(?,?,?)";
@@ -488,10 +488,10 @@ public final class FetchData {
             String idaydate = "";
             //BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7);
             switch (provider) {
-                case "EURONEXT":
+                case EURONEXT:
                     data = fetchEURONEXTEOD(isin, market);
                     break;
-                case "BORSAITALIANA":
+                case BORSAITALIANA:
                     data = MLSE_DataFetch.fetchMLSEEOD(code, Security.secType.valueOf(type));
                     if (iday) {
                         dataiday = MLSE_DataFetch.fetchMLSEEODintraday(code, Security.secType.valueOf(type));
@@ -500,12 +500,36 @@ public final class FetchData {
                         }
                     }
                     break;
-                case "SOLE24ORE":
+                case SOLE24ORE:
                     data = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
                     break;
-                case "XETRA":
+                case XETRA:
                     data = fetchXETRAEOD2(isin, true);
                     break;
+                case YAHOO:
+                    String s = fetchYahooQuotes(code); 
+                    String[] lines = s.split("\n");
+                    data = new JSONArray();
+                    for (int i = 1; i < lines.length; i++) {//skip first header line
+                        try {
+                            JSONObject sv = new JSONObject();
+                            String[] row = lines[i].split(",");
+                            String[] date = row[0].split("-");
+                            Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
+                            double fact = Double.parseDouble(row[5]) / Double.parseDouble(row[4]);
+                            sv.put("date", (new UDate(c.getTimeInMillis())).toYYYYMMDD());
+                            sv.put("close", Double.parseDouble(row[4]) * fact);
+                            sv.put("open", Double.parseDouble(row[1]) * fact);
+                            sv.put("high", Double.parseDouble(row[2]) * fact);
+                            sv.put("low", Double.parseDouble(row[3]) * fact);
+                            sv.put("volume", Double.parseDouble(row[6]));
+                            sv.put("oi", 0);
+                            data.put(sv);
+                        } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
+                            LOG.warn(e);
+                        }
+                    }                    
+                    break;                    
                 default:
                     throw new Exception("provider " + provider + " not implemented");
             }
@@ -525,7 +549,7 @@ public final class FetchData {
                 LOG.debug("rows updated in " + Init.db_sharestable + " table " + stmt1.executeUpdate());
                 stmt2.setString(1, x);
                 stmt2.setString(2, data.toString());
-                stmt2.setString(3, provider);
+                stmt2.setString(3, provider.toString());
                 LOG.debug("rows updated in " + Init.db_eoddatatable + " table " + stmt2.executeUpdate());
                 if (iday && !dataiday.isEmpty()) {
                     stmt3.setString(1, x);
@@ -548,7 +572,7 @@ public final class FetchData {
             java.util.HashMap<String, java.util.HashMap<String, String>> mapXETRA = fetchListDE();
             mapXETRA.keySet().forEach((x) -> {
                 try {
-                    loadintoDB(x, mapXETRA, "XETRA", Optional.of(false));
+                    loadintoDB(x, mapXETRA, Database.Providers.XETRA , Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
                 }
@@ -556,7 +580,7 @@ public final class FetchData {
         } catch (Exception e) {
             LOG.error("ERROR FETCHING XETRA");
         }
-
+        
         try {
             LOG.debug("*** fetching BORSAITALIANA shares ***");
             java.util.HashMap<String, java.util.HashMap<String, String>> mapMLSEBIT = fetchMLSEList(Security.secType.STOCK);
@@ -566,8 +590,8 @@ public final class FetchData {
 
             mapMLSEBIT.keySet().forEach((x) -> {
                 try {
-                    loadintoDB(x, mapMLSEBIT, "BORSAITALIANA", Optional.of(true));
-                    loadintoDB(x, mapMLSEBIT, "SOLE24ORE", Optional.of(false));
+                    loadintoDB(x, mapMLSEBIT, Database.Providers.BORSAITALIANA, Optional.of(true));
+                    loadintoDB(x, mapMLSEBIT, Database.Providers.SOLE24ORE, Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
                 }
@@ -582,7 +606,7 @@ public final class FetchData {
             java.util.HashMap<String, java.util.HashMap<String, String>> mapEURONEXT = fetchEuroNext();
             mapEURONEXT.keySet().forEach((x) -> {
                 try {
-                    loadintoDB(x, mapEURONEXT, "EURONEXT", Optional.of(false));
+                    loadintoDB(x, mapEURONEXT, Database.Providers.EURONEXT, Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
                 }
@@ -597,7 +621,7 @@ public final class FetchData {
             java.util.HashMap<String, java.util.HashMap<String, String>> mapNYSE = fetchNYSEList();
             mapNYSE.keySet().forEach((x) -> {
                 try {
-                    loadintoDB(x, mapNYSE, "YAHOO", Optional.of(false));
+                    loadintoDB(x, mapNYSE, Database.Providers.YAHOO, Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
                 }
