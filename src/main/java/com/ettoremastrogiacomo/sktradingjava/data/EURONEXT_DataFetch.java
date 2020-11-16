@@ -5,15 +5,22 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.data;
 
+import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
+import com.ettoremastrogiacomo.sktradingjava.Security;
+import static com.ettoremastrogiacomo.sktradingjava.data.Database.createSecTable;
 
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.computeHashcode;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
+import com.ettoremastrogiacomo.sktradingjava.starters.intraday.IntradayStats;
 
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +37,7 @@ public class EURONEXT_DataFetch {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(EURONEXT_DataFetch.class);
 
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchEuroNext() throws Exception {
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchEuroNext() throws Exception {
         /**
          *
          * Euronext Access Brussels Euronext Access Lisbon
@@ -192,16 +199,10 @@ public class EURONEXT_DataFetch {
         LOG.debug("samples fetched for "+isin+" = "+totalarr.length());
             return totalarr;
     }    
- static public void main(String[] args) throws Exception {
-     java.util.HashMap<String, java.util.HashMap<String, String>>  map=fetchEuroNext();
-     fetchEURONEXTEOD("CH0043238366", "EURONEXT-A5G");
-     for (String x: map.keySet()) {
-         LOG.debug(map.get(x));
-         //{market=EURONEXT-A5G, code=YZA, name=ARYZTA AG, currency=EUR, type=STOCK, sector=NA, isin=CH0043238366}
-         JSONArray a=fetchEURONEXTEOD(map.get(x).get("isin"), map.get(x).get("market"));
-         if (a.isEmpty()) LOG.error("empty val");
-     }
+ 
+ 
+
      
  }
     
-}
+

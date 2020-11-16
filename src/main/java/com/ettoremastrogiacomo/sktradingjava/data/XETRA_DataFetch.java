@@ -5,28 +5,12 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.data;
 
+import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.computeHashcode;
 import com.ettoremastrogiacomo.utils.HttpFetch;
-import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -40,7 +24,7 @@ import org.jsoup.select.Elements;
  */
 public class XETRA_DataFetch {
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(XETRA_DataFetch.class);
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListDE() throws Exception {
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchListDE() throws Exception {
         //String XetraSuffix="ETR";
         String XetraURL = "http://www.xetra.com/xetra-en/instruments/shares/list-of-tradable-shares";
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
@@ -127,6 +111,7 @@ public class XETRA_DataFetch {
         String market=xetra?"XETR":"XFRA";
         HttpFetch http = new HttpFetch();
         //https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic=XETR&minDate=2010-01-01&maxDate=2099-01-01&isin=NL0000226223        
+        //https://api.boerse-frankfurt.de/v1/tradingview/history?symbol=XETR%3ADE0006047004&resolution=1D&from=1578667823&to=1605455103983
         String url= "https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic="+market+"&minDate=2010-01-01&maxDate=2099-01-01&isin="+isin;
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
@@ -163,6 +148,88 @@ public class XETRA_DataFetch {
         LOG.debug("samples fetched for "+isin+" = "+totalarr.length() );
         return totalarr;
     }
-    
-    
+
+    static public JSONArray fetchXETRAEOD2(String isin,boolean xetra)throws Exception{
+        //NB utilizzare mic=XFRA per dati eod altri mercati europei altrimenti XETR
+        String market=xetra?"XETR":"XFRA";
+        HttpFetch http = new HttpFetch();
+        Long LT=System.currentTimeMillis();
+        
+        //https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic=XETR&minDate=2010-01-01&maxDate=2099-01-01&isin=NL0000226223        
+        String url="https://api.boerse-frankfurt.de/v1/tradingview/history?symbol="+market+"%3A"+isin+"&resolution=1D&from=1000000000&to="+LT.toString().substring(0, 10);
+        //String url= "https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic="+market+"&minDate=2010-01-01&maxDate=2099-01-01&isin="+isin;
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res= new String(http.HttpGetUrl(url,Optional.empty(),Optional.empty()));
+        JSONObject    obj = new JSONObject(res);
+        if (!obj.get("s").equals("ok")) throw new Exception("data for isin "+isin +" not fetched");        
+        JSONArray t_arr=obj.getJSONArray("t");
+        JSONArray o_arr=obj.getJSONArray("o");
+        JSONArray h_arr=obj.getJSONArray("h");
+        JSONArray l_arr=obj.getJSONArray("l");
+        JSONArray c_arr=obj.getJSONArray("c");
+        JSONArray v_arr=obj.getJSONArray("v");
+        int len=t_arr.length();
+        JSONArray totalarr= new JSONArray();
+        for (int i=0;i<len;i++){
+            JSONObject sv= new JSONObject();  
+            UDate datev=new UDate(t_arr.getLong(i)*1000 );
+            double close=c_arr.getDouble(i);
+            double volume=Math.floor(v_arr.getDouble(i));
+            double open=o_arr.getDouble(i);
+            double high=h_arr.getDouble(i);
+            double low=l_arr.getDouble(i);
+            open=open==0?close:open;
+            high=high==0?close:high;
+            low=low==0?close:low;           
+            sv.put("date", datev.toYYYYMMDD());
+            sv.put("open", open);
+            sv.put("high", high);
+            sv.put("low", low);
+            sv.put("close", close);
+            sv.put("volume", volume);
+            sv.put("oi", 0);                
+            totalarr.put(sv);                    
+        }
+        
+        /*JSONArray arr= obj.getJSONArray("data");
+        
+        //TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();        
+        for(int i=0;i<arr.length();i++){                           
+            JSONObject e = arr.getJSONObject(i);
+            JSONObject sv= new JSONObject();                        
+            try {
+                String []dateel=e.getString("date").split("-");
+                UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);                                              
+                double close=e.getDouble("close");
+                double volume=e.getLong("turnoverPieces");
+                double open=e.isNull("open") ? close:e.getDouble("open");
+                double high=e.isNull("high") ? close:e.getDouble("high");
+                double low=e.isNull("low") ? close:e.getDouble("low");
+                sv.put("date", datev.toYYYYMMDD());
+                sv.put("open", open);
+                sv.put("high", high);
+                sv.put("low", low);
+                sv.put("close", close);
+                sv.put("volume", volume);
+                sv.put("oi", 0);                
+                totalarr.put(sv);
+        //        values.put(datev, new ArrayList<>(Arrays.asList(open,high,low,close,volume)) );
+            } catch (Exception ex) {
+                LOG.warn(e.toString()+"\t"+ex);
+            }                        
+        }             */
+        LOG.debug("samples fetched for "+isin+" = "+totalarr.length() );
+        return totalarr;
+    }
+public static void main(String[] args)throws Exception{
+    String isin="DE000A2JNWZ9";
+      JSONArray j=fetchXETRAEOD2(isin,true);
+      Fints f= Database.getFintsQuotes(Database.getHashcodefromIsin(isin, "XETRA"));
+      LOG.debug(f.toString());
+      LOG.debug(f.getMaxDaysDateGap());
+
+}
+    //
 }

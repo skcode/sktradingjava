@@ -47,7 +47,7 @@ public class MLSE_DataFetch {
         return d;
     }
     
-    static UDate ultimoGiornoContrattazioni() throws Exception{
+    public static UDate ultimoGiornoContrattazioni() throws Exception{
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
@@ -61,7 +61,7 @@ public class MLSE_DataFetch {
         return StrBIT2UDate(el.get(0).text().substring(t.length(),t.length()+8));
     }
     
-    static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
+    public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         String url, urldet, type, currency, market;
@@ -316,6 +316,8 @@ public class MLSE_DataFetch {
     
     public static JSONArray fetchMLSEEODsole24ore(String symbol)throws Exception{
         String url="https://vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/"+symbol+".MI?timeWindow=TenYears";                
+        //.PAR per parigi euronext
+        
         HttpFetch http= new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);

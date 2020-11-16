@@ -77,7 +77,7 @@ public class Database {
     static final java.util.List<String> MONTHS = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
 
     public static enum Providers {
-        BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7);
+        BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7), SOLE24ORE(8);
         private final int priority;
 
         Providers(int priority) {
@@ -110,6 +110,10 @@ public class Database {
             if (this.name().equals("NYSE")) {
                 return "nyse quotes";
             }
+            if (this.name().equals("SOLE24ORE")) {
+                return "sole24ore quotes";
+            }
+            
             return "";
         }
     };
@@ -396,6 +400,20 @@ public class Database {
         return map.get(0).get("hashcode");
     }
 
+    /**
+     *
+     * @param isin
+     * @param market
+     * @return hashcode from market+code
+     * @throws Exception
+     */
+    public static String getHashcodefromIsin(String isin, String market) throws Exception {
+        List<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.of(Arrays.asList(isin)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList(market)), Optional.empty(), Optional.empty());
+        if (map.size() < 1) {
+            throw new Exception(isin + "." + market + " not found");
+        }
+        return map.get(0).get("hashcode");
+    }    
     /**
      *
      * @param hashcodes list of hashcodes
@@ -719,7 +737,7 @@ public class Database {
                 names.add("OI(" + codev + "." + marketv + ")");
                 ret = new Fints(dates, names, Fints.frequency.DAILY, matrix);
             } else {
-                throw new SQLException(code + "." + market + " not found");
+                throw new SQLException(code + "." + market + " not found or empty");
             }
         } catch (SQLException e) {
             LOG.error("cannot fetch " + code + "." + market, e);

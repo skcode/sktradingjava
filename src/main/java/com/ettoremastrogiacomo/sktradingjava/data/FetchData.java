@@ -6,46 +6,34 @@
 package com.ettoremastrogiacomo.sktradingjava.data;
 
 import com.ettoremastrogiacomo.sktradingjava.Init;
+import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.utils.Encoding;
 import static com.ettoremastrogiacomo.utils.Encoding.String2Byte;
 import static com.ettoremastrogiacomo.utils.Encoding.getSHA1;
 import com.ettoremastrogiacomo.utils.HttpFetch;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpCookie;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import org.jsoup.nodes.Element;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
+import com.ettoremastrogiacomo.utils.UDate;
+import java.util.Calendar;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEURONEXTEOD;
 import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEuroNext;
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEOD;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEODintraday;
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
-import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchListDE;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEODsole24ore;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
+import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD2;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD;
-import com.ettoremastrogiacomo.utils.UDate;
-import java.sql.PreparedStatement;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.TreeMap;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-
+import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchListDE;
 
 /**
  *
@@ -60,8 +48,6 @@ public final class FetchData {
     static public String computeHashcode(String isin, String market) throws Exception {
         return Encoding.base64encode(getSHA1(String2Byte((isin + market))));
     }
-
-
 
     static java.util.ArrayList<java.util.HashMap<String, String>> dividendiBIT(String hashcode, String type) throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
@@ -218,9 +204,9 @@ public final class FetchData {
 
     public static void loadEODdata() throws Exception {
 
-        String sql1 = "insert or replace into "+Init.db_sharestable+"(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
-        String sql2 = "insert or replace into "+Init.db_eoddatatable+"(hashcode,data,provider) values(?,?,?)";
-        String sql3 = "insert or replace into "+Init.db_intradaytable+"(hashcode,date,quotes) values(?,?,?)";
+        String sql1 = "insert or replace into " + Init.db_sharestable + "(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
+        String sql2 = "insert or replace into " + Init.db_eoddatatable + "(hashcode,data,provider) values(?,?,?)";
+        String sql3 = "insert or replace into " + Init.db_intradaytable + "(hashcode,date,quotes) values(?,?,?)";
         Connection conn = DriverManager.getConnection(Init.db_url);
         java.sql.PreparedStatement stmt1 = conn.prepareStatement(sql1);
         java.sql.PreparedStatement stmt2 = conn.prepareStatement(sql2);
@@ -228,6 +214,40 @@ public final class FetchData {
         conn.setAutoCommit(false);
 
         java.util.HashMap<String, java.util.HashMap<String, String>> m = new HashMap<>();
+////////////////BORSA FRANCESE
+        LOG.debug("*** fetching EURONEXT shares ***");
+        m = fetchEuroNext();
+
+        for (String x : m.keySet()) {
+            try {
+                String isin = m.get(x).get("isin");
+                LOG.debug(">>now fetching " + m.get(x));
+                JSONArray data = fetchEURONEXTEOD(isin, m.get(x).get("market"));
+                LOG.debug("data len " + data.length());
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                LOG.debug("rows updated in " + Init.db_sharestable + " table " + stmt1.executeUpdate());
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, "EURONEXT");
+                LOG.debug("rows updated in " + Init.db_eoddatatable + " table " + stmt2.executeUpdate());
+                //stmt1.executeBatch();
+                //stmt2.executeBatch();
+                conn.commit();
+                LOG.debug("fetched data from EURONEXT " + m.get(x).get("name"));
+            } catch (Exception e) {
+                LOG.warn("cannot fetch EURONEXT data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
+            }
+        }
+
+////////////////BORSA ITALIANA
+        LOG.debug("*** fetching MLSE shares ***");
         m.putAll(fetchMLSEList(secType.ETCETN));
         m.putAll(fetchMLSEList(secType.STOCK));
         m.putAll(fetchMLSEList(secType.ETF));
@@ -238,17 +258,17 @@ public final class FetchData {
                 String code = m.get(x).get("code");
                 String type = m.get(x).get("type");
                 JSONArray data = new JSONArray();
-                JSONArray data2=MLSE_DataFetch.fetchMLSEEODsole24ore(code);                
-                JSONArray data3=new JSONArray();
+                JSONArray data2 = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
+                JSONArray data3 = new JSONArray();
                 if (type.equalsIgnoreCase("STOCK")) {
                     data = fetchMLSEEOD(code, secType.STOCK);
-                    data3=MLSE_DataFetch.fetchMLSEEODintraday(code, secType.STOCK);
+                    data3 = MLSE_DataFetch.fetchMLSEEODintraday(code, secType.STOCK);
                 } else if (type.equalsIgnoreCase("ETF")) {
                     data = fetchMLSEEOD(code, secType.ETF);
-                    data3=MLSE_DataFetch.fetchMLSEEODintraday(code, secType.ETF);
+                    data3 = MLSE_DataFetch.fetchMLSEEODintraday(code, secType.ETF);
                 } else if (type.equalsIgnoreCase("ETCETN")) {
                     data = fetchMLSEEOD(code, secType.ETCETN);
-                    data3=MLSE_DataFetch.fetchMLSEEODintraday(code, secType.ETCETN);
+                    data3 = MLSE_DataFetch.fetchMLSEEODintraday(code, secType.ETCETN);
                 } else {
                     throw new Exception(type + " not allowed");
                 }
@@ -263,56 +283,30 @@ public final class FetchData {
                 stmt1.addBatch();
                 stmt2.setString(1, x);
                 stmt2.setString(2, data.toString());
-                stmt2.setString(3, "BORSAITALIANA");                
+                stmt2.setString(3, "BORSAITALIANA");
                 stmt2.addBatch();
                 stmt2.setString(1, x);
                 stmt2.setString(2, data2.toString());
-                stmt2.setString(3, "SOLE24ORE");                
+                stmt2.setString(3, "SOLE24ORE");
                 stmt2.addBatch();
-                if (!data3.isEmpty()){
+                if (!data3.isEmpty()) {
                     stmt3.setString(1, x);
-                    stmt3.setString(2, data3.getJSONObject(0).getString("date").substring(0,10).trim().replace("-", ""));
-                    stmt3.setString(3, data3.toString());                
-                    stmt3.addBatch();                    
+                    stmt3.setString(2, data3.getJSONObject(0).getString("date").substring(0, 10).trim().replace("-", ""));
+                    stmt3.setString(3, data3.toString());
+                    stmt3.addBatch();
                     stmt3.executeBatch();
-                }                
+                }
                 stmt1.executeBatch();
                 stmt2.executeBatch();
-                
+
                 conn.commit();
                 LOG.debug("fetched data from BORSAITALIANA " + m.get(x).get("name"));
             } catch (Exception e) {
                 LOG.warn("cannot fetch BORSAITALIANA data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
         }
-
-        m = fetchEuroNext();
-
-        for (String x : m.keySet()) {
-            try {
-                String isin = m.get(x).get("isin");
-                JSONArray data = fetchEURONEXTEOD(isin, m.get(x).get("market"));
-                stmt1.setString(1, x);
-                stmt1.setString(2, m.get(x).get("isin"));
-                stmt1.setString(3, m.get(x).get("name"));
-                stmt1.setString(4, m.get(x).get("code"));
-                stmt1.setString(5, m.get(x).get("type"));
-                stmt1.setString(6, m.get(x).get("market"));
-                stmt1.setString(7, m.get(x).get("currency"));
-                stmt1.setString(8, m.get(x).get("sector"));
-                stmt1.addBatch();
-                stmt2.setString(1, x);
-                stmt2.setString(2, data.toString());
-                stmt2.setString(3, "EURONEXT");                
-                stmt2.addBatch();                
-                stmt1.executeBatch();
-                stmt2.executeBatch();
-                conn.commit();
-                LOG.debug("fetched data from EURONEXT " + m.get(x).get("name"));
-            } catch (Exception e) {
-                LOG.warn("cannot fetch EURONEXT data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
-            }
-        }
+////////////////BORSA TEDESCA
+        LOG.debug("*** fetching XETRA shares ***");
         m = fetchListDE();
 
         for (String x : m.keySet()) {
@@ -330,8 +324,8 @@ public final class FetchData {
                 stmt1.addBatch();
                 stmt2.setString(1, x);
                 stmt2.setString(2, data.toString());
-                stmt2.setString(3, "XETRA");                
-                stmt2.addBatch();                
+                stmt2.setString(3, "XETRA");
+                stmt2.addBatch();
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();
@@ -340,7 +334,7 @@ public final class FetchData {
                 LOG.warn("cannot fetch XETRA data for " + m.get(x).get("name") + "\t" + m.get(x).get("isin") + "\t" + m.get(x).get("code") + "\t" + e);
             }
         }
-
+        LOG.debug("*** fetching NYSE shares ***");
         m = fetchNYSEList();
 
         for (String x : m.keySet()) {
@@ -349,24 +343,23 @@ public final class FetchData {
                 String s = fetchYahooQuotes(code);
                 String[] lines = s.split("\n");
                 //TreeMap<UDate, ArrayList<Double>> data = new TreeMap<>();
-                JSONArray data= new JSONArray();
+                JSONArray data = new JSONArray();
                 for (int i = 1; i < lines.length; i++) {//skip first header line
                     try {
-                        JSONObject sv= new JSONObject();
+                        JSONObject sv = new JSONObject();
                         String[] row = lines[i].split(",");
                         String[] date = row[0].split("-");
-                        Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));                        
+                        Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
                         double fact = Double.parseDouble(row[5]) / Double.parseDouble(row[4]);
 
-                        
                         sv.put("date", (new UDate(c.getTimeInMillis())).toYYYYMMDD());
-                        sv.put("close", Double.parseDouble(row[4]) * fact);                
+                        sv.put("close", Double.parseDouble(row[4]) * fact);
                         sv.put("open", Double.parseDouble(row[1]) * fact);
                         sv.put("high", Double.parseDouble(row[2]) * fact);
-                        sv.put("low", Double.parseDouble(row[3]) * fact);                
+                        sv.put("low", Double.parseDouble(row[3]) * fact);
                         sv.put("volume", Double.parseDouble(row[6]));
-                        sv.put("oi", 0);                
-                        data.put(sv);                         
+                        sv.put("oi", 0);
+                        data.put(sv);
                     } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
                         LOG.warn(e);
                     }
@@ -382,8 +375,8 @@ public final class FetchData {
                 stmt1.addBatch();
                 stmt2.setString(1, x);
                 stmt2.setString(2, data.toString());
-                stmt2.setString(3, "YAHOO");                
-                stmt2.addBatch();                    
+                stmt2.setString(3, "YAHOO");
+                stmt2.addBatch();
                 stmt1.executeBatch();
                 stmt2.executeBatch();
                 conn.commit();
@@ -424,7 +417,6 @@ public final class FetchData {
         //};
     }
 
-    
     /*public static String fetchYahooQuotes(String symbol) throws Exception {
         URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
         HttpFetch http = new HttpFetch();
@@ -461,7 +453,7 @@ public final class FetchData {
         Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
         return res;
     }*/
-public static String fetchYahooQuotes(String symbol) throws Exception {
+    public static String fetchYahooQuotes(String symbol) throws Exception {
         //URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
         HttpFetch http = new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -473,4 +465,147 @@ public static String fetchYahooQuotes(String symbol) throws Exception {
         Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
         return res;
     }
+
+    static void loadintoDB(String x, java.util.HashMap<String, java.util.HashMap<String, String>> m, String provider, Optional<Boolean> intraday) throws Exception {
+        String sql1 = "insert or replace into " + Init.db_sharestable + "(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
+        String sql2 = "insert or replace into " + Init.db_eoddatatable + "(hashcode,data,provider) values(?,?,?)";
+        String sql3 = "insert or replace into " + Init.db_intradaytable + "(hashcode,date,quotes) values(?,?,?)";
+        boolean iday = intraday.orElse(false);
+        try (Connection conn = DriverManager.getConnection(Init.db_url)) {
+            java.sql.PreparedStatement stmt1 = conn.prepareStatement(sql1);
+            java.sql.PreparedStatement stmt2 = conn.prepareStatement(sql2);
+            java.sql.PreparedStatement stmt3 = conn.prepareStatement(sql3);
+            java.sql.Statement stmt = conn.createStatement();
+            if (stmt.executeQuery("select * from " + Init.db_providerstable + " where name='" + provider + "'").next() == false) {
+                throw new Exception("provider " + provider + " do not exists");
+            }
+            String isin = m.get(x).get("isin");
+            String code = m.get(x).get("code");
+            String type = m.get(x).get("type");
+            String market = m.get(x).get("market");
+            LOG.debug(">>now fetching " + m.get(x));
+            JSONArray data = new JSONArray(), dataiday = new JSONArray();
+            String idaydate = "";
+            //BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7);
+            switch (provider) {
+                case "EURONEXT":
+                    data = fetchEURONEXTEOD(isin, market);
+                    break;
+                case "BORSAITALIANA":
+                    data = MLSE_DataFetch.fetchMLSEEOD(code, Security.secType.valueOf(type));
+                    if (iday) {
+                        dataiday = MLSE_DataFetch.fetchMLSEEODintraday(code, Security.secType.valueOf(type));
+                        if (!dataiday.isEmpty()) {
+                            idaydate = dataiday.getJSONObject(0).getString("date").substring(0, 10).trim().replace("-", "");
+                        }
+                    }
+                    break;
+                case "SOLE24ORE":
+                    data = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
+                    break;
+                case "XETRA":
+                    data = fetchXETRAEOD2(isin, true);
+                    break;
+                default:
+                    throw new Exception("provider " + provider + " not implemented");
+            }
+            LOG.debug("data len " + data.length());
+            if (data.length() == 0) {
+                //stmt.executeUpdate("delete from "+Init.db_eoddatatable +" where hashcode='"+x+"' and provider='"+provider+"'");                
+                LOG.warn("no data for " + isin + " in " + provider);
+            } else {
+                stmt1.setString(1, x);
+                stmt1.setString(2, m.get(x).get("isin"));
+                stmt1.setString(3, m.get(x).get("name"));
+                stmt1.setString(4, m.get(x).get("code"));
+                stmt1.setString(5, m.get(x).get("type"));
+                stmt1.setString(6, m.get(x).get("market"));
+                stmt1.setString(7, m.get(x).get("currency"));
+                stmt1.setString(8, m.get(x).get("sector"));
+                LOG.debug("rows updated in " + Init.db_sharestable + " table " + stmt1.executeUpdate());
+                stmt2.setString(1, x);
+                stmt2.setString(2, data.toString());
+                stmt2.setString(3, provider);
+                LOG.debug("rows updated in " + Init.db_eoddatatable + " table " + stmt2.executeUpdate());
+                if (iday && !dataiday.isEmpty()) {
+                    stmt3.setString(1, x);
+                    stmt3.setString(2, idaydate);
+                    stmt3.setString(3, dataiday.toString());
+                    LOG.debug("rows updated in " + Init.db_intradaytable + " table " + stmt3.executeUpdate());
+                }
+            }
+        }
+
+    }
+
+    static public void loadEODdatanew() throws Exception {
+        //fetchEURONEXTEOD("FR0010208488", "EURONEXT-XPAR");
+
+        //fetchMLSEList(Security.secType.ETCETN);        
+        //fetchMLSEList(Security.secType.ETF);    
+        try {
+            LOG.debug("*** fetching XETRA shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapXETRA = fetchListDE();
+            mapXETRA.keySet().forEach((x) -> {
+                try {
+                    loadintoDB(x, mapXETRA, "XETRA", Optional.of(false));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING XETRA");
+        }
+
+        try {
+            LOG.debug("*** fetching BORSAITALIANA shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapMLSEBIT = fetchMLSEList(Security.secType.STOCK);
+            mapMLSEBIT.putAll(fetchMLSEList(Security.secType.ETCETN));
+            mapMLSEBIT.putAll(fetchMLSEList(Security.secType.ETF));
+            //map=fetchMLSEList(Security.secType.STOCK); 
+
+            mapMLSEBIT.keySet().forEach((x) -> {
+                try {
+                    loadintoDB(x, mapMLSEBIT, "BORSAITALIANA", Optional.of(true));
+                    loadintoDB(x, mapMLSEBIT, "SOLE24ORE", Optional.of(false));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING BORSAITALIANA");
+        }
+
+        try {
+            LOG.debug("*** fetching EURONEXT shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapEURONEXT = fetchEuroNext();
+            mapEURONEXT.keySet().forEach((x) -> {
+                try {
+                    loadintoDB(x, mapEURONEXT, "EURONEXT", Optional.of(false));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING EURONEXT");
+        }
+
+        try {
+            LOG.debug("*** fetching NYSE shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapNYSE = fetchNYSEList();
+            mapNYSE.keySet().forEach((x) -> {
+                try {
+                    loadintoDB(x, mapNYSE, "YAHOO", Optional.of(false));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING NYSE");
+        }
+
+    }
+
 }
