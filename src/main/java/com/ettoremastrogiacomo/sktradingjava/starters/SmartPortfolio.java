@@ -24,7 +24,7 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=6,maxold=10,minvol=10000,minvoletf=1,setmin=30,setmax=50,popsize=20000,ngen=1500;
+        int minsamples=500,maxsamples=2500,stepsamples=250,maxdaygap=6,maxold=10,minvol=10000,minvoletf=1,setmin=20,setmax=50,popsize=20000,ngen=1500;
         double maxpcgap=.2;      
         Portfolio.optMethod optm=Portfolio.optMethod.MINDD;
         boolean plot=false,plotlist=false;
@@ -40,6 +40,7 @@ public class SmartPortfolio {
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());
+            logger.info("days gap "+ptf.closeER.getMaxDaysDateGap());
             logger.info("len "+ptf.getLength());
             logger.info("minvol "+minvol);
             logger.info("minvoletf "+minvoletf);

@@ -27,9 +27,6 @@ import org.json.JSONObject;
 import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEURONEXTEOD;
 import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEuroNext;
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEOD;
-import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEODintraday;
-import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
-import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEODsole24ore;
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD2;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD;
@@ -482,6 +479,7 @@ public final class FetchData {
             String isin = m.get(x).get("isin");
             String code = m.get(x).get("code");
             String type = m.get(x).get("type");
+            String name = m.get(x).get("name");
             String market = m.get(x).get("market");
             LOG.debug(">>now fetching " + m.get(x));
             JSONArray data = new JSONArray(), dataiday = new JSONArray();
@@ -536,7 +534,7 @@ public final class FetchData {
             LOG.debug("data len " + data.length());
             if (data.length() == 0) {
                 //stmt.executeUpdate("delete from "+Init.db_eoddatatable +" where hashcode='"+x+"' and provider='"+provider+"'");                
-                LOG.warn("no data for " + isin + " in " + provider);
+                LOG.warn("no data for " + isin + "."+code+ "."+name+" in " + provider);
             } else {
                 stmt1.setString(1, x);
                 stmt1.setString(2, m.get(x).get("isin"));

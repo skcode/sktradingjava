@@ -227,6 +227,7 @@ public static void main(String[] args)throws Exception{
     String isin="DE000A2JNWZ9";
       JSONArray j=fetchXETRAEOD2(isin,true);
       Fints f= Database.getFintsQuotes(Database.getHashcodefromIsin(isin, "XETRA"));
+      LOG.debug(f.getMaxDaysDateGap());
       LOG.debug(f.toString());
       LOG.debug(f.getMaxDaysDateGap());
 
