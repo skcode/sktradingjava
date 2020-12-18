@@ -502,7 +502,7 @@ public final class FetchData {
                     data = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
                     break;
                 case XETRA:
-                    data = fetchXETRAEOD2(isin, true);
+                    data = fetchXETRAEOD2(isin, false);
                     break;
                 case YAHOO:
                     String s = fetchYahooQuotes(code); 

@@ -10,6 +10,8 @@ import com.ettoremastrogiacomo.sktradingjava.Init;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.computeHashcode;
 import com.ettoremastrogiacomo.utils.HttpFetch;
 import com.ettoremastrogiacomo.utils.UDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Optional;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -155,7 +157,8 @@ public class XETRA_DataFetch {
         HttpFetch http = new HttpFetch();
         Long LT=System.currentTimeMillis();
         
-        //https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic=XETR&minDate=2010-01-01&maxDate=2099-01-01&isin=NL0000226223        
+        //https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic=XETR&minDate=2010-01-01&maxDate=2099-01-01&isin=NL0000226223       
+        //https://api.boerse-frankfurt.de/v1/tradingview/history?symbol=XETR%3ANL0000226223&resolution=1D&from=1000000000&to=9999999999
         String url="https://api.boerse-frankfurt.de/v1/tradingview/history?symbol="+market+"%3A"+isin+"&resolution=1D&from=1000000000&to="+LT.toString().substring(0, 10);
         //String url= "https://api.boerse-frankfurt.de/data/price_history?limit=10000&offset=0&mic="+market+"&minDate=2010-01-01&maxDate=2099-01-01&isin="+isin;
         if (Init.use_http_proxy.equals("true")) {
@@ -225,7 +228,14 @@ public class XETRA_DataFetch {
     }
 public static void main(String[] args)throws Exception{
     String isin="DE000A2JNWZ9";
-      JSONArray j=fetchXETRAEOD2(isin,true);
+      JSONArray j=fetchXETRAEOD2(isin,false);    
+    ArrayList<HashMap<String,String>> list=Database.getRecords(Optional.of("market='XETRA'"));
+    list.forEach((x)->{
+        try{
+            LOG.debug(x);
+            LOG.debug(Database.getFintsQuotes(x.get("hashcode")).getMaxDaysDateGap());        
+        } catch (Exception e ) {}
+    });
       Fints f= Database.getFintsQuotes(Database.getHashcodefromIsin(isin, "XETRA"));
       LOG.debug(f.getMaxDaysDateGap());
       LOG.debug(f.toString());

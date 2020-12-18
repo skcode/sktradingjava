@@ -22,7 +22,7 @@ public class SecAnalisys {
 static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
-            String symbol="ENEL";//INA.EURONEXT-XLIS
+            String symbol="SWDA";//INA.EURONEXT-XLIS
             String market="MLSE";
             int window=2500;
             String hashcode=Database.getHashcode(symbol, market);

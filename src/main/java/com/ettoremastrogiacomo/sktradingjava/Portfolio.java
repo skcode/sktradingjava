@@ -660,6 +660,24 @@ public class Portfolio {
         return c[0][1] / c[0][0];
     }
 
+        /**
+     *
+     * @param i
+     * @param j
+     * @param headlen campioni in testa da analizzare
+     * @return beta del i-esimo titolo nel portafoglio rispetto alla media di
+     * tutti
+     * @throws Exception
+     */
+    public double getBetaTo(int i,int j, int headlen) throws Exception {
+        //Fints ref= createFintsFromPortfolio(this, "campione");
+        Fints sec1 = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        Fints sec2 = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        double[][] c = Fints.ER(Fints.merge(sec2, sec1), 100, true).head(headlen).getCovariance();
+        return c[0][1] / c[0][0];
+    }
+
+    
     public double getVariance(double[] weights, int headlen) throws Exception {
         double v = 0;
         return closeER.head(headlen).getWeightedCovariance(weights);
@@ -682,6 +700,23 @@ public class Portfolio {
         //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
         double[][] c = Fints.ER(Fints.merge(closeCampione, sec), 100, true).head(headlen).getCorrelation();
+        return c[0][1];
+    }
+
+        /**
+     *
+     * @param i serie 1 idx 
+     * @param j serie 2 idx
+     * @param headlen campioni in testa da analizzare
+     * @return correlazione del i-esimo titolo nel portafoglio rispetto alla
+     * media di tutti
+     * @throws Exception
+     */
+    public double getCorrelationTo(int i, int j,int headlen) throws Exception {
+        //Fints ref= createFintsFromPortfolio(this, "campione");
+        Fints sec1 = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        Fints sec2 = this.securities.get(j).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        double[][] c = Fints.ER(Fints.merge(sec2, sec1), 100, true).head(headlen).getCorrelation();
         return c[0][1];
     }
 

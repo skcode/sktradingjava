@@ -7,8 +7,11 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.starters.temp;
 
+import com.ettoremastrogiacomo.sktradingjava.Security;
+import com.ettoremastrogiacomo.sktradingjava.Security.secType;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
+import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.UDate;
 
@@ -48,7 +51,8 @@ public class Temp {
     }
 
     public static void main(String[] args) throws Exception {
-        com.ettoremastrogiacomo.sktradingjava.data.Database.getFintsQuotes(Optional.of("ENGI"),Optional.of("EURONEXT-XPAR") , Optional.empty());
+       // com.ettoremastrogiacomo.sktradingjava.data.Database.getFintsQuotes(Optional.of("ENGI"),Optional.of("EURONEXT-XPAR") , Optional.empty());
              //LOG.debug(FetchData.fetchYahooQuotes("MSFT"));   ;
+             fetchMLSEList(secType.ETF);
     }
 }
