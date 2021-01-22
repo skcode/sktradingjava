@@ -52,7 +52,7 @@ public class Temp {
 
     public static void main(String[] args) throws Exception {
        // com.ettoremastrogiacomo.sktradingjava.data.Database.getFintsQuotes(Optional.of("ENGI"),Optional.of("EURONEXT-XPAR") , Optional.empty());
-             //LOG.debug(FetchData.fetchYahooQuotes("MSFT"));   ;
-             fetchMLSEList(secType.ETF);
+             LOG.debug(FetchData.fetchYahooQuotes("MSFT"));   ;
+             //fetchMLSEList(secType.ETF);
     }
 }

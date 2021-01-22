@@ -170,14 +170,14 @@ final class jenetics3 implements Problem<ArrayList<Double>, DoubleGene, Double> 
 final class jenetics4 implements Problem<ArrayList<Double>, DoubleGene, Double> {
     final DoubleRange v1Domain;
     final int elements,ngens;
-    final boolean duplicates;
+    
     final Function<ArrayList<Double>,Double> f;
-    public jenetics4(DoubleRange ir,int elements, int ngens,Function<ArrayList<Double>,Double> f,boolean duplicates) {
+    public jenetics4(DoubleRange ir,int elements, int ngens,Function<ArrayList<Double>,Double> f) {
         v1Domain=ir;
         this.elements=elements;
         this.ngens=ngens;
         this.f=f;
-        this.duplicates=duplicates;
+        
         this.run();       
     }
     @Override
@@ -231,13 +231,15 @@ final class jenetics4 implements Problem<ArrayList<Double>, DoubleGene, Double> 
  
 public class jenetics1  {
     public static void main(String[] args){
+        final int ngenes=4;
+        final int epochs=1000;        
         final IntRange domain1 = IntRange.of(0, 100);
        final DoubleRange domain2 = DoubleRange.of(0, 100);
-        Problem<ArrayList<Integer>, IntegerGene, Double> prob= new jenetics2(domain1,4,1000);        
+        Problem<ArrayList<Integer>, IntegerGene, Double> prob= new jenetics2(domain1,ngenes,epochs);        
         System.out.println("\n\n\n");
-        Problem<ArrayList<Double>, DoubleGene, Double> prob2= new jenetics3(domain2,4,1000);        
+        Problem<ArrayList<Double>, DoubleGene, Double> prob2= new jenetics3(domain2,ngenes,epochs);        
         Function<ArrayList<Double>, Double> f= (i) -> {double d=0; for (Double x:i) d+=x;return d;};
-        Problem<ArrayList<Double>, DoubleGene, Double> prob3= new jenetics4(domain2,4,1000,f,true);        
+        Problem<ArrayList<Double>, DoubleGene, Double> prob3= new jenetics4(domain2,ngenes,epochs,f);        
     }
 }
  

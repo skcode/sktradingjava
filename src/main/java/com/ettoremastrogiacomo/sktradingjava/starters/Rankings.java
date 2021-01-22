@@ -8,6 +8,7 @@ package com.ettoremastrogiacomo.sktradingjava.starters;
 import java.util.Optional;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.sktradingjava.*;
+import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
@@ -24,15 +25,17 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=250,maxdaygap=10,maxold=10,minvol=10000,minvoletf=0,setmin=10,setmax=50,popsize=20000,ngen=1000;
-        double maxpcgap=.15;        
+        int minsamples=1000,maxdaygap=10,maxold=10,minvol=10000,minvoletf=0,setmin=5,setmax=50,popsize=10000,ngen=1000;
+        double maxpcgap=.15;   
+        String msciworldhash=Database.getHashcode("XMWO", "MLSE");
+        String sp500hash=Database.getHashcode("CSSPX", "MLSE");        
         boolean plot=false;
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createNYSEStockUSDPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createNYSEStockUSDPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_NYSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_GLOBALI_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
@@ -47,8 +50,11 @@ public class Rankings {
         TreeMap<Double,String> varmap=new TreeMap<>();
         TreeMap<Double,String> minddmap=new TreeMap<>();
         for (int i=0;i<ptf.getNoSecurities();i++) {
-            betamap.put(ptf.getBeta(i, SIZE), ptf.realnames.get(i));
-            corrmap.put(ptf.getCorrelation(i, SIZE), ptf.realnames.get(i));
+            //betamap.put(ptf.getBeta (i, SIZE), ptf.realnames.get(i));
+            //corrmap.put(ptf.getCorrelation(i, SIZE), ptf.realnames.get(i));
+            betamap.put(ptf.getBeta(i,SIZE), ptf.realnames.get(i));
+            corrmap.put(ptf.getCorrelation(i,SIZE), ptf.realnames.get(i));
+
             varmap.put(Math.pow(ptf.closeERlog.getSerieCopy(i).head(SIZE).getStd()[0], 2), ptf.realnames.get(i));
             minddmap.put(ptf.getClose().getSerieCopy(i).getMaxDD(0),ptf.realnames.get(i));
         }

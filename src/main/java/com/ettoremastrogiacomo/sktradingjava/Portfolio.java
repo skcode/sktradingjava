@@ -443,6 +443,10 @@ public class Portfolio {
         return list;
     }
 
+    public int indexOf(String hashcode) {
+        return this.hashcodes.indexOf(hashcode);
+    }
+    
     public ArrayList<String> list2names(ArrayList<Integer> set) {
         ArrayList<String> list = new java.util.ArrayList<>();
         //TreeSet<Integer> hashSetToTreeSet = new TreeSet<>(set); 
@@ -573,6 +577,19 @@ public class Portfolio {
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
+    public static Portfolio create_ETF_BENCHAZIONARIO_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%AREA BENCHMARK:=AZIONARIO%'"));
+        //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    
+    
     public static Portfolio create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         //ArrayList<String> markets = Database.getMarkets();
         ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and upper(sector) like '%SEGMENTO=ETF INDICIZZATI%' and upper(sector) like '%CLASSE=CLASSE 2 IND AZIONARIO%'"));
@@ -633,9 +650,9 @@ public class Portfolio {
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
     
-    public static Portfolio createETFEURPortfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+    public static Portfolio create_ETF_MLSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         //ArrayList<String> markets = Database.getMarkets();
-        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE' and (sector like '%CLASSE 2 IND AZIONARIO%' or sector like '%OBBLIGAZIONARIO%') and not sector like '%Benchmark:=COMMODITIES%' and not sector like '%HEDGED%'"));
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='MLSE'"));
         //ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("ETF")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes = new ArrayList<>();
         map.forEach((x) -> {
@@ -672,7 +689,7 @@ public class Portfolio {
     public double getBetaTo(int i,int j, int headlen) throws Exception {
         //Fints ref= createFintsFromPortfolio(this, "campione");
         Fints sec1 = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
-        Fints sec2 = this.securities.get(i).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
+        Fints sec2 = this.securities.get(j).getDaily().getSerieCopy(Security.SERIE.CLOSE.getValue());
         double[][] c = Fints.ER(Fints.merge(sec2, sec1), 100, true).head(headlen).getCovariance();
         return c[0][1] / c[0][0];
     }
