@@ -24,9 +24,9 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=5000,maxsamples=5000,stepsamples=250,maxdaygap=7,maxold=20,minvol=10000,minvoletf=0,setmin=3,setmax=50,popsize=10000,ngen=1000;
+        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=7,maxold=20,minvol=10000,minvoletf=0,setmin=4,setmax=60,popsize=10000,ngen=1000;
         double maxpcgap=.2;      
-        Portfolio.optMethod optm=Portfolio.optMethod.MINDD;
+        Portfolio.optMethod optm=Portfolio.optMethod.MAXSHARPE;
         boolean plot=false,plotlist=false;
         HashMap<String,Integer> list= new HashMap<>();
         HashMap<Integer,Double> meaneq= new HashMap<>();
@@ -39,8 +39,8 @@ public class SmartPortfolio {
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_GLOBALI_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_ATTIVI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_BENCHAZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_NYSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_BENCHAZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_NYSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
             logger.info("no sec "+ptf.getNoSecurities());
@@ -66,7 +66,14 @@ public class SmartPortfolio {
             logger.info("BEST LEN "+winner.getValue().size());
             winner.getValue().forEach((x) -> {
                 String t1=ptf.getName(ptf.hashcodes.get(x));
-                logger.info( t1);
+                try {
+                    double d1=ptf.getClose().getSerieCopy(x).getEquity().getLastValueInCol(0);             
+                    d1=(d1-1)*100;                    
+                    logger.info( t1+"\t"+ String.format("%.2f", d1)+"%");
+                }catch (Exception e) {
+                    logger.info( t1);
+                }
+                
                 if (list.containsKey(t1)) list.replace(t1, list.get(t1)+1);else list.put(t1, 1);                
             });
             Fints f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());

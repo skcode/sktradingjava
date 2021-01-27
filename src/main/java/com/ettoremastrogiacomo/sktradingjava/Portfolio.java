@@ -207,6 +207,15 @@ class GeneticOpt {
                 fitness = var;
             }
             break;
+            case MINEQUITYVAR: {
+                try {
+                double[] de=DoubleArray.pctdiff(eqt) ;
+                fitness=1.0/DoubleArray.var(de);
+                } catch (Exception e ) {
+                        LOG.warn("error MINEQUITYVAR "+e);
+                }
+            }
+            break;
             default:
 //                                throw new Exception("not yet implemented");
         }
@@ -285,7 +294,8 @@ public class Portfolio {
         SMASHARPE,
         MINCORR,
         MAXVAR,
-        MAXCORR
+        MAXCORR,
+        MINEQUITYVAR
     };
 
     /**

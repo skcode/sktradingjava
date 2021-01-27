@@ -7,6 +7,33 @@ public class DoubleArray {
 
     static Logger logger = Logger.getLogger(DoubleArray.class);
 
+    static public boolean isNullOrEmpty(double[] m) throws Exception {        
+        if (m==null) return true;
+        return m.length==0;
+    }
+    
+    static public double[] diff(double[] m) throws Exception {
+        if (isNullOrEmpty(m)) throw new Exception("cannot diff null or empty array");
+        double[] newm= new double[m.length-1];
+        for (int i=0;i<newm.length;i++) newm[i]=m[i+1]-m[i];
+        return newm;
+    }
+
+    static public double[] pctdiff(double[] m) throws Exception {
+        if (isNullOrEmpty(m)) throw new Exception("cannot diff null or empty array");
+        double[] newm= new double[m.length-1];
+        for (int i=0;i<newm.length;i++) newm[i]=(m[i+1]-m[i])/m[i];
+        return newm;
+    }
+
+    static public double[] logpctdiff(double[] m) throws Exception {
+        if (isNullOrEmpty(m)) throw new Exception("cannot diff null or empty array");
+        double[] newm= new double[m.length-1];
+        for (int i=0;i<newm.length;i++) newm[i]=Math.log(m[i+1]/m[i]);
+        return newm;
+    }
+    
+
     static public double[] linearize(double min, double max, int n) throws Exception {
         if (min >= max || n <= 1) {
             throw new Exception("bad inputs:" + min + " " + max + " " + n);
@@ -336,6 +363,17 @@ public class DoubleArray {
         return ret;
     }
 
+    
+    static public double[] normalizeMean(double[] v) {
+        double[] r = new double[v.length];
+        double std = std(v);
+        double mean = mean(v);
+        for (int i = 0; i < v.length; i++) {
+            r[i] = (v[i] - mean);
+        }
+        return r;
+    }
+    
     static public double[] normalizeStd(double[] v) {
         double[] r = new double[v.length];
         double std = std(v);
