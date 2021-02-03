@@ -116,9 +116,9 @@ public class OptimizeLastWindow {
         //TreeSet<String> all= new TreeSet<>();
         for (int i=0;i<windows.size();i++){
             
-            //Portfolio ptf = Portfolio.createStockEURPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            //Portfolio ptf = Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //logger.debug(ptf.toString());
-            //Portfolio ptf = Portfolio.createNYSEStockUSDPortfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            //Portfolio ptf = Portfolio.create_STOCK_NYSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             Portfolio ptf = Portfolio.create_ETF_INDICIZZATI_GLOBALI_MLSE_Portfolio(Optional.of(minlens.get(i)), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             UDate startDate=ptf.getDate(ptf.getLength()-windows.get(i));
             UDate endDate=ptf.getDate(ptf.getLength()-1);

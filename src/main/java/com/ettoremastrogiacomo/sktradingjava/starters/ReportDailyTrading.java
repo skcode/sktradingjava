@@ -111,8 +111,8 @@ public class ReportDailyTrading {
         //suboptsetmax;efficiency;trainwin;profitBH;totalset;maxdd;duplicate;suboptsetmin;optmethod;testwin;profit;maxddBH;total_samples;
         //best4stock 25;0.19039180728796914;65;2.4501394052044057;146;-0.27898161753310985;false;7;MAXSLOPE;60;5.015622075926776;-0.40446019283299295;2968;
         ArrayList<HashMap<String, String>> l = new ArrayList<>();
-        Portfolio ptfSTOCK = Portfolio.createStockEURPortfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        Portfolio ptfETF = Portfolio.createETFSTOCKEURPortfolio(Optional.of(minlenETF), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvolETF));
+        Portfolio ptfSTOCK = Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minlen), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptfETF = Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minlenETF), Optional.of(maxgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvolETF));
         try ( BufferedWriter bwr = new BufferedWriter(new FileWriter(new File("./test.txt"), true))) {//append mode            
             for (int i = trainfrom; i <= trainto; i = i + trainstep) {//train win
                 for (int j = testfrom; j <= testto && j <= i; j = j + teststep) {//test win

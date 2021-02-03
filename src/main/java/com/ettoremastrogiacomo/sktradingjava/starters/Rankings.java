@@ -25,13 +25,13 @@ public class Rankings {
     static Logger logger = Logger.getLogger(Rankings.class);
     
     public static void main(String[] args) throws Exception {
-        int minsamples=1000,maxdaygap=10,maxold=10,minvol=10000,minvoletf=0,setmin=5,setmax=50,popsize=10000,ngen=1000;
+        int minsamples=1500,maxdaygap=10,maxold=10,minvol=10000,minvoletf=0,setmin=5,setmax=50,popsize=10000,ngen=1000;
         double maxpcgap=.15;   
         String msciworldhash=Database.getHashcode("XMWO", "MLSE");
         String sp500hash=Database.getHashcode("CSSPX", "MLSE");        
         boolean plot=false;
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createNYSEStockUSDPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_NYSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));

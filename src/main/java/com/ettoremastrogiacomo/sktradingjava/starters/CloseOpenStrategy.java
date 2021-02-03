@@ -27,7 +27,7 @@ public class CloseOpenStrategy {
             static final int POOLSIZE=5;
         static  double LASTEQ=100000,FEE=0,spreadPEN=0.001;
     public static void main(String[] args) throws Exception {
-        Portfolio ptf=Portfolio.createMLSEStockEURPortfolio(Optional.of(MINLEN), Optional.of(MAXGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL));
+        Portfolio ptf=Portfolio.create_STOCK_MLSE_Portfolio(Optional.of(MINLEN), Optional.of(MAXGAP), Optional.of(MAXDAYGAP), Optional.of(MAXOLD), Optional.of(MINVOL));
         LOG.debug(ptf);        
         LOG.debug(ptf.closeER.getMaxDaysDateGap());
         Fints close=ptf.getClose(),open=ptf.getOpen();

@@ -24,14 +24,16 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=7,maxold=20,minvol=10000,minvoletf=0,setmin=4,setmax=60,popsize=10000,ngen=1000;
+        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=7,maxold=20,minvol=100000,minvoletf=0,setmin=30,setmax=60,popsize=20000,ngen=2000;
         double maxpcgap=.2;      
-        Portfolio.optMethod optm=Portfolio.optMethod.MAXSHARPE;
+        Portfolio.optMethod optm=Portfolio.optMethod.MINCORR;
         boolean plot=false,plotlist=false;
         HashMap<String,Integer> list= new HashMap<>();
         HashMap<Integer,Double> meaneq= new HashMap<>();
         HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_NYSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createEURStockEURPortfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
@@ -39,7 +41,7 @@ public class SmartPortfolio {
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_GLOBALI_exCOMMODITIES_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_ATTIVI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-            Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_BENCHAZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_BENCHAZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_NYSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             int SIZE=samples<ptf.getLength()?samples:ptf.getLength()-1;
             logger.info("************************ optimization GA "+optm.toString()+" ************************ ");
@@ -97,7 +99,7 @@ public class SmartPortfolio {
         list.keySet().forEach((x)->logger.info( x+"\t"+list.get(x)));        
         logger.info("MEAN EQUITY: "+meaneq.values().stream().mapToDouble(i-> i).average().orElse(Double.NaN));
         logger.info("MEAN MAXDD: "+meanmaxdd.values().stream().mapToDouble(i-> i).average().orElse(Double.NaN));
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createStockEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
