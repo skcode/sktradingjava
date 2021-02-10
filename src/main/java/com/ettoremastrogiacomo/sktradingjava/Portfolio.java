@@ -37,18 +37,21 @@ class GeneticOpt {
     static Portfolio.optMethod met;
     static double[][] cov;
     static double[][] extcorr;
+    static double[][] extcov;
+    static double[] eqbh;
     static double[] meanbycols;
     static boolean duplicates;
     static int popsize, generations;
     static final Logger LOG = Logger.getLogger(GeneticOpt.class);
+    
     GeneticOpt(double[][] m, int setmin, int setmax, Portfolio.optMethod met, Optional<Boolean> duplicates, Optional<Integer> popsize, Optional<Integer> generations) throws Exception {
         GeneticOpt.m = m;
         if (!DoubleDoubleArray.isFinite(m)) throw new Exception("not finite er matrix");
         GeneticOpt.setmax = setmax;
         GeneticOpt.setmin = setmin;
         GeneticOpt.met = met;
-        GeneticOpt.cov = DoubleDoubleArray.cov(m);
-        if (!DoubleDoubleArray.isFinite(cov)) throw new Exception("not finite cov matrix");
+        GeneticOpt.cov = DoubleDoubleArray.cov(m);        
+        if (!DoubleDoubleArray.isFinite(cov)) throw new Exception("not finite cov matrix");        
         GeneticOpt.poolsize = cov.length;
         GeneticOpt.samplelen = m.length;
         GeneticOpt.meanbycols = DoubleDoubleArray.mean(m);
@@ -69,6 +72,13 @@ class GeneticOpt {
             }
         }
         extcorr = DoubleDoubleArray.corr(extm);//l'ultima colonna rappresenta la correlazione con il campione medio
+        extcov = DoubleDoubleArray.cov(extm);//l'ultima colonna rappresenta la covarianza con il campione medio
+        //build equity BH
+        eqbh=new double[samplelen];
+        for (int i = 0; i < samplelen; i++) {            
+            eqbh[i] = i == 0 ? 1 + extm[i][poolsize] : eqbh[i - 1] * (1 + extm[i][poolsize]);
+        }
+        
         if (setmax > poolsize) {
             throw new Exception("optimal set greather than available set " + setmax + ">" + poolsize);
         }
@@ -132,6 +142,7 @@ class GeneticOpt {
             mean = mean / set.size();
             eqt[i] = i == 0 ? 1 + mean : eqt[i - 1] * (1 + mean);
         }
+        
         HashMap<String, Double> lrmap = new HashMap<>();
         if (Double.isNaN(eqt[0])){
             LOG.debug("NAN equity, please check");
@@ -216,6 +227,16 @@ class GeneticOpt {
                 }
             }
             break;
+            case MINCORREQUITYBH: {
+                try {
+                double[] de=DoubleArray.pctdiff(eqt) ;
+                double[] db=DoubleArray.pctdiff(eqbh) ;                
+                fitness=1-DoubleArray.corr(de, db);
+                } catch (Exception e ) {
+                        LOG.warn("error MINCORREQUITYBH "+e);
+                }
+            }
+            break;
             default:
 //                                throw new Exception("not yet implemented");
         }
@@ -295,7 +316,8 @@ public class Portfolio {
         MINCORR,
         MAXVAR,
         MAXCORR,
-        MINEQUITYVAR
+        MINEQUITYVAR,
+        MINCORREQUITYBH
     };
 
     /**
@@ -784,6 +806,27 @@ public class Portfolio {
             }
         }
         return new Fints(subf.getDate(), Arrays.asList("equity", "equityBH"), subf.getFrequency(), eqm);
+    }
+    
+    public Fints getEquityBH(UDate startdate,UDate enddate,Optional<Double> lastequitybh) throws Exception {
+        Fints subf = closeER.Sub(startdate, enddate);
+        double[][] m = subf.getMatrixCopy();
+        int poolsize = subf.getNoSeries();
+        int len = subf.getLength();
+        double[][] eqm = new double[len][1];
+        for (int i = 0; i < len; i++) {
+            double dmbh = 0;
+            for (int j = 0; j < poolsize; j++) {
+                dmbh += m[i][j];
+            }
+            dmbh = dmbh / poolsize;
+            if (i == 0) {
+                eqm[i][0] = lastequitybh.orElse(1.0) * (1 + dmbh);
+            } else {
+                eqm[i][0] = eqm[i - 1][0] * (1 + dmbh);
+            }
+        }
+        return new Fints(subf.getDate(), Arrays.asList("equityBH"), subf.getFrequency(), eqm);
     }
 
     /**
