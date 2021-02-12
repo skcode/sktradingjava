@@ -24,7 +24,7 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=7,maxold=20,minvol=100000,minvoletf=0,setmin=10,setmax=60,popsize=20000,ngen=2000;
+        int minsamples=1500,maxsamples=1500,stepsamples=250,maxdaygap=7,maxold=20,minvol=100000,minvoletf=0,setmin=40,setmax=60,popsize=20000,ngen=2000;
         double maxpcgap=.2;      
         Portfolio.optMethod optm=Portfolio.optMethod.MINCORREQUITYBH;
         boolean plot=false,plotlist=false;
@@ -58,12 +58,13 @@ public class SmartPortfolio {
             Map.Entry<Double,ArrayList<Integer>>winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, optm, plot, popsize, ngen);            
             logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
             logger.info("setmin "+setmin+"\tsetmax "+setmax);
-            logger.info("BEST "+1.0/winner.getKey());
+            logger.info("BEST FITNESS "+winner.getKey());
+            logger.info("BEST FITNESS INVERSE "+1.0/winner.getKey());
             logger.info("BEST "+winner.getValue());
             double[]w=new double[winner.getValue().size()];
             DoubleArray.fill(w, 1.0/winner.getValue().size());                    
             logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-            logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
+            logger.info("BEST VAR check "+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
             logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
             logger.info("BEST LEN "+winner.getValue().size());
             winner.getValue().forEach((x) -> {

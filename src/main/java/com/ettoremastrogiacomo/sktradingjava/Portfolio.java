@@ -231,7 +231,7 @@ class GeneticOpt {
                 try {
                 double[] de=DoubleArray.pctdiff(eqt) ;
                 double[] db=DoubleArray.pctdiff(eqbh) ;                
-                fitness=1-DoubleArray.corr(de, db);
+                fitness=-DoubleArray.corr(de, db);                
                 } catch (Exception e ) {
                         LOG.warn("error MINCORREQUITYBH "+e);
                 }
