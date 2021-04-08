@@ -648,7 +648,10 @@ public final class FetchData {
             String code = m.get(x).get("code");
             String type = m.get(x).get("type");
             String name = m.get(x).get("name");
-            String market = m.get(x).get("market");
+            String market = m.get(x).get("market");   
+            
+            if (market.startsWith("EURONEXT")) {}
+            else
             if (!Markets.contains(market)) {
                 throw new Exception("market " + market + " doesn't exists in market list!\t" + isin + "." + code + "." + type + "." + name);
             }

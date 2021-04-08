@@ -70,6 +70,7 @@ public class EURONEXT_DataFetch {
                 put("Euronext Access Paris", "XMLI");
                 put("Euronext Access Lisbon", "ENXL");
                 put("Euronext Access Brussels", "MLXB");
+                put("Euronext Growth Oslo","MERK");
             }
         };
         String u0 = "https://live.euronext.com/en/products/equities/list";
