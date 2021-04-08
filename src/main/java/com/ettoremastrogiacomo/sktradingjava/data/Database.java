@@ -76,6 +76,31 @@ public class Database {
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Database.class);
     static final java.util.List<String> MONTHS = Arrays.asList("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
 
+    public static enum Markets {
+        MLSE(1), EURONEXT(2), XETRA(3), NYSE(4), NASDAQ(5);
+        private final int id;
+        private static final ArrayList<String> list = new ArrayList<>();
+
+        static {
+            for (Markets m : Markets.values()) {
+                list.add(m.name());
+            }
+        }
+
+        public static boolean contains(String market) {
+            return list.contains(market);
+        }
+
+        private Markets(int id) {
+            this.id = id;
+        }
+
+        public int getID() {
+            return this.id;
+        }
+
+    };
+
     public static enum Providers {
         BORSAITALIANA(1), EURONEXT(2), XETRA(3), NYSE(4), INVESTING(5), YAHOO(6), GOOGLE(7), SOLE24ORE(8);
         private final int priority;
@@ -88,7 +113,7 @@ public class Database {
             return priority;
         }
 
-        String getNote() {
+        public String getNote() {
             if (this.name().equals("BORSAITALIANA")) {
                 return "borsa italiana quotes";
             }
@@ -113,7 +138,7 @@ public class Database {
             if (this.name().equals("SOLE24ORE")) {
                 return "sole24ore quotes";
             }
-            
+
             return "";
         }
     };
@@ -126,6 +151,58 @@ public class Database {
             conn = DriverManager.getConnection(url);
             stmt = conn.createStatement();
             stmt.execute("drop table  if exists " + Init.db_sharestable);
+        } catch (SQLException e) {
+            LOG.error(e, e);
+        } finally {
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }
+    }
+
+    public static void clearEODTable() {
+        String url = Init.db_url;
+        Connection conn = null;
+        Statement stmt = null;
+        try {
+            conn = DriverManager.getConnection(url);
+            stmt = conn.createStatement();
+            stmt.execute("delete from " + Init.db_eoddatatable);
+        } catch (SQLException e) {
+            LOG.error(e, e);
+        } finally {
+            try {
+                if (stmt != null) {
+                    stmt.close();
+                }
+            } catch (SQLException e) {
+            }
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException e) {
+            }
+        }
+    }
+
+    public static void clearSharesTable(Markets market) {
+        String url = Init.db_url;
+        Connection conn = null;
+        Statement stmt = null;
+        try {
+            conn = DriverManager.getConnection(url);
+            stmt = conn.createStatement();
+            stmt.execute("delete from " + Init.db_sharestable + " where market='" + market.name() + "'");
         } catch (SQLException e) {
             LOG.error(e, e);
         } finally {
@@ -229,7 +306,7 @@ public class Database {
     }
 
     public static java.util.HashMap<String, TreeSet<UDate>> getIntradayDatesMap() throws Exception {
-        String sql = "select hashcode,date from "+Init.db_intradaytable;
+        String sql = "select hashcode,date from " + Init.db_intradaytable;
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -243,7 +320,7 @@ public class Database {
             while (res.next()) {
                 String hash = res.getString(1);
                 UDate d = UDate.parseYYYYMMDD(res.getString(2));
-                
+
                 if (map.containsKey(hash)) {
                     map.get(hash).add(d);
                 } else {
@@ -279,7 +356,7 @@ public class Database {
     }
 
     public static java.util.TreeMap<UDate, ArrayList<String>> getIntradayDatesReverseMap() throws Exception {
-        String sql = "select hashcode,date from "+Init.db_intradaytable;
+        String sql = "select hashcode,date from " + Init.db_intradaytable;
         Connection conn = null;
         Statement stmt = null;
         java.sql.ResultSet res = null;
@@ -348,7 +425,7 @@ public class Database {
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
-           // LOG.debug(sql);
+            // LOG.debug(sql);
             res = stmt.executeQuery(sql);
             int ncol = res.getMetaData().getColumnCount();
 
@@ -413,7 +490,8 @@ public class Database {
             throw new Exception(isin + "." + market + " not found");
         }
         return map.get(0).get("hashcode");
-    }    
+    }
+
     /**
      *
      * @param hashcodes list of hashcodes
@@ -625,14 +703,16 @@ public class Database {
         return getFintsQuotes(Optional.of(list.get(0).get("code")), Optional.of(list.get(0).get("market")), Optional.of(list.get(0).get("isin")));
 
     }
-/**
- * 
- * @param code codice titolo
- * @param market mercato
- * @param isin 
- * @return Fints con campi (open,high,low,close,volume,oi) se o,h,l non sono positivi, pongo uguale a close
- * @throws Exception 
- */
+
+    /**
+     *
+     * @param code codice titolo
+     * @param market mercato
+     * @param isin
+     * @return Fints con campi (open,high,low,close,volume,oi) se o,h,l non sono
+     * positivi, pongo uguale a close
+     * @throws Exception
+     */
     public static Fints getFintsQuotes(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
         Connection conn = null;
         Statement stmt = null;
@@ -680,11 +760,13 @@ public class Database {
             JSONArray bestarr = new JSONArray();
             while (res.next()) {
                 JSONArray ja1 = new JSONArray(res.getString("data"));
-                if (ja1.isEmpty()) continue;
+                if (ja1.isEmpty()) {
+                    continue;
+                }
                 /*try {
                 JSONObject jo1= ja1.getJSONObject(ja1.length() - 1);
                 }catch (Exception e) {LOG.error(e, e);LOG.debug(ja1);System.exit(1);}
-                */
+                 */
                 UDate d1 = UDate.parseYYYYMMDD(ja1.getJSONObject(ja1.length() - 1).getString("date"));
                 if (d1.after(bestdate)) {
                     bestarr = ja1;
@@ -697,7 +779,7 @@ public class Database {
                         bestdate = d1;
                     }
                 }
-                
+
             }
 
             if (!bestarr.isEmpty()) {
@@ -712,13 +794,23 @@ public class Database {
                     Double high = o.getDouble("high");
                     Double low = o.getDouble("low");
                     Double close = o.getDouble("close");
-                    if (open<=0) open=close;
-                    if (high<=0) high=close;
-                    if (low<=0) low=close;
+                    if (open <= 0) {
+                        open = close;
+                    }
+                    if (high <= 0) {
+                        high = close;
+                    }
+                    if (low <= 0) {
+                        low = close;
+                    }
                     Double volume = o.getDouble("volume");
                     Double oi = o.getDouble("oi");
-                    if (volume<0) volume=0.;
-                    if (oi<0) oi=0.;
+                    if (volume < 0) {
+                        volume = 0.;
+                    }
+                    if (oi < 0) {
+                        oi = 0.;
+                    }
                     map.put(UDate.parseYYYYMMDD(date), new ArrayList<>(Arrays.asList(open, high, low, close, volume, oi)));
                 }
                 int j = 0;
@@ -765,198 +857,6 @@ public class Database {
         }
         return ret;
     }
-
-    /*    public static Fints getFintsQuotes2(Optional<String> code, Optional<String> market, Optional<String> isin) throws Exception {
-        Connection conn = null;
-        Statement stmt = null;
-        java.sql.ResultSet res = null;
-        ArrayList<UDate> dates = new ArrayList<>();
-        ArrayList<String> names = new ArrayList<>();
-        double[][] matrix;
-        Fints ret = null;
-        String codev, marketv;
-        try {
-            conn = DriverManager.getConnection(Init.db_url);
-            stmt = conn.createStatement();
-            String hashcode;
-            if (isin.isPresent() && market.isPresent()) {//str.replaceAll(“\””, “\\\\\””);
-                res = stmt.executeQuery("select hashcode,code,market from shares where isin='" + isin.get() + "' and market='" + market.get().replaceAll("\"", "\\\\\"") + "'");
-                if (res.next()) {
-                    hashcode = res.getString("hashcode");
-                    codev = res.getString("code");
-                    marketv = res.getString("market");
-                } else {
-                    throw new Exception("isin " + isin.get() + " not found");
-                }
-                res = stmt.executeQuery("select yahooquotes,googlequotes from eoddata where hashcode='" + hashcode + "'");
-            } else if (code.isPresent() && market.isPresent()) {
-                String q = "select hashcode,code,market from shares where code='" + code.get() + "' and market='" + market.get().replaceAll("\"", "\\\"") + "'";
-                res = stmt.executeQuery(q);
-                if (res.next()) {
-                    hashcode = res.getString("hashcode");
-                    codev = res.getString("code");
-                    marketv = res.getString("market");
-                } else {
-                    throw new Exception("code " + code.get() + " not found");
-                }
-
-                res = stmt.executeQuery("select yahooquotes,googlequotes from eoddata where hashcode='" + hashcode + "'");
-
-            } else {
-                throw new Exception("isin+market or code+market must be present");
-            }
-            Fints gdataret = new Fints(), yahooret = new Fints();
-            if (res.next()) {
-                String data = res.getString("yahooquotes");
-                String gdata = res.getString("googlequotes");
-                if (data == null && gdata == null) {
-                    throw new Exception("no data for " + code.orElse("") + "." + market.orElse("") + "\t" + isin.orElse(""));
-                }
-                if (gdata != null) {
-                    LOG.debug("LOADING GOOGLEDATA FOR " + codev + "." + marketv);
-                    String[] lines = gdata.split("\n");
-                    NumberFormat format = NumberFormat.getInstance(Locale.US);
-                    //matrix = new double[lines.length - 1][6];
-
-                    java.util.TreeMap<UDate, java.util.ArrayList<Double>> Mat = new java.util.TreeMap<>();
-                    for (int i = 1; i < lines.length; i++) {
-                        //LOG.debug(lines[i]);
-                        //if (lines[i].toLowerCase().contains("null")) continue;
-                        String[] row = lines[i].split(";");
-
-                        String date = row[0];
-                        //String [] vdate=date.split("-");
-
-                        java.util.ArrayList<Double> datarow = new java.util.ArrayList<>();
-                        Calendar c;//= Calendar.getInstance();
-                        try {
-                            int mese = MONTHS.indexOf(date.substring(0, 3));
-                            int giorno = Integer.parseInt(row[0].length() == 12 ? date.substring(4, 6) : date.substring(4, 5));
-                            int anno = Integer.parseInt(row[0].length() == 12 ? date.substring(8, 12) : date.substring(7, 11));
-
-                            c = new java.util.GregorianCalendar(anno, mese, giorno);
-                            for (int j = 1; j < (row.length); j++) {
-                                datarow.add(format.parse(row[j]).doubleValue());
-                                //matrix[lines.length - i - 1][j - 1] = format.parse(row[j]).doubleValue();
-                            }
-                        } catch (Exception e) {
-                            LOG.warn(codev + "." + marketv + "\t" + lines[i] + "\t" + e);
-                            continue;
-                        }
-                        Mat.put(new UDate(c.getTimeInMillis()), datarow);
-                    }
-                    Mat.keySet().forEach((x) -> {
-                        dates.add(x);
-                    });
-                    matrix = new double[Mat.size()][6];
-                    int k = 0;
-                    for (UDate u : Mat.keySet()) {
-                        java.util.ArrayList<Double> v = Mat.get(u);
-                        for (int i = 0; i < v.size(); i++) {
-                            matrix[k][i] = v.get(i);
-                        }
-                        k++;
-                    }
-                    names.clear();
-                    names.add("OPEN(" + codev + "." + marketv + ")");
-                    names.add("HIGH(" + codev + "." + marketv + ")");
-                    names.add("LOW(" + codev + "." + marketv + ")");
-                    names.add("CLOSE(" + codev + "." + marketv + ")");
-                    names.add("VOLUME(" + codev + "." + marketv + ")");
-                    names.add("OI(" + codev + "." + marketv + ")");
-                    gdataret = new Fints(dates, names, Fints.frequency.DAILY, matrix);
-                }
-                if (data != null) {
-                    LOG.debug("LOADING YAHOODATA FOR " + codev + "." + marketv);
-                    String[] lines = data.split("\n");
-                    //matrix = new double[lines.length - 1][6];
-                    java.util.TreeMap<UDate, java.util.ArrayList<Double>> map = new java.util.TreeMap<>();
-
-                    for (int i = 0; i < lines.length; i++) {
-                        try {
-                            String[] row = lines[i].split(",");
-                            String[] date = row[0].split("-");
-                            Calendar c = new java.util.GregorianCalendar(Integer.parseInt(date[0]), Integer.parseInt(date[1]) - 1, Integer.parseInt(date[2]));
-                            //dates.add(new UDate(c.getTimeInMillis()));
-                            java.util.ArrayList<Double> drow = new java.util.ArrayList<>();
-                            //try {
-                                for (int j = 1; j < (row.length); j++) {
-                                    //matrix[lines.length - i - 1][j - 1] = Double.parseDouble(row[j]);
-                                    if (j != 5) {
-                                        drow.add(Double.parseDouble(row[j]));
-                                    }
-                                }
-                            if (row.length != 7) {
-                                throw new Exception(" row size must be = 7\t" + lines[i]);
-                            }
-                            map.put(new UDate(c.getTimeInMillis()), drow);
-                        } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
-                            //LOG.warn(e);
-                        }
-                    }
-                    matrix = new double[map.size()][6];
-                    dates.clear();
-                    dates.addAll(map.keySet());
-                    int i = 0;
-                    for (UDate dd : map.keySet()) {
-                        List<Double> l = map.get(dd);
-                        for (int j = 0; j < 5; j++) {
-                            matrix[i][j] = l.get(j);
-                        }
-                        i++;
-                    }
-                    //for (int i=0;i<matrix.length;i++)
-                    //  for (int j=0;j<6;j++)
-                    //map.keySet()
-                    names.clear();
-                    names.add("OPEN(" + codev + "." + marketv + ")");
-                    names.add("HIGH(" + codev + "." + marketv + ")");
-                    names.add("LOW(" + codev + "." + marketv + ")");
-                    names.add("CLOSE(" + codev + "." + marketv + ")");
-                    names.add("VOLUME(" + codev + "." + marketv + ")");
-                    names.add("OI(" + codev + "." + marketv + ")");
-                    yahooret = new Fints(dates, names, Fints.frequency.DAILY, matrix);
-                }
-            } else {
-                throw new SQLException(code + "." + market + " not found");
-            }
-            if (yahooret.isEmpty()) {
-                ret = gdataret;
-            } else if (gdataret.isEmpty()) {
-                ret = yahooret;
-            } else if (yahooret.getLastDate().after(gdataret.getLastDate())) {
-                ret = yahooret;
-            } else {
-                ret = gdataret;
-            }
-  
-        } catch (SQLException e) {
-            LOG.error("cannot fetch " + code + "." + market, e);
-            throw e;
-
-        } finally {
-            try {
-                if (res != null) {
-                    res.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (stmt != null) {
-                    stmt.close();
-                }
-            } catch (SQLException e) {
-            }
-            try {
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-            }
-        }
-        return ret;
-    }
-     */
     /**
      * @param hashcodes list
      *
@@ -981,7 +881,7 @@ public class Database {
             if (hashcodes.isPresent()) {
 
                 if (hashcodes.get().indexOf(map.get("hashcode")) < 0) {
-                   // LOG.debug("hashcode " + map.get("hashcode") + " not in list");
+                    // LOG.debug("hashcode " + map.get("hashcode") + " not in list");
                     continue;
                 }
             }
@@ -992,7 +892,7 @@ public class Database {
                 //check length
                 if (length.isPresent()) {
                     if (t.getLength() < length.get()) {
-                     //   LOG.debug("length too short:" + t.getLength() + "<" + length.get());
+                        //   LOG.debug("length too short:" + t.getLength() + "<" + length.get());
                         continue;
                     }
                 }
@@ -1003,12 +903,12 @@ public class Database {
                         Fints er = Fints.ER(t.getSerieCopy(3).head(250), 100, true);
                         Fints sma = Fints.SMA(Fints.Sharpe(er, 20), 200);
                         if (sma.get(sma.getLength() - 1, 0) <= sharpe_treshold.get()) {
-                       //     LOG.debug("sharpe below treshold: " + sma.get(sma.getLength() - 1, 0) + "<=" + sharpe_treshold.get());
+                            //     LOG.debug("sharpe below treshold: " + sma.get(sma.getLength() - 1, 0) + "<=" + sharpe_treshold.get());
                             continue;
                         }
-                       // LOG.debug("sharpe=" + sma.get(sma.getLength() - 1, 0));
+                        // LOG.debug("sharpe=" + sma.get(sma.getLength() - 1, 0));
                     } else {
-                       // LOG.warn("cannot check for sharpe (len<250)");
+                        // LOG.warn("cannot check for sharpe (len<250)");
                         continue;
                     }
                 }
@@ -1019,7 +919,7 @@ public class Database {
                 double volmean = t.getSerieCopy(4).head(win).getMeans()[0];
                 if (minvol.isPresent()) {
                     if (volmean < minvol.get()) {
-                       // LOG.debug("too few volumes: " + volmean + "<" + minvol.get());
+                        // LOG.debug("too few volumes: " + volmean + "<" + minvol.get());
                         continue;
                     }
                 }
@@ -1028,7 +928,7 @@ public class Database {
                 double dfn = t.getDaysFromNow();
                 if (maxold.isPresent()) {
                     if (dfn > maxold.get()) {
-                  //      LOG.debug("lasdate older " + dfn + " days from now");
+                        //      LOG.debug("lasdate older " + dfn + " days from now");
                         continue;
                     }
                 }
@@ -1038,7 +938,7 @@ public class Database {
                 double mapvg = t.getMaxAbsPercentValueGap(0);
                 if (maxpcgap.isPresent()) {
                     if (mapvg > maxpcgap.get()) {
-                  //      LOG.debug("max gap " + mapvg + ">" + maxpcgap.get());
+                        //      LOG.debug("max gap " + mapvg + ">" + maxpcgap.get());
                         continue;
                     }
                 }
@@ -1047,7 +947,7 @@ public class Database {
                 double mdg = t.getMaxDaysDateGap();
                 if (maxdaygap.isPresent()) {
                     if (mdg > maxdaygap.get()) {
-                  //      LOG.debug("dates gap " + mdg + ">" + maxdaygap.get());
+                        //      LOG.debug("dates gap " + mdg + ">" + maxdaygap.get());
                         continue;
                     }
                 }
@@ -1056,7 +956,7 @@ public class Database {
                 //f = f == null ? t : f.merge(t);
                 LOG.info("added " + map.get("isin") + "\t" + map.get("name") + "." + map.get("market"));
             } catch (Exception e) {
-                LOG.warn(e,e);
+                LOG.warn(e, e);
             }
         }
 
@@ -1246,7 +1146,7 @@ public class Database {
         }
         return new Fints(dates, names, Fints.frequency.SECOND, matrix);
     }
-*/
+     */
     public static void fetchEODquotesST() throws Exception {
         /*
                 /**

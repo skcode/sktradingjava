@@ -58,7 +58,7 @@ public class EURONEXT_DataFetch {
                 put("Euronext Brussels, Paris", "XBRU");
                 put("Euronext Brussels", "XBRU");
                 put("Euronext Brussels, Amsterdam", "XBRU");
-                put("Euronext Expert Market", "VPXB");                
+                put("Euronext Expert Market", "VPXB");
                 put("Euronext Amsterdam, Paris", "XAMS");
                 put("Euronext Amsterdam, London", "XAMS");
                 put("Euronext Amsterdam, Brussels, Paris", "XAMS");
@@ -81,7 +81,7 @@ public class EURONEXT_DataFetch {
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         com.ettoremastrogiacomo.utils.HttpFetch httpf = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+            httpf.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
         String s = new String(httpf.HttpGetUrl(u0, Optional.empty(), Optional.empty()));
         List<HttpCookie> ck = httpf.getCookies();
@@ -92,10 +92,10 @@ public class EURONEXT_DataFetch {
         String u1 = s.substring(k1, k2 - 1);
         //LOG.debug(u1);
         u1 = u1.replace("\\u0026", "&");
-        
+
         u1 = "https://live.euronext.com" + u1.replace("/", "");
         u1 = u1.replace("\\", "/");//"+"&display_datapoints=dp_stocks&display_filters=df_stocks";
-        
+
         LOG.debug(u1);
         java.util.HashMap<String, String> vmap = new java.util.HashMap<>();
         vmap.put("args[fe_date_format]", "d/m/y");
@@ -104,7 +104,7 @@ public class EURONEXT_DataFetch {
         vmap.put("args[fe_layout]", "ver");
         vmap.put("args[fe_type]", "excel");
         vmap.put("args[initialLetter]", "");
-        vmap.put("iDisplayLength", "20");        
+        vmap.put("iDisplayLength", "20");
         vmap.put("iDisplayStart", "0");
         HttpURLConnection post = httpf.sendPostRequest(u1, vmap);
         StringBuffer response;
@@ -150,7 +150,7 @@ public class EURONEXT_DataFetch {
             map.put("isin", isin);
             map.put("code", row[2].replace("\"", ""));
             if (row[2].replace("\"", "").equalsIgnoreCase("-")) {
-                LOG.warn(row[2]+"\t"+line);
+                LOG.warn(row[2] + "\t" + line);
                 continue;
             }
             map.put("name", row[0].replace("\"", ""));
@@ -161,48 +161,45 @@ public class EURONEXT_DataFetch {
             if (!all.containsKey(hash)) {
                 all.put(hash, map);
             }
-            
+
         }
         return all;
     }
-    
- static public JSONArray fetchEURONEXTEOD(String isin, String market) throws Exception {
-        String val=market.contains("EURONEXT")? isin+market.substring(market.indexOf("-")):isin+"-"+market;        
+
+    static public JSONArray fetchEURONEXTEOD(String isin, String market) throws Exception {
+        String val = market.contains("EURONEXT") ? isin + market.substring(market.indexOf("-")) : isin + "-" + market;
         //https://live.euronext.com/intraday_chart/getChartData/FR0010242511-XPAR/max
-        String url="https://live.euronext.com/intraday_chart/getChartData/"+val+"/max";
+        String url = "https://live.euronext.com/intraday_chart/getChartData/" + val + "/max";
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
-    //TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
-        String res= new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
+        //TreeMap<UDate,ArrayList<Double>> values= new TreeMap<>();
+        String res = new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
         JSONArray arr = new JSONArray(res);
-        JSONArray totalarr= new JSONArray();
-        for(int i=0;i<arr.length();i++){      
-            JSONObject sv= new JSONObject();
-            JSONObject e = arr.getJSONObject(i);
-            String[] dateel=e.getString("time").substring(0, 10).split("-");
-            UDate datev=UDate.genDate(Integer.parseInt(dateel[0]) , Integer.parseInt(dateel[1])-1, Integer.parseInt(dateel[2]), 0, 0, 0);            
-            double close=e.getDouble("price");
-            double volume=e.getLong("volume");
-            sv.put("date", datev.toYYYYMMDD());
-            sv.put("close", close);                
-            sv.put("open", close);
-            sv.put("high", close);
-            sv.put("low", close);                
-            sv.put("volume", volume);
-            sv.put("oi", 0);                
-            totalarr.put(sv);             
-            
+        JSONArray totalarr = new JSONArray();
+        for (int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject sv = new JSONObject();
+                JSONObject e = arr.getJSONObject(i);
+                String[] dateel = e.getString("time").substring(0, 10).split("-");
+                UDate datev = UDate.genDate(Integer.parseInt(dateel[0]), Integer.parseInt(dateel[1]) - 1, Integer.parseInt(dateel[2]), 0, 0, 0);
+                double close = e.getDouble("price");
+                double volume = e.getLong("volume");
+                sv.put("date", datev.toYYYYMMDD());
+                sv.put("close", close);
+                sv.put("open", close);
+                sv.put("high", close);
+                sv.put("low", close);
+                sv.put("volume", volume);
+                sv.put("oi", 0);
+                totalarr.put(sv);
+            } catch (Exception e) {
+            } //skip row
             //values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
-        }        
-        LOG.debug("samples fetched for "+isin+" = "+totalarr.length());
-            return totalarr;
-    }    
- 
- 
+        }
+        LOG.debug("samples fetched for " + isin + " = " + totalarr.length());
+        return totalarr;
+    }
 
-     
- }
-    
-
+}

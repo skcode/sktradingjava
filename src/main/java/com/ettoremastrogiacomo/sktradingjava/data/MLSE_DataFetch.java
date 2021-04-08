@@ -37,37 +37,38 @@ public class MLSE_DataFetch {
 
     static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(FetchData.class);
     static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+
     static UDate StrBIT2UDate(String s) {
-        String pdr =s;
+        String pdr = s;
         UDate d;
-        int y = pdr.length()>=8? Integer.parseInt(pdr.substring(6, 8)):Integer.parseInt(pdr.substring(6));
+        int y = pdr.length() >= 8 ? Integer.parseInt(pdr.substring(6, 8)) : Integer.parseInt(pdr.substring(6));
         int M = Integer.parseInt(pdr.substring(3, 5));
         int day = Integer.parseInt(pdr.substring(0, 2));
         d = UDate.genDate(y + 2000, M - 1, day, 22, 0, 0);
         return d;
     }
-    
-    public static UDate ultimoGiornoContrattazioni() throws Exception{
+
+    public static UDate ultimoGiornoContrattazioni() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
-        }        
-        
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+
         String s = new String(http.HttpGetUrl("https://www.borsaitaliana.it/borsa/indici/indici-in-continua/dettaglio.html?indexCode=FTSEMIB&lang=it", Optional.of(20), Optional.empty()));
-        Document doc= Jsoup.parse(s);
-        String t="Data - Ora Ultimo Valore ";
-        Elements el=doc.select("span[class=\"t-text -block -size-xs | u-hidden -xs\"]");
-        LOG.debug("ultima data contrattazione #"+el.get(0).text().substring(t.length(),t.length()+8)+"#");
-        return StrBIT2UDate(el.get(0).text().substring(t.length(),t.length()+8));
+        Document doc = Jsoup.parse(s);
+        String t = "Data - Ora Ultimo Valore ";
+        Elements el = doc.select("span[class=\"t-text -block -size-xs | u-hidden -xs\"]");
+        LOG.debug("ultima data contrattazione #" + el.get(0).text().substring(t.length(), t.length() + 8) + "#");
+        return StrBIT2UDate(el.get(0).text().substring(t.length(), t.length() + 8));
     }
-    
+
     public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchMLSEList(secType st) throws Exception {
         int cnt = 1;
         java.util.HashMap<String, java.util.HashMap<String, String>> all = new java.util.HashMap<>();
         String url, urldet, type, currency, market;
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port),Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }//javascript:loadBoxContentCustom('tableResults','/borsa/etf/search.html?comparto=ETC&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&sectorization=&lang=it&page=4')
         final String FUTURES_URL = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/lista.html";
         final String FUTURES_URL_DETAILS = "https://www.borsaitaliana.it/borsa/derivati/mini-ftse-mib/dati-completi.html?isin=#";
@@ -77,7 +78,7 @@ public class MLSE_DataFetch {
         final String ALLSHARE_URL = "https://www.borsaitaliana.it/borsa/azioni/all-share/lista.html?&page=#";
         final String ETF_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETF&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&sectorization=&page=#";
         final String ETCETN_URL = "https://www.borsaitaliana.it/borsa/etf/search.html?comparto=ETC&idBenchmarkStyle=&idBenchmark=&indexBenchmark=&lang=it&sectorization=&page=#";
-        UDate ultimacontr=ultimoGiornoContrattazioni();
+        UDate ultimacontr = ultimoGiornoContrattazioni();
         switch (st) {
             case STOCK:
                 url = ALLSHARE_URL;
@@ -154,7 +155,7 @@ public class MLSE_DataFetch {
                         map.put("type", type);
                         map.put("currency", currency);
                         map.put("market", market);
-                        
+
                         String sd = urldet.replace("#", isin);
                         if (urls.contains(sd)) {
                             return;
@@ -174,14 +175,16 @@ public class MLSE_DataFetch {
                                     Elements cols = row.select("td");
                                     if (cols.size() == 2) {
                                         m.put(cols.get(0).text(), cols.get(1).text());
-                                        if (cols.get(0).text().equalsIgnoreCase("Codice Alfanumerico")) map.put("code", cols.get(1).text());
+                                        if (cols.get(0).text().equalsIgnoreCase("Codice Alfanumerico")) {
+                                            map.put("code", cols.get(1).text());
+                                        }
                                     }
                                 }
                             }
 
                             //if (!(m.get("Fase di Mercato").equalsIgnoreCase("Chiusura") || m.get("Fase di Mercato").equalsIgnoreCase("Fine Servizio"))) {
-                             //   LOG.warn("mercato non chiuso per " + map.get("isin"));
-                              //  return;
+                            //   LOG.warn("mercato non chiuso per " + map.get("isin"));
+                            //  return;
                             //}
                             map.put("sector", m.toString());
                             map.keySet().forEach((xx) -> {
@@ -216,108 +219,128 @@ public class MLSE_DataFetch {
         LOG.debug("#" + all.size());
         return all;
     }
-    
-    public static JSONArray fetchMLSEEOD(String symbol,Security.secType sec)throws Exception{
-        String market="";
-        if (null==sec) throw new Exception(sec+" non gestito");
-        else switch (sec) {
-            case STOCK:
-                market="MTA";
-                break;
-            case ETF:
-            case ETCETN:
-                market="ETF";
-                break;
-            default:
-                throw new Exception(sec+" non gestito");
+
+    public static JSONArray fetchMLSEEOD(String symbol, Security.secType sec) throws Exception {
+        String market = "";
+        if (null == sec) {
+            throw new Exception(sec + " non gestito");
+        } else {
+            switch (sec) {
+                case STOCK:
+                    market = "MTA";
+                    break;
+                case ETF:
+                case ETCETN:
+                    market = "ETF";
+                    break;
+                default:
+                    throw new Exception(sec + " non gestito");
+            }
         }
-        String url="https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";        
-        String jsonstriday="{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+ "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
-        String jsonstr="{\"request\":{\"SampleTime\":\"1d\",\"TimeFrame\":\"10y\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+"\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
-        HttpFetch http= new HttpFetch();
+        String url = "https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";
+        String jsonstriday = "{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\"" + symbol + "." + market + "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        String jsonstr = "{\"request\":{\"SampleTime\":\"1d\",\"TimeFrame\":\"10y\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\"" + symbol + "." + market + "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        HttpFetch http = new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
         }
-        String res=http.sendjsonPostRequest(url, jsonstr);
-        JSONObject o= new JSONObject(res);
-        JSONArray arr= o.getJSONArray("d");
+        String res = http.sendjsonPostRequest(url, jsonstr);
+        JSONObject o = new JSONObject(res);
+        JSONArray arr = o.getJSONArray("d");
         //TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()  ;
-        JSONArray totalarr= new JSONArray();
-        for (int i=0;i<arr.length();i++){   
-            
-            JSONObject sv= new JSONObject();             
-            UDate d=new UDate(arr.getJSONArray(i).getLong(0));
-            d=UDate.getNewDate(d, 0, 0, 0);
-            if (!arr.getJSONArray(i).isEmpty()){                
+        JSONArray totalarr = new JSONArray();
+        for (int i = 0; i < arr.length(); i++) {
+
+            JSONObject sv = new JSONObject();
+            UDate d = new UDate(arr.getJSONArray(i).getLong(0));
+            d = UDate.getNewDate(d, 0, 0, 0);
+            if (!arr.getJSONArray(i).isEmpty()) {
                 sv.put("date", d.toYYYYMMDD());
-                sv.put("close", arr.getJSONArray(i).getDouble(5));                
-                sv.put("open", arr.getJSONArray(i).isNull(2)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(2));
-                sv.put("high", arr.getJSONArray(i).isNull(3)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(3));
-                sv.put("low", arr.getJSONArray(i).isNull(4)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(4));                
-                sv.put("volume", arr.getJSONArray(i).isNull(6)?0.0: (double)arr.getJSONArray(i).getDouble(6));
-                sv.put("oi", 0);                
-                totalarr.put(sv);                 
-                
+                sv.put("close", arr.getJSONArray(i).getDouble(5));
+                sv.put("open", arr.getJSONArray(i).isNull(2) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(2));
+                sv.put("high", arr.getJSONArray(i).isNull(3) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(3));
+                sv.put("low", arr.getJSONArray(i).isNull(4) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(4));
+                sv.put("volume", arr.getJSONArray(i).isNull(6) ? 0.0 : (double) arr.getJSONArray(i).getDouble(6));
+                sv.put("oi", 0);
+                totalarr.put(sv);
+
                 //if (!arr.getJSONArray(i).isNull(6)) map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),(double)arr.getJSONArray(i).getInt(6))));
                 //else map.put(d, new ArrayList<>(Arrays.asList(arr.getJSONArray(i).getDouble(2),arr.getJSONArray(i).getDouble(3),arr.getJSONArray(i).getDouble(4),arr.getJSONArray(i).getDouble(5),0.0)));
             }
-           
-             
+
         }
-        LOG.debug("samples fetched for "+symbol+" = "+totalarr.length());
+        LOG.debug("samples fetched for " + symbol + " = " + totalarr.length());
         return totalarr;
     }
-    
 
-    public static JSONArray fetchMLSEEODintraday(String symbol,Security.secType sec)throws Exception{
-        String market="";
-        if (null==sec) throw new Exception(sec+" non gestito");
-        else switch (sec) {
-            case STOCK:
-                market="MTA";
-                break;
-            case ETF:
-            case ETCETN:
-                market="ETF";
-                break;
-            default:
-                throw new Exception(sec+" non gestito");
-        }
-        String url="https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";        
-        String jsonstr="{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\""+symbol+"."+market+ "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";        
-        HttpFetch http= new HttpFetch();
-        if (Init.use_http_proxy.equals("true")) {
-            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
-        }
-        String res=http.sendjsonPostRequest(url, jsonstr);
-        JSONObject o= new JSONObject(res);
-        JSONArray arr= o.getJSONArray("d");
-        //TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()  ;
-        JSONArray totalarr= new JSONArray();
-        UDate today=new UDate();
-        for (int i=0;i<arr.length();i++){               
-            JSONObject sv= new JSONObject();             
-            UDate d=new UDate(arr.getJSONArray(i).getLong(0)-1000*60*120);
-            today=UDate.getNewDate(d, 0, 0, 0);
-            if (!arr.getJSONArray(i).isEmpty()){                
-                sv.put("date", d.toString());
-                sv.put("close", arr.getJSONArray(i).getDouble(5));                
-                sv.put("open", arr.getJSONArray(i).isNull(2)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(2));
-                sv.put("high", arr.getJSONArray(i).isNull(3)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(3));
-                sv.put("low", arr.getJSONArray(i).isNull(4)?arr.getJSONArray(i).getDouble(5): arr.getJSONArray(i).getDouble(4));                
-                sv.put("volume", arr.getJSONArray(i).isNull(6)?0.0: (double)arr.getJSONArray(i).getDouble(6));
-                sv.put("oi", 0);                
-                totalarr.put(sv);                 
+    public static JSONArray fetchMLSEEODintraday(String symbol, Security.secType sec) throws Exception {
+        String market = "";
+        if (null == sec) {
+            throw new Exception(sec + " non gestito");
+        } else {
+            switch (sec) {
+                case STOCK:
+                    market = "MTA";
+                    break;
+                case ETF:
+                case ETCETN:
+                    market = "ETF";
+                    break;
+                default:
+                    throw new Exception(sec + " non gestito");
             }
         }
-        LOG.debug("intraday samples fetched for "+symbol+" = "+totalarr.length());
+        String url = "https://charts.borsaitaliana.it/charts/services/ChartWService.asmx/GetPricesWithVolume";
+        String jsonstr = "{\"request\":{\"SampleTime\":\"1mm\",\"TimeFrame\":\"1d\",\"RequestedDataSetType\":\"ohlc\",\"ChartPriceType\":\"price\",\"Key\":\"" + symbol + "." + market + "\",\"OffSet\":0,\"FromDate\":null,\"ToDate\":null,\"UseDelay\":true,\"KeyType\":\"Topic\",\"KeyType2\":\"Topic\",\"Language\":\"it-IT\"}}";
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res = http.sendjsonPostRequest(url, jsonstr);
+        JSONObject o = new JSONObject(res);
+        JSONArray arr = o.getJSONArray("d");
+        //TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>()  ;
+        JSONArray totalarr = new JSONArray();
+        UDate today = new UDate();
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject sv = new JSONObject();
+            UDate d = new UDate(arr.getJSONArray(i).getLong(0) - 1000 * 60 * 120);
+            today = UDate.getNewDate(d, 0, 0, 0);
+            if (!arr.getJSONArray(i).isEmpty()) {
+                try {
+                    sv.put("date", d.toString());
+                    sv.put("close", arr.getJSONArray(i).getDouble(5));
+                    sv.put("open", arr.getJSONArray(i).isNull(2) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(2));
+                    sv.put("high", arr.getJSONArray(i).isNull(3) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(3));
+                    sv.put("low", arr.getJSONArray(i).isNull(4) ? arr.getJSONArray(i).getDouble(5) : arr.getJSONArray(i).getDouble(4));
+                    sv.put("volume", arr.getJSONArray(i).isNull(6) ? 0.0 : (double) arr.getJSONArray(i).getDouble(6));
+                    sv.put("oi", 0);
+                    totalarr.put(sv);
+                } catch (Exception e) {
+                }//skip row
+            }
+        }
+        LOG.debug("intraday samples fetched for " + symbol + " = " + totalarr.length());
         return totalarr;
     }
-    
-    public static JSONArray fetchMLSEEODsole24ore(String symbol)throws Exception{
-        String url="https://vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/"+symbol+".MI?timeWindow=TenYears";                
-        //.PAR per parigi euronext
+
+    /*public static JSONArray fetchMLSEEODsole24ore(String symbol,Database.Markets market)throws Exception{
+        String post="";
+        switch (market){
+                case EURONEXT:{post=".PAR";}
+                break;
+                case MLSE:{post=".MI";}
+                break;
+                case NYSE:{post=".NY";}
+                break;
+                case NASDAQ:{post=".Q";}
+                break;                
+                default:
+                    throw new Exception("cannot fetch isin form this market : "+market);
+        }
         
+        String url="https://vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/"+symbol+post+"?timeWindow=TenYears";                
+        //.PAR per parigi euronext        
         HttpFetch http= new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
             http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type,Init.http_proxy_user, Init.http_proxy_password);
@@ -340,8 +363,6 @@ public class MLSE_DataFetch {
         }
         LOG.debug("samples fetched for "+symbol+" = "+totalarr.length());
         return totalarr;
-    }
-    
+    }*/
 //vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/4AIM.MI?timeWindow=TenYears	
-    
 }

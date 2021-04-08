@@ -20,6 +20,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import com.ettoremastrogiacomo.sktradingjava.Security.secType;
+import com.ettoremastrogiacomo.sktradingjava.data.Database.Markets;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.Calendar;
 import org.json.JSONArray;
@@ -29,8 +30,12 @@ import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetc
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEEOD;
 import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD2;
-import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchXETRAEOD;
 import static com.ettoremastrogiacomo.sktradingjava.data.XETRA_DataFetch.fetchListDE;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.jsoup.nodes.Element;
 
 /**
  *
@@ -142,6 +147,53 @@ public final class FetchData {
 
     }
 
+    public static String fetchISINsole24ore(String symbol, Database.Markets market) throws Exception {
+        String post = "";
+        String u1 = "";
+        switch (market) {
+            case EURONEXT: {
+                post = ".PAR";
+                u1 = "https://mercati.ilsole24ore.com/azioni/borse-europee/parigi/dettaglio/";
+            }
+            break;
+            case MLSE: {
+                post = ".MI";
+                u1 = "https://mercati.ilsole24ore.com/azioni/borsa-italiana/dettaglio-completo/";
+            }
+            break;
+            case NYSE: {
+                post = ".NY";
+                u1 = "https://mercati.ilsole24ore.com/azioni/borse-extra-europee/usa-nyse/dettaglio/";
+            }
+            break;
+            case NASDAQ: {
+                post = ".Q";
+                u1 = "https://mercati.ilsole24ore.com/azioni/borse-extra-europee/usa-nasdaq/dettaglio/";
+            }
+            break;
+            default:
+                throw new Exception("cannot fetch isin form this market : " + market);
+        }
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        u1 = u1 + symbol + post;
+        String res1 = new String(http.HttpGetUrl(u1, Optional.empty(), Optional.empty()));
+        if (!res1.contains("boxDettaglioColumn")) {
+            throw new Exception("cannot find " + symbol);
+        }
+        LOG.debug("getting " + symbol + "\tURL=" + u1);
+        Document doc = Jsoup.parse(res1);
+        Element table = doc.select("table[class='boxDettaglioColumn']").get(3);
+        Element row = table.select("tr").first();
+        String visin = row.select("td").get(1).text();
+        row = table.select("tr").get(1);
+        String vmkt = row.select("td").get(1).text();
+        LOG.debug(visin + "\t" + vmkt);
+        return visin;
+    }
+
     public static java.util.HashMap<String, java.util.HashMap<String, String>> fetchNYSEList() throws Exception {
         com.ettoremastrogiacomo.utils.HttpFetch http = new com.ettoremastrogiacomo.utils.HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -154,52 +206,101 @@ public final class FetchData {
         //ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot Size|Test Issue|NASDAQ Symbol
         String url_others = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/otherlisted.txt";
         String nasdaq = new String(http.FTPGetUrl(url_nasdaq));
-        String others = new String(http.FTPGetUrl(url_others)) + "\n" + nasdaq;
+        String others = new String(http.FTPGetUrl(url_others));// + "\n" + nasdaq;
         String[] lines = others.split("\n");
         for (String x : lines) {
-            String[] s = x.split("\\|");
-            if (s.length < 5) {
-                continue;
-            }
-            if (s[1].contains("Common Stock")) {
-                String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
-                if (name.equals("")) {
+            try {
+                String[] s = x.split("\\|");
+                if (s.length < 5) {
                     continue;
                 }
-                LOG.info(s[0] + "\t" + name);
-                java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
-                map.put("isin", "US" + Long.toString(hc));
-                map.put("name", name);
-                map.put("code", s[0]);
-                map.put("type", "STOCK");
-                map.put("currency", "USD");
-                map.put("market", "NYSE");
-                map.put("sector", "NA");
-                all.put(map.get("isin"), map);
-            } else if (s[4].contains("Y")) {//ETF
-                String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
-                if (name.equals("")) {
-                    continue;
-                }
-                LOG.info(s[0] + "\t" + name);
-                java.util.HashMap<String, String> map = new java.util.HashMap<>();
-                long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
-                map.put("isin", "US" + Long.toString(hc));
-                map.put("name", name);
-                map.put("code", s[0]);
-                map.put("type", "ETF");
-                map.put("currency", "USD");
-                map.put("market", "NYSE");
-                map.put("sector", "NA");
-                all.put(map.get("isin"), map);
-            }
+                if (s[1].contains("Common Stock")) {
+                    String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                    if (name.equals("")) {
+                        continue;
+                    }
+                    LOG.info(s[0] + "\t" + name);
+                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                    ;
+                    long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
 
+                    map.put("isin", fetchISINsole24ore(s[0], Markets.NYSE));
+                    map.put("name", name);
+                    map.put("code", s[0]);
+                    map.put("type", "STOCK");
+                    map.put("currency", "USD");
+                    map.put("market", Markets.NYSE.name());
+                    map.put("sector", "NA");
+                    all.put(map.get("isin"), map);
+                } else if (s[4].contains("Y")) {//ETF
+                    String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                    if (name.equals("")) {
+                        continue;
+                    }
+                    LOG.info(s[0] + "\t" + name);
+                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                    long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                    map.put("isin", fetchISINsole24ore(s[0], Markets.NYSE));
+                    map.put("name", name);
+                    map.put("code", s[0]);
+                    map.put("type", "ETF");
+                    map.put("currency", "USD");
+                    map.put("market", Markets.NYSE.name());
+                    map.put("sector", "NA");
+                    all.put(map.get("isin"), map);
+                }
+            } catch (Exception e) {
+                LOG.warn(e);
+            }
+        }
+        lines = nasdaq.split("\n");
+        for (String x : lines) {
+            try {
+                String[] s = x.split("\\|");
+                if (s.length < 5) {
+                    continue;
+                }
+                if (s[1].contains("Common Stock")) {
+                    String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                    if (name.equals("")) {
+                        continue;
+                    }
+                    LOG.info(s[0] + "\t" + name);
+                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                    long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                    map.put("isin", fetchISINsole24ore(s[0], Markets.NASDAQ));
+                    map.put("name", name);
+                    map.put("code", s[0]);
+                    map.put("type", "STOCK");
+                    map.put("currency", "USD");
+                    map.put("market", Markets.NASDAQ.name());
+                    map.put("sector", "NA");
+                    all.put(map.get("isin"), map);
+                } else if (s[4].contains("Y")) {//ETF
+                    String name = s[1];//s[1].indexOf(" -") > 0 ? s[1].substring(0, s[1].indexOf(" -")) : "";
+                    if (name.equals("")) {
+                        continue;
+                    }
+                    LOG.info(s[0] + "\t" + name);
+                    java.util.HashMap<String, String> map = new java.util.HashMap<>();
+                    long hc = Math.abs(9999999999L - Math.abs(name.hashCode()));//NON HO ISIN CORRETTO
+                    map.put("isin", fetchISINsole24ore(s[0], Markets.NYSE));
+                    map.put("name", name);
+                    map.put("code", s[0]);
+                    map.put("type", "ETF");
+                    map.put("currency", "USD");
+                    map.put("market", Markets.NASDAQ.name());
+                    map.put("sector", "NA");
+                    all.put(map.get("isin"), map);
+                }
+            } catch (Exception e) {
+                LOG.warn(e);
+            }
         }
         return all;
     }
 
-    public static void loadEODdata() throws Exception {
+    /*public static void loadEODdata() throws Exception {
 
         String sql1 = "insert or replace into " + Init.db_sharestable + "(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
         String sql2 = "insert or replace into " + Init.db_eoddatatable + "(hashcode,data,provider) values(?,?,?)";
@@ -255,7 +356,7 @@ public final class FetchData {
                 String code = m.get(x).get("code");
                 String type = m.get(x).get("type");
                 JSONArray data = new JSONArray();
-                JSONArray data2 = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
+                JSONArray data2 = MLSE_DataFetch.fetchMLSEEODsole24ore(code,Markets.MLSE);
                 JSONArray data3 = new JSONArray();
                 if (type.equalsIgnoreCase("STOCK")) {
                     data = fetchMLSEEOD(code, secType.STOCK);
@@ -413,8 +514,8 @@ public final class FetchData {
         //fetchDatiCompletiMLSE("NL0010877643", secType.STOCK);
         //};
     }
-
-    /*public static String fetchYahooQuotes(String symbol) throws Exception {
+     */
+ /*public static String fetchYahooQuotes(String symbol) throws Exception {
         URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
         HttpFetch http = new HttpFetch();
         if (Init.use_http_proxy.equals("true")) {
@@ -463,7 +564,74 @@ public final class FetchData {
         return res;
     }
 
-    static void loadintoDB(String x, java.util.HashMap<String, java.util.HashMap<String, String>> m, Database.Providers provider, Optional<Boolean> intraday) throws Exception {
+    public static String fetchAlphaVantageQuotes(String symbol) throws Exception {
+        //URL url = new URL("https://finance.yahoo.com/quote/" + symbol + "/history?p=" + symbol);
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        //https://query1.finance.yahoo.com/v7/finance/download/HFRN.MI?period1=0&period2=1578265200&interval=1d&events=history&crumb=hCd0SUv4Zf2
+
+        //String u2 = "https://query1.finance.yahoo.com/v7/finance/download/" + symbol + "?period1=0&period2=" + System.currentTimeMillis() + "&interval=1d&events=history";
+        String u2 = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=" + symbol + "&outputsize=full&apikey=JBBIWYANEHDAPYTN";
+        String res = new String(http.HttpGetUrl(u2, Optional.empty(), Optional.empty()));
+        Database.LOG.debug("getting " + symbol + "\tURL=" + u2);
+        return res;
+    }
+
+    public static JSONArray fetchEODsole24ore(String symbol, Database.Markets market) throws Exception {
+        String post = "";
+        switch (market) {
+            case EURONEXT: {
+                post = ".PAR";
+            }
+            break;
+            case MLSE: {
+                post = ".MI";
+            }
+            break;
+            case NYSE: {
+                post = ".NY";
+            }
+            break;
+            case NASDAQ: {
+                post = ".Q";
+            }
+            break;
+            default:
+                throw new Exception("cannot fetch isin form this market : " + market);
+        }
+
+        String url = "https://vwd-proxy.ilsole24ore.com/FinanzaMercati/api/TimeSeries/GetTimeSeries/" + symbol + post + "?timeWindow=TenYears";
+        //.PAR per parigi euronext        
+        HttpFetch http = new HttpFetch();
+        if (Init.use_http_proxy.equals("true")) {
+            http.setProxy(Init.http_proxy_host, Integer.parseInt(Init.http_proxy_port), Init.http_proxy_type, Init.http_proxy_user, Init.http_proxy_password);
+        }
+        String res = new String(http.HttpGetUrl(url, Optional.empty(), Optional.empty()));
+        JSONObject o = new JSONObject(res);
+        JSONArray arr = o.getJSONArray("series");
+        JSONArray totalarr = new JSONArray();
+        for (int i = 0; i < arr.length(); i++) {
+            try {
+                JSONObject sv = new JSONObject();
+                sv.put("open", arr.getJSONObject(i).getDouble("open"));
+                sv.put("high", arr.getJSONObject(i).getDouble("high"));
+                sv.put("low", arr.getJSONObject(i).getDouble("low"));
+                sv.put("close", arr.getJSONObject(i).getDouble("close"));
+                sv.put("volume", arr.getJSONObject(i).getDouble("volume"));
+                String timestamp = arr.getJSONObject(i).getString("timestamp").substring(0, 10);
+                sv.put("date", UDate.parseYYYYmMMmDD(timestamp).toYYYYMMDD());
+                sv.put("oi", 0);
+                totalarr.put(sv);
+            } catch (Exception e) {
+            }//skip row
+        }
+        LOG.debug("samples fetched for " + symbol + " = " + totalarr.length());
+        return totalarr;
+    }
+
+    static public void loadintoDB(String x, java.util.HashMap<String, java.util.HashMap<String, String>> m, Database.Providers provider, Optional<Boolean> intraday) throws Exception {
         String sql1 = "insert or replace into " + Init.db_sharestable + "(hashcode,isin,name,code,type,market,currency,sector) values(?,?,?,?,?,?,?,?)";
         String sql2 = "insert or replace into " + Init.db_eoddatatable + "(hashcode,data,provider) values(?,?,?)";
         String sql3 = "insert or replace into " + Init.db_intradaytable + "(hashcode,date,quotes) values(?,?,?)";
@@ -481,6 +649,9 @@ public final class FetchData {
             String type = m.get(x).get("type");
             String name = m.get(x).get("name");
             String market = m.get(x).get("market");
+            if (!Markets.contains(market)) {
+                throw new Exception("market " + market + " doesn't exists in market list!\t" + isin + "." + code + "." + type + "." + name);
+            }
             LOG.debug(">>now fetching " + m.get(x));
             JSONArray data = new JSONArray(), dataiday = new JSONArray();
             String idaydate = "";
@@ -499,13 +670,13 @@ public final class FetchData {
                     }
                     break;
                 case SOLE24ORE:
-                    data = MLSE_DataFetch.fetchMLSEEODsole24ore(code);
+                    data = fetchEODsole24ore(code, Markets.valueOf(market));
                     break;
                 case XETRA:
                     data = fetchXETRAEOD2(isin, false);
                     break;
                 case YAHOO:
-                    String s = fetchYahooQuotes(code); 
+                    String s = fetchYahooQuotes(code);
                     String[] lines = s.split("\n");
                     data = new JSONArray();
                     for (int i = 1; i < lines.length; i++) {//skip first header line
@@ -526,15 +697,15 @@ public final class FetchData {
                         } catch (Exception e) {//LOG.warn("skip row "+i+"\t"+e);
                             LOG.warn(e);
                         }
-                    }                    
-                    break;                    
+                    }
+                    break;
                 default:
                     throw new Exception("provider " + provider + " not implemented");
             }
             LOG.debug("data len " + data.length());
             if (data.length() == 0) {
                 //stmt.executeUpdate("delete from "+Init.db_eoddatatable +" where hashcode='"+x+"' and provider='"+provider+"'");                
-                LOG.warn("no data for " + isin + "."+code+ "."+name+" in " + provider);
+                LOG.warn("no data for " + isin + "." + code + "." + name + " in " + provider);
             } else {
                 stmt1.setString(1, x);
                 stmt1.setString(2, m.get(x).get("isin"));
@@ -559,26 +730,7 @@ public final class FetchData {
         }
 
     }
-
-    static public void loadEODdatanew() throws Exception {
-        //fetchEURONEXTEOD("FR0010208488", "EURONEXT-XPAR");
-
-        //fetchMLSEList(Security.secType.ETCETN);        
-        //fetchMLSEList(Security.secType.ETF);    
-        try {
-            LOG.debug("*** fetching XETRA shares ***");
-            java.util.HashMap<String, java.util.HashMap<String, String>> mapXETRA = fetchListDE();
-            mapXETRA.keySet().forEach((x) -> {
-                try {
-                    loadintoDB(x, mapXETRA, Database.Providers.XETRA , Optional.of(false));
-                } catch (Exception e) {
-                    LOG.warn(e);
-                }
-            });
-        } catch (Exception e) {
-            LOG.error("ERROR FETCHING XETRA");
-        }
-        
+    static public void loadIntradayData() throws Exception {
         try {
             LOG.debug("*** fetching BORSAITALIANA shares ***");
             java.util.HashMap<String, java.util.HashMap<String, String>> mapMLSEBIT = fetchMLSEList(Security.secType.STOCK);
@@ -589,6 +741,44 @@ public final class FetchData {
             mapMLSEBIT.keySet().forEach((x) -> {
                 try {
                     loadintoDB(x, mapMLSEBIT, Database.Providers.BORSAITALIANA, Optional.of(true));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING BORSAITALIANA");
+        }
+    
+    }
+    static public void loadEODdatanew() throws Exception {
+        //fetchEURONEXTEOD("FR0010208488", "EURONEXT-XPAR");
+
+        //fetchMLSEList(Security.secType.ETCETN);        
+        //fetchMLSEList(Security.secType.ETF);    
+        try {
+            LOG.debug("*** fetching XETRA shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapXETRA = fetchListDE();
+            mapXETRA.keySet().forEach((x) -> {
+                try {
+                    loadintoDB(x, mapXETRA, Database.Providers.XETRA, Optional.of(false));
+                } catch (Exception e) {
+                    LOG.warn(e);
+                }
+            });
+        } catch (Exception e) {
+            LOG.error("ERROR FETCHING XETRA");
+        }
+
+        try {
+            LOG.debug("*** fetching BORSAITALIANA shares ***");
+            java.util.HashMap<String, java.util.HashMap<String, String>> mapMLSEBIT = fetchMLSEList(Security.secType.STOCK);
+            mapMLSEBIT.putAll(fetchMLSEList(Security.secType.ETCETN));
+            mapMLSEBIT.putAll(fetchMLSEList(Security.secType.ETF));
+            //map=fetchMLSEList(Security.secType.STOCK); 
+
+            mapMLSEBIT.keySet().forEach((x) -> {
+                try {
                     loadintoDB(x, mapMLSEBIT, Database.Providers.SOLE24ORE, Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
@@ -619,7 +809,7 @@ public final class FetchData {
             java.util.HashMap<String, java.util.HashMap<String, String>> mapNYSE = fetchNYSEList();
             mapNYSE.keySet().forEach((x) -> {
                 try {
-                    loadintoDB(x, mapNYSE, Database.Providers.YAHOO, Optional.of(false));
+                    loadintoDB(x, mapNYSE, Database.Providers.SOLE24ORE, Optional.of(false));
                 } catch (Exception e) {
                     LOG.warn(e);
                 }

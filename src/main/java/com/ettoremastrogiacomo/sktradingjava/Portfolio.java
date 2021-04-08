@@ -532,6 +532,17 @@ public class Portfolio {
         return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
+    public static Portfolio create_STOCK_NYSE_NASDAQ_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
+        //ArrayList<String> markets = Database.getMarkets();
+        ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(Arrays.asList("NYSE","NASDAQ")), Optional.of(Arrays.asList("USD")), Optional.empty());
+        ArrayList<String> hashcodes = new ArrayList<>();
+        map.forEach((x) -> {
+            hashcodes.add(x.get("hashcode"));
+        });
+        ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), minlen, maxgap, maxdaygap, maxold, minvol, Optional.empty());
+        return new Portfolio(list, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+    
     public static Portfolio create_ETF_NYSE_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
 
         ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.of(" where type= 'ETF' and market='NYSE' and not name like '%Ultra%' and not name like '%Short%' and not name like '%Bear%'"));
