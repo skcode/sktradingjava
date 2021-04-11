@@ -9,11 +9,14 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import static com.ettoremastrogiacomo.sktradingjava.starters.Rankings.logger;
 import com.ettoremastrogiacomo.utils.DoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.log4j.Logger;
 
 /**
@@ -25,11 +28,13 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=1500,maxsamples=1500,stepsamples=500,maxdaygap=7,maxold=30,minvol=10000,minvoletf=0,setmin=20,setmax=40,popsize=10000,ngen=1000;
+        int minsamples=2500,maxsamples=2500,stepsamples=500,maxdaygap=7,maxold=30,minvol=10000,minvoletf=0,setmin=30,setmax=50,popsize=20000,ngen=2000;
         double maxpcgap=.2;      
-        Portfolio.optMethod optm=Portfolio.optMethod.MINCORR;
+        Portfolio.optMethod optm=Portfolio.optMethod.MINCORREQUITYBH;
         boolean plot=false,plotlist=false;
         HashMap<String,Integer> list= new HashMap<>();
+        Set<String> listhash= new HashSet<>();
+        String filename="./hashlist";
         HashMap<Integer,Double> meaneq= new HashMap<>();
         HashMap<Integer,Double> meanmaxdd= new HashMap<>();
         for (int samples=minsamples;samples<=maxsamples;samples=samples+stepsamples){
@@ -72,11 +77,11 @@ public class SmartPortfolio {
                 try {
                     double d1=ptf.getClose().getSerieCopy(x).getEquity().getLastValueInCol(0);             
                     d1=(d1-1)*100;                    
-                    logger.info( t1+"\t"+ String.format("%.2f", d1)+"%");
+                    logger.info( t1+"\t"+ String.format("%.2f", d1)+"%");                    
                 }catch (Exception e) {
                     logger.info( t1);
                 }
-                
+                listhash.add(ptf.hashcodes.get(x));
                 if (list.containsKey(t1)) list.replace(t1, list.get(t1)+1);else list.put(t1, 1);                
             });
             Fints f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
@@ -104,7 +109,8 @@ public class SmartPortfolio {
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-    
+        Misc.writeObjToFile(listhash, filename);
+        ((HashSet)Misc.readObjFromFile(filename)).forEach((x)->{logger.debug(x);});
     
     }
 }

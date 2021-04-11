@@ -25,7 +25,7 @@ import org.apache.log4j.Logger;
 public class Compare {
     static Logger logger = Logger.getLogger(Compare.class );
     public static void main(String[] args) throws Exception {
-        int minsamples=1000,maxdaygap=7,maxold=10,minvol=10000,minvoletf=1000,setsize=20;
+        int minsamples=1000,maxdaygap=7,maxold=10,minvol=100000,minvoletf=1000,setsize=20;
         double maxpcgap=.3;           
         Fints msciworld=Database.getFintsQuotes(Database.getHashcode("XMWO", "MLSE")).getSerieCopy(Security.SERIE.CLOSE.getValue());        
         //String sp500hash=Database.getHashcode("CSSPX", "MLSE");        
@@ -52,7 +52,7 @@ public class Compare {
             
         }
         ArrayList<String> newhashes=new ArrayList<>();
-        betamap2msciworld.headMap(0.2,true).keySet().forEach((x)->{
+        betamap2msciworld.headMap(0.3,true).keySet().forEach((x)->{
             logger.info(ptf.getName(betamap2msciworld.get(x))+"\t"+x);               
             newhashes.add(betamap2msciworld.get(x));
         });

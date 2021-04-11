@@ -3,6 +3,7 @@ package com.ettoremastrogiacomo.sktradingjava;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleArray;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
+import com.ettoremastrogiacomo.utils.Misc;
 import com.ettoremastrogiacomo.utils.UDate;
 import com.joptimizer.functions.ConvexMultivariateRealFunction;
 import com.joptimizer.functions.LinearMultivariateRealFunction;
@@ -757,7 +758,9 @@ public class Portfolio {
         double[][] c = Fints.ER(Fints.merge(sec2, sec1), 100, true).head(headlen).getCorrelation();
         return c[0][1];
     }
-
+    public void writeHashesToFile(String filename) throws Exception {
+        Misc.writeObjToFile(this.hashcodes, filename);    
+    }
     public Fints getWeightedtEquity(double[] weights) throws Exception {
         
         double[][] cer=this.close.getMatrixCopy();
