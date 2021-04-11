@@ -26,20 +26,33 @@ public class Rankings {
     
     public static void main(String[] args) throws Exception {
         int minsamples=1000,maxdaygap=7,maxold=10,minvol=10000,minvoletf=1000;
-        double maxpcgap=.3;   
-        String msciworldhash=Database.getHashcode("XMWO", "MLSE");
-        String sp500hash=Database.getHashcode("CSSPX", "MLSE");        
+        double maxpcgap=.3;           
+        Fints msciworld=Database.getFintsQuotes(Database.getHashcode("XMWO", "MLSE")).getSerieCopy(Security.SERIE.CLOSE.getValue());        
+        //String sp500hash=Database.getHashcode("CSSPX", "MLSE");        
         boolean plot=false;
-        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_NYSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.createETFSTOCKEURPortfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
-        Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_exCOMMODITIES_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_NYSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
         //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_GLOBALI_MLSE_Portfolio(Optional.of(minsamples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
+        
         int SIZE=minsamples<ptf.getLength()?minsamples:ptf.getLength()-1;
+        TreeMap<Double,String> betamap2msciworld= new TreeMap<>();
+        for (String h: ptf.hashcodes){
+            Fints f=Database.getFintsQuotes(h).getSerieCopy(Security.SERIE.CLOSE.getValue());
+            Fints fm=Fints.ER(Fints.merge(f, msciworld), 100, true);
+            if (fm.getLength()<SIZE) continue;            
+            double[][] c = fm.head(SIZE).getCovariance();
+            double beta= c[0][1] / c[0][0];
+            betamap2msciworld.put(beta, ptf.getName(h));
+            logger.info(ptf.getName(h)+"\t"+beta);             
+        }
+        betamap2msciworld.keySet().forEach((x)->{logger.debug(betamap2msciworld.get(x)+"\t"+x);});
+        System.exit(0);
         logger.info("no sec "+ptf.getNoSecurities());
         logger.info("len "+ptf.getLength());
         logger.info("minvol "+minvol);
@@ -73,133 +86,7 @@ public class Rankings {
         for (int i=0;i<smasharpev.length;i++) smasharpemap.put(smasharpev[i], ptf.realnames.get(i));
         //smasharpemap.keySet().forEach((x)-> logger.info(x+"\t"+smasharpemap.get(x)));
         Misc.map2csv(smasharpemap, "./sharpeamap.csv",Optional.empty());        
-        //betamap.keySet().forEach((x)-> logger.info(x+"\t"+betamap.get(x)));
-        //Misc.map2csv(betamap, "./betamap.csv",Optional.empty());
-        /*
-        UDate train_enddate=ptf.dates.get(ptf.dates.size()-1);
-        UDate train_startdate=ptf.dates.get(ptf.dates.size()-SIZE);
-        //double[] w=ptf.optimizeMinVarQP(Optional.of(minsamples<ptf.getLength()?minsamples:ptf.getLength()-1), Optional.of(0), Optional.of(.05));
-        setmax=setmax>ptf.getNoSecurities()?ptf.getNoSecurities():setmax;
-        
-        Entry<Double,ArrayList<Integer>> winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MINVAR, plot, popsize, ngen);
-        logger.info("************************ optimization GA MINVAR ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
-        logger.info("setmin "+setmin+"\tsetmax "+setmax);
-        logger.info("BEST "+1.0/winner.getKey());
-        logger.info("BEST "+winner.getValue());
-        double[]w=new double[winner.getValue().size()];
-        DoubleArray.fill(w, 1.0/winner.getValue().size());        
-        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
-        logger.info("BEST LEN "+winner.getValue().size());
-        winner.getValue().forEach((x) -> {
-            logger.info( ptf.getName(ptf.hashcodes.get(x)));
-        });
-        Fints f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
-        f.plot("minvar", "price");        
-        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
-        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
-        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
-        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
-        logger.debug("\n\n");
 
-
-        winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MINDD, plot, popsize, ngen);
-        logger.info("************************ optimization GA MINDD ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
-        logger.info("setmin "+setmin+"\tsetmax "+setmax);
-        logger.info("BEST "+1.0/winner.getKey());
-        logger.info("BEST "+winner.getValue());
-        w=new double[winner.getValue().size()];
-        DoubleArray.fill(w, 1.0/winner.getValue().size());        
-        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
-        logger.info("BEST LEN "+winner.getValue().size());
-        winner.getValue().forEach((x) -> {
-            logger.info( ptf.getName(ptf.hashcodes.get(x)));
-        });
-        f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
-        f.plot("mindd", "price");
-        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
-        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
-        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
-        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));
-        logger.debug("\n\n");        
-        
-        winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MAXSLOPE, plot, popsize, ngen);
-        logger.info("************************ optimization GA MAXSLOPE ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
-        logger.info("setmin "+setmin+"\tsetmax "+setmax);
-        logger.info("BEST "+1.0/winner.getKey());
-        logger.info("BEST "+winner.getValue());
-        w=new double[winner.getValue().size()];
-        DoubleArray.fill(w, 1.0/winner.getValue().size());        
-        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
-        logger.info("BEST LEN "+winner.getValue().size());
-        winner.getValue().forEach((x) -> {
-            logger.info( ptf.getName(ptf.hashcodes.get(x)));
-        });
-        f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
-        f.plot("maxslope", "price");
-        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
-        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
-        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
-        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
-        logger.debug("\n\n");        
-
-
-        winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MINCORR, plot, popsize, ngen);
-        logger.info("************************ optimization GA MINCORR ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
-        logger.info("setmin "+setmin+"\tsetmax "+setmax);
-        logger.info("BEST "+1.0/winner.getKey());
-        logger.info("BEST "+winner.getValue());
-        w=new double[winner.getValue().size()];
-        DoubleArray.fill(w, 1.0/winner.getValue().size());        
-        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
-        logger.info("BEST LEN "+winner.getValue().size());
-        winner.getValue().forEach((x) -> {
-            logger.info( ptf.getName(ptf.hashcodes.get(x)));
-        });
-        f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
-        f.plot("mincorr", "price");
-        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
-        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
-        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
-        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
-        logger.debug("\n\n");        
-
-
-        winner=ptf.opttrain(train_startdate, train_enddate, setmin, setmax, Portfolio.optMethod.MAXSHARPE, plot, popsize, ngen);
-        logger.info("************************ optimization GA MAXSHARPE ************************ ");
-        logger.info(train_startdate+"\tto\t"+train_enddate+"\tsamples "+ptf.closeER.Sub(train_startdate, train_enddate).getLength());
-        logger.info("setmin "+setmin+"\tsetmax "+setmax);
-        logger.info("BEST "+1.0/winner.getKey());
-        logger.info("BEST "+winner.getValue());
-        w=new double[winner.getValue().size()];
-        DoubleArray.fill(w, 1.0/winner.getValue().size());        
-        logger.info("BEST LOG VAR "+ptf.closeERlog.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("BEST VAR check"+ptf.closeER.SubSeries(winner.getValue()).head(SIZE).getWeightedCovariance(w));
-        logger.info("LOG VAR CAMPIONE "+Fints.ER(ptf.closeCampione, 100, true).head(SIZE).getCovariance()[0][0]);
-        logger.info("BEST LEN "+winner.getValue().size());
-        winner.getValue().forEach((x) -> {
-            logger.info( ptf.getName(ptf.hashcodes.get(x)));
-        });
-        f=ptf.opttest(winner.getValue(), train_startdate, train_enddate, Optional.empty(), Optional.empty());
-        f.plot("maxsharpe", "price");
-        logger.info("MAXDD: "+f.getName(0)+"\t"+f.getMaxDD(0));
-        logger.info("MAXDD: "+f.getName(1)+"\t"+f.getMaxDD(1));
-        logger.info("Final EQ: "+f.getName(0)+"\t"+f.getLastValueInCol(0));
-        logger.info("Final EQ: "+f.getName(1)+"\t"+f.getLastValueInCol(1));        
-        logger.debug("\n\n");        
-
-        */
     }
     
     

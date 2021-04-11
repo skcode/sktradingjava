@@ -1111,7 +1111,16 @@ public class Portfolio {
     public java.util.List<UDate> getDate() {
         return allfints.getDate();
     }
+    
+    public UDate getFirstDate() {
+        return  allfints.getFirstDate();
+    }
+    
 
+    public UDate getLastDate() {
+        return  allfints.getLastDate();
+    }
+   
     /**
      *
      * @param symbol

@@ -1236,6 +1236,13 @@ public final class Fints implements Serializable{
         for (int i=0;i<std.length;i++)std[i]=Math.sqrt(c[i][i]);
         return std;
     }
+    
+    public double[] getSharpe() throws Exception {
+        double v[]=getMeans();
+        double d[]=getStd();
+        for (int i=0;i<v.length;i++) if (d[i]!=0) v[i]=v[i]/d[i];else v[i]=Double.POSITIVE_INFINITY;
+        return v;
+    }
 
     
     public double[] getSums() throws Exception {

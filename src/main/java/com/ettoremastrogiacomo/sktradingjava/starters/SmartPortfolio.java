@@ -25,9 +25,9 @@ public class SmartPortfolio {
     static public org.apache.log4j.Logger LOG= Logger.getLogger(SmartPortfolio.class);
     
     public static void main(String[] args) throws Exception{        
-        int minsamples=1000,maxsamples=1000,stepsamples=500,maxdaygap=7,maxold=20,minvol=10000,minvoletf=0,setmin=20,setmax=40,popsize=20000,ngen=2000;
+        int minsamples=1500,maxsamples=1500,stepsamples=500,maxdaygap=7,maxold=30,minvol=10000,minvoletf=0,setmin=20,setmax=40,popsize=10000,ngen=1000;
         double maxpcgap=.2;      
-        Portfolio.optMethod optm=Portfolio.optMethod.MINCORREQUITYBH;
+        Portfolio.optMethod optm=Portfolio.optMethod.MINCORR;
         boolean plot=false,plotlist=false;
         HashMap<String,Integer> list= new HashMap<>();
         HashMap<Integer,Double> meaneq= new HashMap<>();
