@@ -130,9 +130,9 @@ class CallableClass implements Callable<CallableClass> {
                 eq.replace(eq.lastKey(), eq.lastEntry().getValue() - FIXEDFEE);//close trades        
             }
             TreeMap<UDate,ArrayList<Double>> map= new TreeMap<>();
-            for (UDate d: eq.keySet()) {
-                map.put(d, new ArrayList<Double>(Arrays.asList(eq.get(d))));
-            }
+            eq.keySet().forEach(d -> {
+                map.put(d, new ArrayList<>(Arrays.asList(eq.get(d))));
+            });
             eqres = new Fints(map, Arrays.asList("equity-" + f.getName(0) + "-" + tot.getFirstDate().toYYYYMMDD()), tot.getFrequency());
         } catch (Exception e) {
             logger.warn(e);
@@ -153,7 +153,7 @@ public class TestTrading {
     public static ArrayList<Double> test(String hash, int h, int k, TreeSet<UDate> dates) throws Exception {
         ArrayList<Double> profit = new ArrayList<>();
         for (UDate d : dates) {
-            Fints f = Security.changeFreq(Security.createContinuity(Database.getIntradayFintsQuotes(hash, d)), Fints.frequency.MINUTE).getSerieCopy(3);
+            Fints f = Database.getIntradayFintsQuotes(hash, d).getSerieCopy(Security.SERIE.CLOSE.getValue());//Security.changeFreq(Security.createContinuity(Database.getIntradayFintsQuotes(hash, d)), Fints.frequency.MINUTE).getSerieCopy(3);
             CallableClass c = new CallableClass(f, h, k).call();
             c.plotTot();
             profit.add(c.getEquity().getLastValueInCol(0));
@@ -162,7 +162,7 @@ public class TestTrading {
     }
 
     public static void main(String[] args) throws Exception {
-        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 300;
+        final double VARFEE = .001, FIXEDFEE = 7, INITCAP = 60000, MINSAMPLES = 100;
         final int TRAINWIN = 100, TESTWIN = 10;
         HashMap<String, TreeMap<UDate, Fints>> fintsmap = new HashMap<>();
         TreeSet<UDate> dates = Misc.mostRecentTimeSegment(Database.getIntradayDates(), 1000 * 60 * 60 * 24 * 5);
@@ -172,7 +172,7 @@ public class TestTrading {
 
         //TestTrading.test(Database.getHashcode("ENEL", "MLSE"), 2, 26, datest);
         for (String x : map.keySet()) {
-            if (map.get(x).containsAll(dates) && nmap.get(x).contains("FBK.MLSE.STOCK")) {//best profit at k,h=[187, 202] FBK
+            if (map.get(x).containsAll(dates) ) {//best profit at k,h=[187, 202] FBK
                 boolean toadd = true;
                 TreeMap<UDate, Fints> t1 = new TreeMap<>();
                 for (UDate d : dates) {
@@ -181,8 +181,7 @@ public class TestTrading {
                         toadd = false;
                         break;
                     } else {
-                        t1.put(d, Security.changeFreq(Security.createContinuity(Database.getIntradayFintsQuotes(x, d)), Fints.frequency.MINUTE).getSerieCopy(3));
-
+                        t1.put(d, Database.getIntradayFintsQuotes(x, d).getSerieCopy(3));
                     }
                 }
                 if (toadd) {

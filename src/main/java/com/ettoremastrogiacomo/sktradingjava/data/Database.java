@@ -314,7 +314,6 @@ public class Database {
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
-            LOG.debug(sql);
             res = stmt.executeQuery(sql);
 
             while (res.next()) {
@@ -365,7 +364,7 @@ public class Database {
         try {
             conn = DriverManager.getConnection(Init.db_url);
             stmt = conn.createStatement();
-            LOG.debug(sql);
+
             res = stmt.executeQuery(sql);
 
             while (res.next()) {

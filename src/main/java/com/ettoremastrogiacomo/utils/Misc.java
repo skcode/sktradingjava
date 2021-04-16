@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -183,7 +184,29 @@ public class Misc {
         //Integer[] d=intSet.toArray(new Integer[intSet.size()]  );        
         return intSet;
     }
-  
+    
+    /**
+     * 
+     * @param <E>
+     * @param set insieme dal quale prendere n campioni casuali
+     * @param samples numero campioni (distinti) da prendere
+     * @return
+     * @throws Exception 
+     */
+    public static <E>  Set<E> getRandomElements(Set<? extends E> set,int samples) throws Exception
+    {
+        Set<Integer> s=getDistinctRandom(samples, set.size()); 
+        Iterator<? extends E> iterator = set.iterator(); 
+        int currentIndex = 0;
+        HashSet<E> res= new HashSet<>();
+        while (iterator.hasNext()) {  
+            E randomElement = iterator.next();
+            if (s.contains(currentIndex))
+                res.add(randomElement);
+            currentIndex++;
+        }  
+        return res;
+    }  
     /**
      *
      * @param samples

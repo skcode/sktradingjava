@@ -29,7 +29,7 @@ public class SecAnalisys {
 static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
-            String symbol="ISP";//INA.EURONEXT-XLIS
+            String symbol="ENEL";//INA.EURONEXT-XLIS
             String market="MLSE";
             String hashcode=Database.getHashcode(symbol, market);
             Fints f=Database.getFintsQuotes(Optional.of(symbol), Optional.of(market),Optional.empty());
@@ -50,12 +50,12 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
                 runs.add(f1.runTestZscore(Security.SERIE.CLOSE.getValue()));
                 samples.add(f1.getLength());                
             }
-            LOG.debug("intraday samples "+dates.size());
-            LOG.debug("closeopen "+closeopen.stream().collect(Collectors.averagingDouble(a->a)));
-            LOG.debug("meaner "+meanv.stream().collect(Collectors.averagingDouble(a->a)));
-            LOG.debug("stder "+stdv.stream().collect(Collectors.averagingDouble(a->a)));
-            LOG.debug("runs "+runs.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN));
-            LOG.debug("samples "+samples.stream().mapToDouble(a->a).average().orElse(Double.NaN));
+            LOG.info("intraday samples "+dates.size());
+            LOG.info("closeopen "+closeopen.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.info("meaner "+meanv.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.info("stder "+stdv.stream().collect(Collectors.averagingDouble(a->a)));
+            LOG.info("runs "+runs.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN));
+            LOG.info("samples "+samples.stream().mapToDouble(a->a).average().orElse(Double.NaN));
             
                 System.out.println(f);
                 System.out.println(f.getSerieCopy(3));

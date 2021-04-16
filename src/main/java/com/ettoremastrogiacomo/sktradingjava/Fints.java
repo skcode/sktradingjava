@@ -434,6 +434,21 @@ public final class Fints implements Serializable{
         double d=60*60*24;
         return getSecondsFromNow()/d;
     }
+    /**
+     * 
+     * @return lastrow minus firstrow
+     * @throws Exception 
+     */
+    public double[] getLastMinusFirst() throws Exception{
+        if (!isEmpty() && getLength()>1) {
+            double[] d=new double[getNoSeries()];
+            for (int i=0;i<matrix[0].length;i++) 
+                d[i]=this.matrix[matrix.length-1][i]-this.matrix[0][i];
+            return d;
+        }else        
+            throw new RuntimeException("length < 2");
+    }
+    
     public double get(int i, int j) {
         return this.matrix[i][j];
     }

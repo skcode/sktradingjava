@@ -223,7 +223,7 @@ public class PairTrading {
     public static void main(String[] args) throws Exception {
         String filename = "./pairtrading.dat";
         File file = new File(filename);
-        int limitsamples = 300;
+        int limitsamples = 100;
         int PAIR = 2, EPOCHS = 100000, TESTSET = 1, TRAINSET = 100;
         //final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
         final double VARFEE = .001, FIXEDFEE = 7, INITCAP = PAIR * 60000;
