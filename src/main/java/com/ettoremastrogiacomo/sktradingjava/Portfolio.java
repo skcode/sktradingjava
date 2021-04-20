@@ -501,7 +501,6 @@ public class Portfolio {
     
     public static Portfolio create_STOCK_EUR_Portfolio(Optional<Integer> minlen, Optional<Double> maxgap, Optional<Integer> maxdaygap, Optional<Integer> maxold, Optional<Integer> minvol) throws Exception {
         ArrayList<String> markets = Database.getMarkets();
-
         ArrayList<HashMap<String, String>> map = Database.getRecords(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(Arrays.asList("STOCK")), Optional.of(markets), Optional.of(Arrays.asList("EUR")), Optional.empty());
         ArrayList<String> hashcodes = new ArrayList<>();
         map.forEach((x) -> {

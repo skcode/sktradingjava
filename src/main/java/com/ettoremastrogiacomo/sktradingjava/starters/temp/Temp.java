@@ -7,32 +7,18 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.starters.temp;
 
-import com.ettoremastrogiacomo.sktradingjava.Init;
-import com.ettoremastrogiacomo.sktradingjava.Security;
-import com.ettoremastrogiacomo.sktradingjava.Security.secType;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import com.ettoremastrogiacomo.sktradingjava.data.Database.Markets;
 import static com.ettoremastrogiacomo.sktradingjava.data.EURONEXT_DataFetch.fetchEuroNext;
 import com.ettoremastrogiacomo.sktradingjava.data.FetchData;
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.loadintoDB;
-import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
-import com.ettoremastrogiacomo.utils.HttpFetch;
-import com.ettoremastrogiacomo.utils.Misc;
 import org.apache.log4j.Logger;
 import com.ettoremastrogiacomo.utils.UDate;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /**
  *
@@ -67,20 +53,8 @@ public class Temp {
     public static void main(String[] args) throws Exception {
        // com.ettoremastrogiacomo.sktradingjava.data.Database.getFintsQuotes(Optional.of("ENGI"),Optional.of("EURONEXT-XPAR") , Optional.empty());
              //LOG.debug(FetchData.fetchYahooQuotes("MSFT"));
-        try {
-            LOG.debug("*** fetching EURONEXT shares ***");
-            java.util.HashMap<String, java.util.HashMap<String, String>> mapEURONEXT = fetchEuroNext();
-            mapEURONEXT.keySet().forEach((x) -> {
-                try {
-                    loadintoDB(x, mapEURONEXT, Database.Providers.EURONEXT, Optional.of(false));
-                } catch (Exception e) {
-                    LOG.warn(e);
-                }
-            });
+            FetchData.loadEODdatanew();
 
-        } catch (Exception e) {
-            LOG.error("ERROR FETCHING EURONEXT");
-        }             
-             
+
     }
 }
