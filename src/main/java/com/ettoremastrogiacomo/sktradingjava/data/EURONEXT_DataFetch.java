@@ -5,27 +5,17 @@
  */
 package com.ettoremastrogiacomo.sktradingjava.data;
 
-import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Init;
-import com.ettoremastrogiacomo.sktradingjava.Security;
-import static com.ettoremastrogiacomo.sktradingjava.data.Database.createSecTable;
 
 import static com.ettoremastrogiacomo.sktradingjava.data.FetchData.computeHashcode;
-import static com.ettoremastrogiacomo.sktradingjava.data.MLSE_DataFetch.fetchMLSEList;
-import com.ettoremastrogiacomo.sktradingjava.starters.intraday.IntradayStats;
 
 import com.ettoremastrogiacomo.utils.UDate;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
 

@@ -34,7 +34,7 @@ public class FetchQuotes {
                 Database.clearEODTable();
                 Database.deleteSharesTable();                
                 Database.createSecTable();
-                FetchData.loadEODdatanew();} catch (Exception e){LOG.warn(e);
+                FetchData.loadEODdata();} catch (Exception e){LOG.warn(e);
             }                           
         }   
        try {Database.createSecTable();} catch (Exception e){LOG.warn(e);}   

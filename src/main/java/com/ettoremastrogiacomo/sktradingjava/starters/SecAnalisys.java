@@ -24,8 +24,8 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
             //String symbol="STAW";//INA.EURONEXT-XLIS
-            String symbol="XSPX";
-            String market="MLSE";
+            String symbol="ABL";
+            String market="XETRA";
             int window=2500;
             String hashcode=Database.getHashcode(symbol, market);
             HashMap<String,String> info=Database.getRecords(Optional.of(Arrays.asList(hashcode)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()).get(0);
@@ -55,6 +55,9 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
             LOG.info("max "+f.getMax()[0]);
             LOG.info("min "+f.getMin()[0]);
             LOG.info("max drowdown "+nf.format(f.getMaxDD(0)*100)+"%");
+            LOG.info("max day gap "+nf.format(f.getMaxDaysDateGap()));
+            Fints fv=s.getDaily().getSerieCopy(Security.SERIE.VOLUME.getValue());
+            LOG.info("mean volume "+nf.format(fv.getMeans()[0]));
             
             
             

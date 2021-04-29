@@ -754,7 +754,7 @@ public final class FetchData {
         }
     
     }
-    static public void loadEODdatanew() throws Exception {
+    static public void loadEODdata() throws Exception {
         //fetchEURONEXTEOD("FR0010208488", "EURONEXT-XPAR");
 
         //fetchMLSEList(Security.secType.ETCETN);        

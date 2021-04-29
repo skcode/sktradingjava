@@ -136,7 +136,9 @@ public final class UDate
        c.set(Calendar.MONTH, 0);       
        return new UDate(c.getTimeInMillis());
    }
-
+   public static UDate now() {
+       return new UDate();
+   }
    
    
    public UDate(){
@@ -183,6 +185,17 @@ public final class UDate
     public String toYYYYMMDD() {
         SimpleDateFormat sdf = new SimpleDateFormat();
         sdf.applyPattern("yyyyMMdd");             
+        return sdf.format(this.getDate());        
+    }
+
+        /**
+     * 
+     * @return date in format YYYYMMDDHHmmss
+     */
+    
+    public String toYYYYMMDDHHmmss() {
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.applyPattern("yyyyMMddHHmmss");             
         return sdf.format(this.getDate());        
     }
 
