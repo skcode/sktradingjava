@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Optional;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -185,7 +186,7 @@ public class EURONEXT_DataFetch {
                 sv.put("volume", volume);
                 sv.put("oi", 0);
                 totalarr.put(sv);
-            } catch (Exception e) {
+            } catch (NumberFormatException | JSONException e) {
             } //skip row
             //values.put(datev, new ArrayList<>(Arrays.asList(close,close,close,close,volume)) );
         }

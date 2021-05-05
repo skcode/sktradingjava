@@ -27,9 +27,9 @@ public class JsonPortfolio {
         // com.ettoremastrogiacomo.sktradingjava.data.Database.getFintsQuotes(Optional.of("ENGI"),Optional.of("EURONEXT-XPAR") , Optional.empty());
         //LOG.debug(FetchData.fetchYahooQuotes("MSFT"));
         JSONArray arr;
-        String mindd = "20210429100757.MINDD.smartportfolio.json";
-        String mincorr = "20210429114943.MINCORREQUITYBH.smartportfolio.json";
-        try ( FileReader f = new FileReader(mincorr)) {
+        String mindd = "20210501182015.MINDD.smartportfolio.json";
+        String mincorr = "20210501150450.MINCORREQUITYBH.smartportfolio.json";
+        try ( FileReader f = new FileReader(mindd)) {
             JSONTokener tokener = new JSONTokener(f);
             JSONObject json = new JSONObject(tokener);
             arr = (JSONArray) json.get("data");
@@ -88,13 +88,14 @@ public class JsonPortfolio {
         Fints eq = new Fints(all.getDate(), Arrays.asList("Weighted Equity"), all.getFrequency(), meq);
         double reccsize=(2000/DoubleArray.min(weights));
         for (int i = 0; i < all.getNoSeries(); i++) {
-            LOG.debug(all.getName(i) + "\t"+names.get(i)+"\t" + String.format("%.4f", weights[i])+"\t"+reccsize*weights[i]);
+            LOG.debug(all.getName(i) + "\t"+names.get(i)+"\t" + String.format("%.4f", weights[i])+"\t"+String.format("%.2f",reccsize*weights[i]));
         }
         
         LOG.debug("size :" + all.getNoSeries());
         LOG.debug("maxdd :" + eq.getMaxDD(0));
         LOG.debug("profit :" + eq.getLastValueInCol(0));
-        LOG.debug("recommended ptf size € : "+reccsize);
+        LOG.debug("profit/maxdd ratio : "+eq.getLastValueInCol(0)/(Math.abs(eq.getMaxDD(0))));
+        LOG.debug("recommended ptf size € : "+String.format("%.2f",reccsize));
         eq.plot("equity", "val");
     }
 }

@@ -15,15 +15,20 @@ import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
 import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
-import static com.ettoremastrogiacomo.sktradingjava.starters.Rankings.logger;
+import static com.ettoremastrogiacomo.sktradingjava.starters.SmartPortfolio.LOG;
+import com.ettoremastrogiacomo.utils.Misc;
+import com.ettoremastrogiacomo.utils.UDate;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.log4j.Logger;
+import org.json.JSONObject;
 
 
-public class Compare {
-    static Logger logger = Logger.getLogger(Compare.class );
+public class CompareBETA {
+    static Logger logger = Logger.getLogger(CompareBETA.class );
     public static void main(String[] args) throws Exception {
         int minsamples=1000,maxdaygap=7,maxold=10,minvol=100000,minvoletf=1000,setsize=20;
         double maxpcgap=.3;           
@@ -42,6 +47,7 @@ public class Compare {
         
         int SIZE=minsamples<ptf.getLength()?minsamples:ptf.getLength()-1;
         TreeMap<Double,String> betamap2msciworld= new TreeMap<>();
+        TreeMap<Double,String> betamap2msciworldNames= new TreeMap<>();
         for (String h: ptf.hashcodes){
             Fints f=Database.getFintsQuotes(h).getSerieCopy(Security.SERIE.CLOSE.getValue());
             Fints fm=Fints.ER(Fints.merge(f, msciworld), 100, true);
@@ -51,7 +57,15 @@ public class Compare {
             betamap2msciworld.put(beta, h);
             
         }
+        betamap2msciworld.keySet().forEach((x)->betamap2msciworldNames.put(x, ptf.getName(betamap2msciworld.get(x))));
         ArrayList<String> newhashes=new ArrayList<>();
+        JSONObject json= new JSONObject();
+        json.put("samples", SIZE);
+        json.put("minvol", minvol);
+        json.put("size", betamap2msciworld.size());
+        json.put("betamaphash", betamap2msciworld);
+        json.put("betamapnames", betamap2msciworldNames);
+        Misc.writeStringToFile(json.toString(), UDate.now().toYYYYMMDDHHmmss()+".beta.json");
         betamap2msciworld.headMap(0.3,true).keySet().forEach((x)->{
             logger.info(ptf.getName(betamap2msciworld.get(x))+"\t"+x);               
             newhashes.add(betamap2msciworld.get(x));

@@ -24,8 +24,8 @@ static public org.apache.log4j.Logger LOG= Logger.getLogger(SecAnalisys.class);
 
     public static void main(String[] args) throws Exception{
             //String symbol="STAW";//INA.EURONEXT-XLIS
-            String symbol="ABL";
-            String market="XETRA";
+            String symbol="ETFMIB";
+            String market="MLSE";
             int window=2500;
             String hashcode=Database.getHashcode(symbol, market);
             HashMap<String,String> info=Database.getRecords(Optional.of(Arrays.asList(hashcode)), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()).get(0);

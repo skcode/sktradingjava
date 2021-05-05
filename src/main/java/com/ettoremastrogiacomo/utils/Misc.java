@@ -423,34 +423,23 @@ public class Misc {
         }
     }
 
-    public static void writeObjToFile(Object obj, String filename) {
-        try {
-            File fileOne = new File(filename);
-            FileOutputStream fos = new FileOutputStream(fileOne);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
+    public static void writeObjToFile(Object obj, String filename) throws Exception {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(filename)))){
             oos.writeObject(obj);
             oos.flush();
-            oos.close();
-            fos.close();
-        } catch (IOException e) {
-            logger.warn(e);
-        }
+        } 
     }
-
-    public static Object readObjFromFile(String filename) {
-        try {
-            File toRead = new File(filename);
-            FileInputStream fis = new FileInputStream(toRead);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-
+    public static void writeStringToFile(String  s,String filename) throws Exception{
+        try ( FileWriter file = new FileWriter(filename) ){
+            file.write(s);
+            file.flush();
+        }          
+    }
+    public static Object readObjFromFile(String filename) throws Exception {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(filename)))){
             Object retobj = ois.readObject();
-            ois.close();
-            fis.close();
             return retobj;
-        } catch (Exception e) {
-            logger.warn(e.toString());
         }
-        return null;
     }
     public static ArrayList<ArrayList<String>>  CSVreader(String filename,char delimiter,int ntokens) {
         ArrayList<ArrayList<String>> parsed=new ArrayList<>();

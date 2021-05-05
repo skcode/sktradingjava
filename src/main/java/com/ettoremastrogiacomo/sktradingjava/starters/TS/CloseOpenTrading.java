@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.ettoremastrogiacomo.sktradingjava.starters.intraday;
+package com.ettoremastrogiacomo.sktradingjava.starters.TS;
 
 import com.ettoremastrogiacomo.sktradingjava.Fints;
 import com.ettoremastrogiacomo.sktradingjava.Portfolio;
-import com.ettoremastrogiacomo.sktradingjava.Security;
 import com.ettoremastrogiacomo.sktradingjava.data.Database;
 import com.ettoremastrogiacomo.utils.DoubleDoubleArray;
 import static com.ettoremastrogiacomo.utils.JeneticsTemplates.Integer2Double;
@@ -30,13 +29,12 @@ import java.util.function.Function;
  *
  * @author root
  */
-public class IntradayCloseOpenTrading {
-    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(IntradayCloseOpenTrading.class);   
+public class CloseOpenTrading {
+    static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CloseOpenTrading.class);   
     
     public static void main(String[] args) throws Exception {
         //final int MAXGAP=5,MINSAMPLE=100,MINDAYS=200;  
         final int POOLSIZE=1;
-        final boolean WEEKLY=false;
         final int TRAIN_WINDOW=120,TEST_WINDOW=5;
         final double INITEQ=40000,FEE=7,spreadPEN=.001,maxpcgap=.2;
         final int samples=2000,maxdaygap=7,maxold=30,minvol=50000;
@@ -48,28 +46,19 @@ public class IntradayCloseOpenTrading {
             hashcodes.add(x.get("hashcode"));
         });
         ArrayList<String> list = Database.getFilteredPortfolio(Optional.of(hashcodes), Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol), Optional.empty());
-        Portfolio ptf=WEEKLY? new Portfolio(list, Optional.of(Fints.frequency.WEEKLY), Optional.empty(), Optional.empty(), Optional.empty()):new Portfolio(list, Optional.of(Fints.frequency.DAILY), Optional.empty(), Optional.empty(), Optional.empty());
-
-        
-        //Portfolio ptf=WEEKLY?com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol)):com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+        Portfolio ptf=new Portfolio(list, Optional.of(Fints.frequency.DAILY), Optional.empty(), Optional.empty(), Optional.empty());
         TreeMap<UDate,ArrayList<Double>> equity= new TreeMap<>();                        
         LOG.debug(ptf.dates.size());
-
         ArrayList<Double> profit= new ArrayList<>();
-        //ArrayList<Double> profit_train= new ArrayList<>();
-        
         Fints close, open;
-
-         close=ptf.getClose();
-         open=ptf.getOpen();        
-
+        close=ptf.getClose();
+        open=ptf.getOpen();        
         Fints d1=Fints.Diff(close, open);
         final UDate []darr=d1.getDate().toArray(new UDate[d1.getDate().size()]);        
         double[][] mat=Fints.DIV(d1, open).getMatrixCopy();
-        if ((POOLSIZE*2)>=ptf.securities.size()) throw new Exception("POOLSIZE TOO BIG "+POOLSIZE);
-        
-
+        if ((POOLSIZE*2)>=ptf.securities.size()) throw new Exception("POOLSIZE TOO BIG "+POOLSIZE);        
         equity.put(darr[TRAIN_WINDOW-1], new ArrayList<Double>() {{ add(INITEQ);}});
+        
         for (int i=0;i<(darr.length-TRAIN_WINDOW-TEST_WINDOW);i=i+TEST_WINDOW) {
             UDate[] traindates=d1.getDate().subList(i, i+TRAIN_WINDOW).toArray(new UDate[TRAIN_WINDOW]);//    subSet(darr[i], darr[i+TRAIN_WINDOW]).toArray(new UDate[TRAIN_WINDOW]);
             LOG.debug(traindates.length);
