@@ -28,8 +28,8 @@ public class JsonPortfolio {
         //LOG.debug(FetchData.fetchYahooQuotes("MSFT"));
         JSONArray arr;
         String mindd = "20210501182015.MINDD.smartportfolio.json";
-        String mincorr = "20210501150450.MINCORREQUITYBH.smartportfolio.json";
-        try ( FileReader f = new FileReader(mindd)) {
+        String mincorr = "20210622150020.MINCORREQUITYBH.smartportfolio.json";
+        try ( FileReader f = new FileReader(mincorr)) {
             JSONTokener tokener = new JSONTokener(f);
             JSONObject json = new JSONObject(tokener);
             arr = (JSONArray) json.get("data");

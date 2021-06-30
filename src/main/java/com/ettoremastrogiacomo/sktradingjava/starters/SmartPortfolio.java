@@ -31,7 +31,7 @@ public class SmartPortfolio {
     public static void main(String[] args) throws Exception {
         int minsamples = 500, maxsamples = 2500, stepsamples = 250, maxdaygap = 7, maxold = 30, minvol = 10000, minvoletf = 0, setmin = 20, setmax = 50, popsize = 20000, ngen = 2000;
         double maxpcgap = .2;
-        Portfolio.optMethod optm = Portfolio.optMethod.MINCORR;
+        Portfolio.optMethod optm = Portfolio.optMethod.MINCORREQUITYBH;
         boolean plot = false, plotlist = false;
         HashMap<String, Integer> list = new HashMap<>();
         //Set<String> listhash= new HashSet<>();
@@ -52,7 +52,7 @@ public class SmartPortfolio {
 
             json.put("samples", samples);
 
-            //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_NYSE_NASDAQ_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
+           // Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_NYSE_NASDAQ_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             Portfolio ptf = com.ettoremastrogiacomo.sktradingjava.Portfolio.create_STOCK_EUR_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvol));
             //Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));
             //    Portfolio ptf=com.ettoremastrogiacomo.sktradingjava.Portfolio.create_ETF_INDICIZZATI_AZIONARIO_MLSE_Portfolio(Optional.of(samples), Optional.of(maxpcgap), Optional.of(maxdaygap), Optional.of(maxold), Optional.of(minvoletf));

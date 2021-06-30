@@ -188,6 +188,14 @@ public class DoubleArray {
         return ret;
     }
     
+    static public double prod(double[] v) {
+        double s = 1;
+        for (int i = 0; i < v.length; i++) {
+            s *= v[i];
+        }
+        return s;
+    }
+
     
     static public double sum(double[] v) {
         double s = 0;

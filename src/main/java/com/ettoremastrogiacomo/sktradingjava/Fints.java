@@ -195,7 +195,14 @@ public final class Fints implements Serializable{
         });
         return new Fints(newdate, f.names, f.freq, newmatrix);
     }
-
+/**
+ * 
+ * @param f1
+ * @param f2
+ * @return un fints con che contiene lo stesso numero di serie, e dati di f2 aggiunti alla fine solo se posteriori
+ * alle date di f1
+ * @throws Exception 
+ */
     static public Fints append(Fints f1, Fints f2) throws Exception {
         if (f1.freq != f2.freq) {
             throw new Exception("frequence doesn't match");
@@ -227,6 +234,8 @@ public final class Fints implements Serializable{
         Fints newf = new Fints(date, f1.names, f1.freq, mat);
         return newf;
     }
+    
+    
 
     static public ArrayList<UDate> mergeDate(ArrayList<UDate> d1, ArrayList<UDate> d2) throws Exception {
         ArrayList<UDate> date = new ArrayList<>();

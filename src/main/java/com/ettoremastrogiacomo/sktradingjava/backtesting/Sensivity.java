@@ -34,21 +34,12 @@ public class Sensivity {
     static Logger LOG = Logger.getLogger(Sensivity.class);
     public Sensivity(HashMap <ArrayList<Double>,Double> params,Optional<Integer> multiplier){
         this.params=params;
-
-        //float[][] dst= new float[mat.length*mat.length][3];
-        
         for (ArrayList<Double> v1: params.keySet()) {
-            for (ArrayList<Double> v2: params.keySet()) {
+            for (ArrayList<Double> v2: params.keySet()) {                
                 distance.add(computedist(v1, v2)); 
                 if (distance.size()>(v1.size()*multiplier.orElse(7))) distance.remove(distance.last());
             }            
-          //  LOG.debug("step "+i+" of "+mat.length);
         }        
-        for (Double v: distance){
-            LOG.debug(v);
-
-        }
-
     }
     
 
@@ -73,11 +64,11 @@ public class Sensivity {
             d=d/cnt;
             if (Double.isFinite(d)) ranking.put(d, v1);
         }        
-         for (Double d: ranking.keySet()){
+         /*for (Double d: ranking.keySet()){
              LOG.debug(d+"\t"+ranking.get(d));
          }
          LOG.debug("last dist = "+distance.last());
-         show(ranking.lastEntry().getValue(),LIM);
+         //show(ranking.lastEntry().getValue(),LIM);*/
         return ranking;
     }    
 }

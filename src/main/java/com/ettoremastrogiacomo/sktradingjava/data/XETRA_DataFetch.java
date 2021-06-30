@@ -205,8 +205,10 @@ public class XETRA_DataFetch {
     }
 
     public static void main(String[] args) throws Exception {
-        String isin = "FI0009005961";
-        JSONArray j = fetchXETRAEOD2(isin, false);
+        String isin = "DE0005493092";
+        JSONArray j = fetchXETRAEOD2(isin, true);
+        j.forEach((x)-> {LOG.debug(x);});
+        /*
         ArrayList<HashMap<String, String>> list = Database.getRecords(Optional.of("market='XETRA'"));
         list.forEach((x) -> {
             try {
@@ -219,7 +221,7 @@ public class XETRA_DataFetch {
         LOG.debug(f.getMaxDaysDateGap());
         LOG.debug(f.toString());
         LOG.debug(f.getMaxDaysDateGap());
-
+*/
     }
     //
 }

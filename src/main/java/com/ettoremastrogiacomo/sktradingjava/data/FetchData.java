@@ -676,7 +676,7 @@ public final class FetchData {
                     data = fetchEODsole24ore(code, Markets.valueOf(market));
                     break;
                 case XETRA:
-                    data = fetchXETRAEOD2(isin, false);
+                    data = fetchXETRAEOD2(isin, true);
                     break;
                 case YAHOO:
                     String s = fetchYahooQuotes(code);
